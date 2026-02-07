@@ -1,0 +1,20 @@
+name: interactive_book_app
+description: Offline interactive book with cinematic audio
+publish_to: "none"
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  camera: ^0.10.5
+  permission_handler: ^11.0.1
+  flutter_riverpod: ^2.4.0
+  path_provider: ^2.1.1
+  isar: ^3.1.0
+  isar_flutter_libs: ^3.1.0
+  just_audio: ^0.9.36
+
+flutter:
+  uses-material-design: true
