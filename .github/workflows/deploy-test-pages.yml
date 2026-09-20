@@ -1,0 +1,58 @@
+name: SuperBook Test Pages
+
+on:
+  push:
+    branches:
+      - 'test/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-test
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build test web app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Build Flutter web
+        run: flutter build web --release --base-href "/SuperBook/test/"
+
+      - name: Prepare Pages artifact
+        run: |
+          mkdir -p _site/test
+          cp -R build/web/. _site/test/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy test Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
