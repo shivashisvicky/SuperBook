@@ -48,7 +48,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 onPressed: chapterIndex == 0 ? null : () => setState(() => chapterIndex--),
                 child: const Text('Previous'),
               ),
-              Text('Chapter ' + (chapterIndex + 1).toString() + ' of ' + widget.book.chapters.length.toString()),
+              Text('Chapter ${chapterIndex + 1} of ${widget.book.chapters.length}'),
               OutlinedButton(
                 onPressed: chapterIndex + 1 >= widget.book.chapters.length
                     ? null
