@@ -43,6 +43,9 @@ jobs:
           mkdir -p _site/test
           cp -R build/web/. _site/test/
 
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
