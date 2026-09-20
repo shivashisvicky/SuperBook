@@ -36,7 +36,7 @@ jobs:
         run: flutter create . --platforms web
 
       - name: Build Flutter web
-        run: flutter build web --release --base-href "/SuperBook/test/"
+        run: flutter build web --release --pwa-strategy=none --base-href "/SuperBook/test/"
 
       - name: Prepare Pages artifact
         run: |
