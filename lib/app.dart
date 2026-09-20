@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'features/reader/reader_screen.dart';
+import 'features/library/library_screen.dart';
 
-class InteractiveBookApp extends StatelessWidget {
-  const InteractiveBookApp({super.key});
+class SuperBookApp extends StatelessWidget {
+  const SuperBookApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'SuperBook',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true),
-      home: const ReaderScreen(),
+      home: const LibraryScreen(),
     );
   }
 }
