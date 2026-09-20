@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:superbook/app.dart';
 
@@ -12,7 +13,13 @@ void main() {
     await tester.pumpWidget(const SuperBookApp());
     await tester.tap(find.text('The Little House'));
     await tester.pumpAndSettle();
-    expect(find.text('The Old House'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('The Old House'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('experience is deterministic', (tester) async {
