@@ -32,6 +32,9 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      - name: Enable Flutter web platform
+        run: flutter create . --platforms web
+
       - name: Build Flutter web
         run: flutter build web --release --base-href "/SuperBook/test/"
 
@@ -56,5 +59,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-# Pages source is configured for GitHub Actions in repository settings.
