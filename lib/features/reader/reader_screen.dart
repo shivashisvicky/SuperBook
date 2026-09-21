@@ -35,7 +35,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
             ),
             for (var i = 0; i < widget.book.chapters.length; i++)
               ListTile(
-                leading: CircleAvatar(child: Text((i + 1).toString())),
+                leading: CircleAvatar(child: Text('\${i + 1}')),
                 title: Text(widget.book.chapters[i].title),
                 trailing: i == chapterIndex ? const Icon(Icons.check) : null,
                 onTap: () {
@@ -166,10 +166,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       label: const Text('Previous'),
                     ),
                     Text(
-                      'Chapter ' +
-                          (chapterIndex + 1).toString() +
-                          ' of ' +
-                          widget.book.chapters.length.toString(),
+                      'Chapter \${chapterIndex + 1} of \${widget.book.chapters.length}',
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                     OutlinedButton.icon(
@@ -232,8 +229,8 @@ class _ExperienceCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(scene.caption, style: Theme.of(context).textTheme.bodyLarge),
                 const SizedBox(height: 16),
-                Text('Moment: ' + scene.moment),
-                Text('Atmosphere: ' + scene.atmosphere),
+                Text('Moment: \${scene.moment}'),
+                Text('Atmosphere: \${scene.atmosphere}'),
                 const SizedBox(height: 18),
                 const Text('Scene Plan · deterministic · intensity 2–3'),
               ],
