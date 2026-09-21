@@ -182,7 +182,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       label: const Text('Previous'),
                     ),
                     Text(
-                      'Chapter ${chapterIndex + 1} of ${widget.book.chapters.length}',
+                      '${_sectionLabel(chapter)} ${chapterIndex + 1} of ${widget.book.chapters.length}',
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                     OutlinedButton.icon(
@@ -284,6 +284,7 @@ class _ExperienceCard extends StatelessWidget {
 
 
 String _sectionLabel(Chapter chapter) {
-  final title = chapter.title.trim().toLowerCase();
-  return title.startsWith('chapter') ? 'Chapter' : 'Section';
+  return chapter.title.trim().toLowerCase().startsWith('chapter')
+      ? 'Chapter'
+      : 'Section';
 }
