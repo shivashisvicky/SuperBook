@@ -40,7 +40,7 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
         'author': author,
         'passage': passage,
       }),
-    ).timeout(const Duration(seconds: 90));
+    ).timeout(const Duration(seconds: 180));
 
     Map<String, dynamic> body;
     try {
@@ -68,10 +68,26 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
       throw StateError('SuperBook AI gateway returned an invalid scene image.');
     }
 
+    final video = body['video'];
+    String? videoUrl;
+    int? videoDurationSeconds;
+    if (video is Map) {
+      final url = video['url'];
+      if (url is String && url.isNotEmpty) {
+        videoUrl = url;
+      }
+      final duration = video['durationSeconds'];
+      if (duration is num) {
+        videoDurationSeconds = duration.toInt();
+      }
+    }
+
     return GeneratedScene(
       plan: AiScenePlan.fromJson(Map<String, dynamic>.from(planJson)),
       imageBase64: base64,
       mimeType: mimeType,
+      videoUrl: videoUrl,
+      videoDurationSeconds: videoDurationSeconds,
     );
   }
 }
