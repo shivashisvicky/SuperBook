@@ -137,6 +137,54 @@ export default {
       return new Response(null, { status: 204, headers: cors(origin) });
     }
 
+    const requestUrl = new URL(request.url);
+
+    if (request.method === 'GET' && requestUrl.pathname === '/video') {
+      const target = requestUrl.searchParams.get('url');
+      if (!target) return json({ error: 'url is required.' }, 400, origin);
+
+      let targetUrl;
+      try {
+        targetUrl = new URL(target);
+      } catch (_) {
+        return json({ error: 'Invalid video URL.' }, 400, origin);
+      }
+
+      if (targetUrl.protocol !== 'https:') {
+        return json({ error: 'Video URL must use HTTPS.' }, 400, origin);
+      }
+
+      try {
+        const range = request.headers.get('Range');
+        const upstream = await fetch(targetUrl.toString(), {
+          headers: range ? { Range: range } : {},
+        });
+
+        const headers = new Headers();
+        const contentType = upstream.headers.get('Content-Type');
+        const contentLength = upstream.headers.get('Content-Length');
+        const contentRange = upstream.headers.get('Content-Range');
+        const acceptRanges = upstream.headers.get('Accept-Ranges');
+
+        if (contentType) headers.set('Content-Type', contentType);
+        if (contentLength) headers.set('Content-Length', contentLength);
+        if (contentRange) headers.set('Content-Range', contentRange);
+        if (acceptRanges) headers.set('Accept-Ranges', acceptRanges);
+        headers.set('Cache-Control', 'public, max-age=300');
+        Object.entries(cors(origin)).forEach(([key, value]) => headers.set(key, value));
+
+        return new Response(upstream.body, {
+          status: upstream.status,
+          headers,
+        });
+      } catch (error) {
+        return json({
+          error: 'Video proxy failed.',
+          detail: error instanceof Error ? error.message : String(error),
+        }, 502, origin);
+      }
+    }
+
     if (request.method !== 'POST') {
       return json({ error: 'POST required.' }, 405, origin);
     }
@@ -206,7 +254,9 @@ export default {
         videoUrl = video && video.video
           ? video.video
           : video && video.result && video.result.video;
-        if (typeof videoUrl !== 'string' || videoUrl.length === 0) {
+        if (typeof videoUrl === 'string' && videoUrl.length > 0) {
+          videoUrl = requestUrl.origin + '/video?url=' + encodeURIComponent(videoUrl);
+        } else {
           videoUrl = null;
           videoError = 'Video model returned no video URL.';
         }
