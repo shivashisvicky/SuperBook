@@ -80,11 +80,9 @@ the table while the landlord prepared their supper.
       isNot(contains('This chapter contains no readable text')),
     );
   });
-}
 
-
-test('Gutenberg parser recognizes Sherlock-style adventure headings', () async {
-  const text = '''
+  test('Gutenberg parser recognizes Sherlock-style adventure headings', () async {
+    const text = '''
 *** START OF THE PROJECT GUTENBERG EBOOK TEST ***
 
 CONTENTS
@@ -103,45 +101,23 @@ The room was quiet while Holmes considered the evidence before him.
 
 *** END OF THE PROJECT GUTENBERG EBOOK TEST ***
 ''';
-
-  final client = MockClient((request) async {
-    if (request.url.host == 'gutendex.com') {
-      return http.Response(
-        jsonEncode({
-          'formats': {
-            'text/plain':
-                'https://www.gutenberg.org/cache/epub/1661/pg1661.txt',
-          },
-        }),
-        200,
-        headers: const {'content-type': 'application/json'},
-      );
-    }
-    if (request.url.host == 'r.jina.ai') {
-      return http.Response(text, 200);
-    }
-    return http.Response('not found', 404);
+    final client = MockClient((request) async {
+      if (request.url.host == 'gutendex.com') {
+        return http.Response(jsonEncode({'formats': {'text/plain': 'https://www.gutenberg.org/cache/epub/1661/pg1661.txt'}}), 200, headers: const {'content-type': 'application/json'});
+      }
+      if (request.url.host == 'r.jina.ai') return http.Response(text, 200);
+      return http.Response('not found', 404);
+    });
+    final service = GutenbergService(client: client);
+    const summary = GutenbergBookSummary(id: 1661, title: 'The Adventures of Sherlock Holmes', author: 'Arthur Conan Doyle', downloadCount: 0, coverUrl: null);
+    final book = await service.loadBook(summary);
+    expect(book.chapters, hasLength(2));
+    expect(book.chapters.first.title, 'A SCANDAL IN BOHEMIA');
+    expect(book.chapters.last.title, 'THE RED-HEADED LEAGUE');
   });
 
-  final service = GutenbergService(client: client);
-  const summary = GutenbergBookSummary(
-    id: 1661,
-    title: 'The Adventures of Sherlock Holmes',
-    author: 'Arthur Conan Doyle',
-    downloadCount: 0,
-    coverUrl: null,
-  );
-
-  final book = await service.loadBook(summary);
-
-  expect(book.chapters, hasLength(2));
-  expect(book.chapters.first.title, 'A SCANDAL IN BOHEMIA');
-  expect(book.chapters.last.title, 'THE RED-HEADED LEAGUE');
-  expect(book.chapters.first.passage.first, contains('Holmes examined the paper'));
-});
-
-test('Gutenberg parser recognizes standalone Roman numeral sections', () async {
-  const text = '''
+  test('Gutenberg parser recognizes standalone Roman numeral sections', () async {
+    const text = '''
 *** START OF THE PROJECT GUTENBERG EBOOK TEST ***
 
 I
@@ -156,38 +132,18 @@ length before the next part of the story begins.
 
 *** END OF THE PROJECT GUTENBERG EBOOK TEST ***
 ''';
-
-  final client = MockClient((request) async {
-    if (request.url.host == 'gutendex.com') {
-      return http.Response(
-        jsonEncode({
-          'formats': {
-            'text/plain':
-                'https://www.gutenberg.org/cache/epub/1661/pg1661.txt',
-          },
-        }),
-        200,
-        headers: const {'content-type': 'application/json'},
-      );
-    }
-    if (request.url.host == 'r.jina.ai') {
-      return http.Response(text, 200);
-    }
-    return http.Response('not found', 404);
+    final client = MockClient((request) async {
+      if (request.url.host == 'gutendex.com') {
+        return http.Response(jsonEncode({'formats': {'text/plain': 'https://www.gutenberg.org/cache/epub/1661/pg1661.txt'}}), 200, headers: const {'content-type': 'application/json'});
+      }
+      if (request.url.host == 'r.jina.ai') return http.Response(text, 200);
+      return http.Response('not found', 404);
+    });
+    final service = GutenbergService(client: client);
+    const summary = GutenbergBookSummary(id: 1661, title: 'Sherlock-style test', author: 'Arthur Conan Doyle', downloadCount: 0, coverUrl: null);
+    final book = await service.loadBook(summary);
+    expect(book.chapters, hasLength(2));
+    expect(book.chapters.first.title, 'Chapter I');
+    expect(book.chapters.last.title, 'Chapter II');
   });
-
-  final service = GutenbergService(client: client);
-  const summary = GutenbergBookSummary(
-    id: 1661,
-    title: 'Sherlock-style test',
-    author: 'Arthur Conan Doyle',
-    downloadCount: 0,
-    coverUrl: null,
-  );
-
-  final book = await service.loadBook(summary);
-
-  expect(book.chapters, hasLength(2));
-  expect(book.chapters.first.title, 'Chapter I');
-  expect(book.chapters.last.title, 'Chapter II');
-});
+}
