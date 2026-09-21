@@ -178,17 +178,19 @@ async function generateMotionFrames(env, plan, imageBase64, origin) {
   }
 
   const sourceBlob = new Blob([sourceBytes], { type: 'image/png' });
-  const actions = plan.actions.filter((action) => typeof action === 'string' && action.trim()).slice(0, 3);
+  // Two distinct AI-generated acting states are enough for the current
+  // motion-comic presentation. Generate them concurrently so one scene
+  // does not wait for three serial inference calls.
+  const actions = plan.actions.filter((action) => typeof action === 'string' && action.trim()).slice(0, 2);
   const beats = actions.length > 0
     ? actions
-    : plan.characters.slice(0, 3).map((character) => character.action).filter(Boolean);
+    : plan.characters.slice(0, 2).map((character) => character.action).filter(Boolean);
 
   if (beats.length === 0) {
     beats.push(plan.motion || 'subtle natural movement');
   }
 
-  const frames = [];
-  for (const beat of beats) {
+  const frames = await Promise.all(beats.map(async (beat) => {
     const form = new FormData();
     form.append('input_image_0', sourceBlob, 'scene.png');
     form.append(
@@ -223,12 +225,12 @@ async function generateMotionFrames(env, plan, imageBase64, origin) {
       throw new Error('Motion frame model returned no image.');
     }
 
-    frames.push({
+    return {
       mimeType: 'image/jpeg',
       base64: generated.image,
       beat,
-    });
-  }
+    };
+  }));
 
   return json({
     frames,
@@ -438,16 +440,3 @@ export default {
         scenePlan: plan,
         image: {
           mimeType: 'image/jpeg',
-          base64: image.image,
-        },
-        video: null,
-      }, 200, origin);
-    } catch (error) {
-      console.error('SuperBook scene generation failed', error);
-      return json({
-        error: 'Scene generation failed.',
-        detail: error instanceof Error ? error.message : String(error),
-      }, 502, origin);
-    }
-  },
-};
