@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../domain/book.dart';
 import '../../services/scene_generation/cloudflare_scene_provider.dart';
@@ -32,6 +33,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
   GeneratedScene? _generated;
   String? _error;
   bool _loading = false;
+  VideoPlayerController? _video;
 
   Chapter get _chapter =>
       widget.book.chapters.firstWhere((chapter) => chapter.id == widget.beat.chapterId);
@@ -49,12 +51,38 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       passage: _chapter.passage.join('\n'),
     );
     _generated = _sceneCache.get(key);
+    if (_generated?.hasVideo == true) {
+      _loadVideo(_generated!.videoUrl!);
+    }
   }
 
   @override
   void dispose() {
     _motion.dispose();
+    _video?.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadVideo(String url) async {
+    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    try {
+      await controller.initialize();
+      await controller.setLooping(true);
+      await controller.setVolume(0);
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      final old = _video;
+      setState(() => _video = controller);
+      await old?.dispose();
+      await controller.play();
+    } catch (error) {
+      await controller.dispose();
+      if (mounted) {
+        setState(() => _error = 'Generated animation could not be loaded: $error');
+      }
+    }
   }
 
   Future<void> _generate() async {
@@ -80,6 +108,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       final cached = _sceneCache.get(key);
       if (cached != null) {
         setState(() => _generated = cached);
+        if (cached.hasVideo) await _loadVideo(cached.videoUrl!);
         return;
       }
 
@@ -100,6 +129,45 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     }
   }
 
+  Widget _visual(GeneratedScene generated) {
+    final video = _video;
+    if (video != null && video.value.isInitialized) {
+      return FittedBox(
+        fit: BoxFit.cover,
+        clipBehavior: Clip.hardEdge,
+        child: SizedBox(
+          width: video.value.size.width,
+          height: video.value.size.height,
+          child: VideoPlayer(video),
+        ),
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _motion,
+      builder: (context, _) {
+        final scale = 1.0 + (_motion.value * 0.018);
+        final shift = (_motion.value - 0.5) * 4;
+        return ClipRect(
+          child: Transform.translate(
+            offset: Offset(shift, shift * 0.25),
+            child: Transform.scale(
+              scale: scale,
+              child: Image.memory(
+                base64Decode(generated.imageBase64),
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Text('Generated scene image could not be decoded.'),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final generated = _generated;
@@ -114,29 +182,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
         fit: StackFit.expand,
         children: [
           if (generated != null)
-            AnimatedBuilder(
-              animation: _motion,
-              builder: (context, _) {
-                final scale = 1.0 + (_motion.value * 0.045);
-                final shift = (_motion.value - 0.5) * 10;
-                return ClipRect(
-                  child: Transform.translate(
-                    offset: Offset(shift, shift * 0.35),
-                    child: Transform.scale(
-                      scale: scale,
-                      child: Image.memory(
-                        base64Decode(generated.imageBase64),
-                        fit: BoxFit.cover,
-                        gaplessPlayback: true,
-                        errorBuilder: (_, __, ___) => const Center(
-                          child: Text('Generated scene image could not be decoded.'),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            )
+            _visual(generated)
           else
             const ColoredBox(color: Color(0xFF05070B)),
           Positioned.fill(
