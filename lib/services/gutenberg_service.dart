@@ -65,21 +65,49 @@ class GutenbergService {
     if (response.statusCode != 200) throw Exception('Could not load book ${summary.title}.');
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final formats = data['formats'] as Map<String, dynamic>? ?? const {};
-    final textUrl = _textUrl(formats);
-    if (textUrl == null) throw Exception('No plain-text edition is available for ${summary.title}.');
-    final textResponse = await _client.get(Uri.parse(textUrl));
-    if (textResponse.statusCode != 200) throw Exception('Could not download ${summary.title}.');
+    final textUrls = _textUrls(summary.id, formats);
+    if (textUrls.isEmpty) {
+      throw Exception('No plain-text edition is available for ${summary.title}.');
+    }
+
+    http.Response? textResponse;
+    Object? lastError;
+    for (final textUrl in textUrls) {
+      try {
+        final response = await _client.get(Uri.parse(textUrl));
+        if (response.statusCode == 200) {
+          textResponse = response;
+          break;
+        }
+        lastError = 'HTTP ${response.statusCode}';
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (textResponse == null) {
+      throw Exception(
+        'Could not download ${summary.title}${lastError == null ? '' : ': $lastError'}.',
+      );
+    }
+
     final text = utf8.decode(textResponse.bodyBytes, allowMalformed: true);
     final book = _toBook(summary, text);
     _cache[summary.id] = book;
     return book;
   }
 
-  String? _textUrl(Map<String, dynamic> formats) {
+  List<String> _textUrls(int bookId, Map<String, dynamic> formats) {
+    final urls = <String>[
+      'https://www.gutenberg.org/cache/epub/$bookId/pg$bookId.txt',
+    ];
     for (final entry in formats.entries) {
-      if (entry.key.startsWith('text/plain')) return entry.value as String?;
+      if (entry.key.startsWith('text/plain')) {
+        final value = entry.value as String?;
+        if (value != null && !urls.contains(value)) urls.add(value);
+      }
     }
-    return null;
+    return urls;
   }
 
   Book _toBook(GutenbergBookSummary summary, String rawText) {
