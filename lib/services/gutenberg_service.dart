@@ -169,7 +169,7 @@ class GutenbergService {
           lines.sublist(marker.line + 1, endLine),
         );
         final heading = marker.heading.isEmpty
-            ? 'Chapter \${marker.number ?? i + 1}'
+            ? 'Chapter ${marker.number ?? i + 1}'
             : marker.heading;
         chapters.add(_chapterFromParagraphs(heading, section, i));
       }
@@ -189,7 +189,7 @@ class GutenbergService {
     ];
 
     return Book(
-      id: 'gutenberg-\${summary.id}',
+      id: 'gutenberg-${summary.id}',
       title: summary.title,
       author: summary.author,
       description: 'Original public-domain text from Project Gutenberg.',
