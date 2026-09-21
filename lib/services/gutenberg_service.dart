@@ -72,9 +72,12 @@ class GutenbergService {
 
     http.Response? textResponse;
     Object? lastError;
+
     for (final textUrl in textUrls) {
       try {
-        final response = await _client.get(Uri.parse(textUrl));
+        final response = await _client
+            .get(Uri.parse(textUrl))
+            .timeout(const Duration(seconds: 20));
         if (response.statusCode == 200) {
           textResponse = response;
           break;
@@ -98,16 +101,16 @@ class GutenbergService {
   }
 
   List<String> _textUrls(int bookId, Map<String, dynamic> formats) {
-    final urls = <String>[
-      'https://www.gutenberg.org/cache/epub/$bookId/pg$bookId.txt',
+    final sourceUrl =
+        'https://www.gutenberg.org/cache/epub/$bookId/pg$bookId.txt';
+    return [
+      'https://r.jina.ai/$sourceUrl',
+      for (final entry in formats.entries)
+        if (entry.key.startsWith('text/plain') &&
+            entry.value is String &&
+            entry.value != sourceUrl)
+          entry.value as String,
     ];
-    for (final entry in formats.entries) {
-      if (entry.key.startsWith('text/plain')) {
-        final value = entry.value as String?;
-        if (value != null && !urls.contains(value)) urls.add(value);
-      }
-    }
-    return urls;
   }
 
   Book _toBook(GutenbergBookSummary summary, String rawText) {
