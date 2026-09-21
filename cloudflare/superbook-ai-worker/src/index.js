@@ -1,5 +1,6 @@
 const TEXT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
+const VIDEO_MODEL = 'alibaba/hh1.1-i2v';
 const MAX_PASSAGE = 12000;
 
 const sceneSchema = {
@@ -68,6 +69,8 @@ const SYSTEM_PROMPT = [
   'Prefer concrete visual details from the passage. Infer only harmless visual details needed for composition.',
   'The imagePrompt must describe one coherent cinematic frame, not a collage.',
   'Describe people with period-appropriate clothing and consistent physical appearance.',
+  'The motion field must describe restrained, physically plausible movement for a short 3-6 second literary scene.',
+  'The camera movement should be subtle and scene-specific, not a generic zoom.',
   'Avoid text, captions, speech bubbles, logos, watermarks, modern objects, duplicate people, extra limbs, and distorted anatomy.',
   'Return only the requested JSON object.',
 ].join(' ');
@@ -93,6 +96,20 @@ function json(data, status, origin) {
 
 function trimPassage(value) {
   return String(value || '').replace(/\s+/g, ' ').trim().slice(0, MAX_PASSAGE);
+}
+
+function videoPrompt(plan) {
+  return [
+    'Animate this exact literary scene as a restrained 3-6 second cinematic moment.',
+    'Preserve the characters, clothing, composition, setting, period, and identity from the reference image.',
+    'Do not introduce new characters or objects.',
+    'Meaningful motion: ' + plan.motion,
+    'Character actions: ' + plan.actions.join('; '),
+    'Camera: ' + plan.camera.movement + ', ' + plan.camera.shot + ', ' + plan.camera.angle + '.',
+    'Lighting: ' + plan.lighting,
+    'Natural movement only. Avoid warping faces, hands, clothing, furniture, or architecture.',
+    'No text, captions, logos, watermarks, or scene changes.',
+  ].join(' ');
 }
 
 function validatePlan(plan) {
@@ -170,13 +187,37 @@ export default {
         return json({ error: 'Image model returned no image.' }, 502, origin);
       }
 
+      let videoUrl = null;
+      let videoError = null;
+      try {
+        const video = await env.AI.run(VIDEO_MODEL, {
+          image: 'data:image/jpeg;base64,' + image.image,
+          prompt: videoPrompt(plan).slice(0, 2500),
+          duration: 4,
+          resolution: '720P',
+          watermark: false,
+        });
+        videoUrl = video && video.video
+          ? video.video
+          : video && video.result && video.result.video;
+        if (typeof videoUrl !== 'string' || videoUrl.length === 0) {
+          videoUrl = null;
+          videoError = 'Video model returned no video URL.';
+        }
+      } catch (error) {
+        console.error('SuperBook scene animation failed', error);
+        videoError = error instanceof Error ? error.message : String(error);
+      }
+
       return json({
-        schemaVersion: '1',
+        schemaVersion: '2',
         scenePlan: plan,
         image: {
           mimeType: 'image/jpeg',
           base64: image.image,
         },
+        video: videoUrl ? { url: videoUrl, durationSeconds: 4 } : null,
+        videoError,
       }, 200, origin);
     } catch (error) {
       console.error('SuperBook scene generation failed', error);
