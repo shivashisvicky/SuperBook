@@ -255,7 +255,7 @@ class GutenbergService {
     if (text.length < 180) return false;
     final words = text.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
     if (words.length < 30) return false;
-    final sentenceMarks = RegExp(r'[.!?](?:["’”\')\]]|\s|$)').allMatches(text).length;
+    final sentenceMarks = RegExp(r'[.!?]').allMatches(text).length;
     return sentenceMarks >= 2;
   }
 

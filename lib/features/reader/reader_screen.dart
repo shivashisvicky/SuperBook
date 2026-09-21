@@ -36,7 +36,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
             ),
             for (var i = 0; i < widget.book.chapters.length; i++)
               ListTile(
-                leading: CircleAvatar(child: Text('${i + 1}')),
+                leading: CircleAvatar(child: Text('\${i + 1}')),
                 title: Text(widget.book.chapters[i].title),
                 trailing: i == chapterIndex ? const Icon(Icons.check) : null,
                 onTap: () {
@@ -94,6 +94,16 @@ class _ReaderScreenState extends State<ReaderScreen> {
   @override
   Widget build(BuildContext context) {
     final progress = (chapterIndex + 1) / widget.book.chapters.length;
+    final beat = widget.book.beats.firstWhere(
+      (item) => item.chapterId == chapter.id,
+      orElse: () => NarrativeBeat(
+        title: chapter.title,
+        summary: chapter.passage.first,
+        chapterId: chapter.id,
+        intensity: 1,
+      ),
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(chapter.title),
@@ -154,8 +164,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 if (experienceVisible) ...[
                   const SizedBox(height: 8),
                   _ExperienceCard(
+                    book: widget.book,
                     scene: chapter.scene,
-                    beat: widget.book.beats.firstWhere((b) => b.chapterId == chapter.id),
+                    beat: beat,
                   ),
                 ],
                 const SizedBox(height: 28),
@@ -171,7 +182,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       label: const Text('Previous'),
                     ),
                     Text(
-                      'Chapter ${chapterIndex + 1} of ${widget.book.chapters.length}',
+                      'Chapter \${chapterIndex + 1} of \${widget.book.chapters.length}',
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                     OutlinedButton.icon(
@@ -212,8 +223,13 @@ class _NarrationBar extends StatelessWidget {
 }
 
 class _ExperienceCard extends StatelessWidget {
-  const _ExperienceCard({required this.scene, required this.beat});
+  const _ExperienceCard({
+    required this.book,
+    required this.scene,
+    required this.beat,
+  });
 
+  final Book book;
   final Scene scene;
   final NarrativeBeat beat;
 
@@ -225,7 +241,11 @@ class _ExperienceCard extends StatelessWidget {
         key: const ValueKey('experience-scene-entry'),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ScenePlayerScreen(book: widget.book, scene: scene, beat: beat),
+            builder: (_) => ScenePlayerScreen(
+              book: book,
+              scene: scene,
+              beat: beat,
+            ),
           ),
         ),
         child: Padding(

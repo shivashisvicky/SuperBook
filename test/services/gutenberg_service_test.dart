@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:superbook/services/gutenberg_service.dart';
 
 void main() {
@@ -21,10 +22,12 @@ Front matter.
 CHAPTER 1. First.
 This is the actual first chapter. It contains enough prose to prove that
 the marker is a real chapter boundary and not merely a contents entry.
+The prose continues here with another complete sentence.
 
 CHAPTER 2. Second.
 This is the actual second chapter. It contains enough prose to prove that
 the marker is a real chapter boundary and not merely a contents entry.
+The prose continues here with another complete sentence.
 
 CHAPTER 3. The Spouter-Inn.
 Entering that gable-ended Spouter-Inn, you found yourself in a wide,
@@ -36,7 +39,26 @@ the table while the landlord prepared their supper.
 *** END OF THE PROJECT GUTENBERG EBOOK TEST ***
 ''';
 
-    final service = GutenbergService(client: _FakeGutenbergClient(text));
+    final client = MockClient((request) async {
+      if (request.url.host == 'gutendex.com') {
+        return http.Response(
+          jsonEncode({
+            'formats': {
+              'text/plain':
+                  'https://www.gutenberg.org/cache/epub/2701/pg2701.txt',
+            },
+          }),
+          200,
+          headers: const {'content-type': 'application/json'},
+        );
+      }
+      if (request.url.host == 'r.jina.ai') {
+        return http.Response(text, 200);
+      }
+      return http.Response('not found', 404);
+    });
+
+    final service = GutenbergService(client: client);
     const summary = GutenbergBookSummary(
       id: 2701,
       title: 'Moby Dick; Or, The Whale',
@@ -49,35 +71,13 @@ the table while the landlord prepared their supper.
 
     expect(book.chapters, hasLength(3));
     expect(book.chapters[2].title, 'The Spouter-Inn');
-    expect(book.chapters[2].passage.first, contains('Entering that gable-ended Spouter-Inn'));
+    expect(
+      book.chapters[2].passage.first,
+      contains('Entering that gable-ended Spouter-Inn'),
+    );
     expect(
       book.chapters[2].passage.first,
       isNot(contains('This chapter contains no readable text')),
     );
   });
-}
-
-class _FakeGutenbergClient extends http.Client {
-  _FakeGutenbergClient(this.text);
-
-  final String text;
-
-  @override
-  Future<http.Response> get(Uri url, {Map<String, String>? headers}) async {
-    if (url.host == 'gutendex.com') {
-      return http.Response(
-        jsonEncode({
-          'formats': {
-            'text/plain': 'https://www.gutenberg.org/cache/epub/2701/pg2701.txt',
-          },
-        }),
-        200,
-        headers: const {'content-type': 'application/json'},
-      );
-    }
-    if (url.host == 'r.jina.ai') {
-      return http.Response(text, 200);
-    }
-    return http.Response('not found', 404);
-  }
 }
