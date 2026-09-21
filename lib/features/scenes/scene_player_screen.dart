@@ -28,14 +28,10 @@ class ScenePlayerScreen extends StatefulWidget {
   State<ScenePlayerScreen> createState() => _ScenePlayerScreenState();
 }
 
-class _ScenePlayerScreenState extends State<ScenePlayerScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _motion;
+class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   GeneratedScene? _generated;
   String? _error;
   bool _loading = false;
-  bool _videoLoading = false;
-  int _videoRequestId = 0;
   VideoPlayerController? _video;
 
   Chapter get _chapter =>
@@ -50,22 +46,17 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
   @override
   void initState() {
     super.initState();
-    _motion = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 18),
-    )..repeat(reverse: true);
-
     final cached = _sceneCache.get(_cacheKey);
     _generated = cached;
     if (cached?.hasVideo == true) {
       unawaited(_loadVideo(cached!.videoUrl!));
+    } else if (cached == null) {
+      unawaited(_generate());
     }
   }
 
   @override
   void dispose() {
-    _videoRequestId++;
-    _motion.dispose();
     _video?.dispose();
     super.dispose();
   }
@@ -92,47 +83,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     }
   }
 
-  Future<void> _startVideoGeneration(GeneratedScene scene) async {
-    if (_videoLoading || scene.hasVideo || _sceneEndpoint.isEmpty) return;
-
-    final requestId = ++_videoRequestId;
-    if (mounted) {
-      setState(() {
-        _videoLoading = true;
-        _error = null;
-      });
-    }
-
-    try {
-      final provider = CloudflareSceneProvider(endpoint: _sceneEndpoint);
-      final video = await provider.generateVideo(
-        plan: scene.plan,
-      );
-      if (!mounted || requestId != _videoRequestId) return;
-
-      final completed = GeneratedScene(
-        plan: scene.plan,
-        imageBase64: scene.imageBase64,
-        mimeType: scene.mimeType,
-        videoUrl: video.url,
-        videoDurationSeconds: video.durationSeconds,
-      );
-      _sceneCache.put(_cacheKey, completed);
-      setState(() {
-        _generated = completed;
-        _videoLoading = false;
-      });
-      await _loadVideo(video.url);
-    } catch (error) {
-      if (mounted && requestId == _videoRequestId) {
-        setState(() {
-          _videoLoading = false;
-          _error = 'Animation generation failed: $error';
-        });
-      }
-    }
-  }
-
   Future<void> _generate({bool force = false}) async {
     if (_loading) return;
     if (_sceneEndpoint.isEmpty) {
@@ -143,15 +93,9 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     }
 
     if (force) {
-      _videoRequestId++;
       final oldVideo = _video;
       _video = null;
       await oldVideo?.dispose();
-      if (mounted) {
-        setState(() {
-          _videoLoading = false;
-        });
-      }
     }
 
     setState(() {
@@ -213,28 +157,13 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       );
     }
 
-    return AnimatedBuilder(
-      animation: _motion,
-      builder: (context, _) {
-        final scale = 1.0 + (_motion.value * 0.018);
-        final shift = (_motion.value - 0.5) * 4;
-        return ClipRect(
-          child: Transform.translate(
-            offset: Offset(shift, shift * 0.25),
-            child: Transform.scale(
-              scale: scale,
-              child: Image.memory(
-                base64Decode(generated.imageBase64),
-                fit: BoxFit.cover,
-                gaplessPlayback: true,
-                errorBuilder: (_, __, ___) => const Center(
-                  child: Text('Generated scene image could not be decoded.'),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    return Image.memory(
+      base64Decode(generated.imageBase64),
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      errorBuilder: (_, __, ___) => const Center(
+        child: Text('Generated scene image could not be decoded.'),
+      ),
     );
   }
 
@@ -255,6 +184,24 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
             _visual(generated)
           else
             const ColoredBox(color: Color(0xFF05070B)),
+          if (generated == null && _loading)
+            const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  ),
+                  SizedBox(height: 14),
+                  Text(
+                    'Creating your story moment…',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -301,23 +248,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                       ),
                     ] else
                       Text(widget.scene.atmosphere),
-                    if (_videoLoading) ...[
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Adding motion to the scene…',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                    ],
                     if (_error != null) ...[
                       const SizedBox(height: 10),
                       Text(
@@ -334,23 +264,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                           'Narrative beat · intensity ${widget.beat.intensity}',
                         ),
                         const Spacer(),
-                        if (generated != null && !generated.hasVideo)
-                          OutlinedButton.icon(
-                            onPressed: _videoLoading
-                                ? null
-                                : () => _startVideoGeneration(generated),
-                            icon: _videoLoading
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.movie_creation_outlined),
-                            label: Text(
-                              _videoLoading ? 'Animating…' : 'Animate story',
-                            ),
-                          ),
-                        const SizedBox(width: 8),
                         FilledButton.icon(
                           onPressed: _loading
                               ? null
