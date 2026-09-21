@@ -52,9 +52,7 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw StateError(
         body['error'] as String? ??
-            'SuperBook AI gateway failed with HTTP ' +
-                res.statusCode.toString() +
-                '.',
+            'SuperBook AI gateway failed with HTTP ${res.statusCode}.',
       );
     }
 
