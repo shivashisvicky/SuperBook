@@ -1,6 +1,7 @@
 // SuperBook animation path: narrative-driven T2V, no R2 asset handoff.
 const TEXT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
+const MOTION_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
 const VIDEO_MODEL = 'alibaba/hh1.1-t2v';
 const MAX_PASSAGE = 12000;
 
@@ -163,6 +164,78 @@ function validatePlan(plan) {
     typeof plan.camera.shot === 'string';
 }
 
+async function generateMotionFrames(env, plan, imageBase64, origin) {
+  if (typeof imageBase64 !== 'string' || imageBase64.length === 0) {
+    return json({ error: 'A reference scene image is required.' }, 400, origin);
+  }
+
+  let sourceBytes;
+  try {
+    const binary = atob(imageBase64);
+    sourceBytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  } catch (_) {
+    return json({ error: 'Reference scene image is not valid base64.' }, 400, origin);
+  }
+
+  const sourceBlob = new Blob([sourceBytes], { type: 'image/png' });
+  const actions = plan.actions.filter((action) => typeof action === 'string' && action.trim()).slice(0, 3);
+  const beats = actions.length > 0
+    ? actions
+    : plan.characters.slice(0, 3).map((character) => character.action).filter(Boolean);
+
+  if (beats.length === 0) {
+    beats.push(plan.motion || 'subtle natural movement');
+  }
+
+  const frames = [];
+  for (const beat of beats) {
+    const form = new FormData();
+    form.append('input_image_0', sourceBlob, 'scene.png');
+    form.append(
+      'prompt',
+      [
+        'Create the next illustrated story frame from the reference image.',
+        'Preserve the same room, period, characters, clothing, faces, composition, lighting, and visual style.',
+        'Change only the physical acting needed for this narrative beat.',
+        'Do not add characters, remove characters, change location, or invent a new event.',
+        'Keep identities and architecture consistent with the reference.',
+        'Narrative beat: ' + beat,
+        'Character actions: ' + plan.characters.map((character) => character.id + ': ' + character.action + ', ' + character.emotion).join('; '),
+        'Visual style: ' + plan.visualStyle,
+        'No text, captions, logos, watermarks, or collage panels.',
+      ].join(' ').slice(0, 2048),
+    );
+    form.append('width', '1024');
+    form.append('height', '768');
+
+    const serialized = new Response(form);
+    const multipartBody = serialized.body;
+    const contentType = serialized.headers.get('content-type');
+
+    const generated = await env.AI.run(MOTION_MODEL, {
+      multipart: {
+        body: multipartBody,
+        contentType,
+      },
+    });
+
+    if (!generated || typeof generated.image !== 'string' || generated.image.length === 0) {
+      throw new Error('Motion frame model returned no image.');
+    }
+
+    frames.push({
+      mimeType: 'image/jpeg',
+      base64: generated.image,
+      beat,
+    });
+  }
+
+  return json({
+    frames,
+    frameDurationSeconds: 2.4,
+  }, 200, origin);
+}
+
 async function generateVideo(env, plan, origin, requestUrl) {
   const video = await env.AI.run(VIDEO_MODEL, {
     prompt: [
@@ -246,6 +319,36 @@ export default {
         return json({
           error: 'Video proxy failed.',
           detail: error instanceof Error ? error.message : String(error),
+        }, 502, origin);
+      }
+    }
+
+    if (request.method === 'POST' && requestUrl.pathname === '/motion') {
+      let input;
+      try {
+        input = await request.json();
+      } catch (_) {
+        return json({ error: 'Request body must be valid JSON.' }, 400, origin);
+      }
+
+      const plan = input && input.scenePlan;
+      const imageBase64 = input && input.imageBase64;
+      if (!validatePlan(plan)) {
+        return json({ error: 'A valid scenePlan is required.' }, 400, origin);
+      }
+
+      try {
+        return await generateMotionFrames(env, plan, imageBase64, origin);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        const code = error && typeof error === 'object' ? error.code : undefined;
+        const status = error && typeof error === 'object' ? error.status : undefined;
+        console.error('SuperBook motion frame generation failed', { detail, code, status });
+        return json({
+          error: 'Motion frame generation failed.',
+          detail,
+          code: code ?? null,
+          upstreamStatus: status ?? null,
         }, 502, origin);
       }
     }
