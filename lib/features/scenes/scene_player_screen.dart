@@ -381,32 +381,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                         ),
                       ],
                     ),
-                        const Spacer(),
-                        FilledButton.icon(
-                          onPressed: _loading
-                              ? null
-                              : () => _generate(force: generated != null),
-                          icon: _loading
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : Icon(
-                                  generated == null
-                                      ? Icons.auto_awesome
-                                      : Icons.refresh,
-                                ),
-                          label: Text(
-                            _loading
-                                ? 'Creating scene…'
-                                : generated == null
-                                    ? 'Generate scene'
-                                    : 'Regenerate',
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
