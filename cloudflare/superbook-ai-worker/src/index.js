@@ -1,6 +1,6 @@
 const TEXT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
-const VIDEO_MODEL = 'alibaba/hh1.1-i2v';
+const VIDEO_MODEL = 'alibaba/hh1.1-t2v';
 const MAX_PASSAGE = 12000;
 
 const sceneSchema = {
@@ -101,9 +101,12 @@ function trimPassage(value) {
 
 function videoPrompt(plan) {
   return [
-    'Animate this exact literary scene as a restrained 3-6 second cinematic moment.',
-    'Preserve the characters, clothing, composition, setting, period, and identity from the reference image.',
-    'Do not introduce new characters or objects.',
+    'Animate the story moment described below as a restrained 3-6 second cinematic sequence.',
+    'Story summary: ' + plan.sceneSummary,
+    'Visual style: ' + plan.visualStyle,
+    'Environment: ' + plan.environment.location + ', ' + plan.environment.time + '. ' + plan.environment.description,
+    'Characters: ' + plan.characters.map((character) => character.description + ', ' + character.action + ', ' + character.emotion).join('; '),
+    'Do not introduce new characters, major objects, or events beyond the literary moment.',
     'Meaningful motion: ' + plan.motion,
     'Character actions: ' + plan.actions.join('; '),
     'Camera: ' + plan.camera.movement + ', ' + plan.camera.shot + ', ' + plan.camera.angle + '.',
@@ -129,30 +132,8 @@ function validatePlan(plan) {
     typeof plan.camera.shot === 'string';
 }
 
-async function storeSceneImage(env, imageDataUri) {
-  const separator = imageDataUri.indexOf(',');
-  const header = separator >= 0 ? imageDataUri.slice(0, separator) : '';
-  const payload = separator >= 0 ? imageDataUri.slice(separator + 1) : '';
-  const mimeMatch = /^data:(.+);base64$/.exec(header);
-  if (!mimeMatch || !payload) throw new Error('Invalid scene image data.');
-
-  const mimeType = mimeMatch[1];
-  const binary = atob(payload);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index++) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-
-  const key = `scene-${crypto.randomUUID()}`;
-  await env.SCENE_ASSETS.put(key, bytes, {
-    httpMetadata: { contentType: mimeType, cacheControl: 'private, max-age=300' },
-  });
-  return key;
-}
-
-async function generateVideo(env, plan, imageUrl, origin, requestUrl) {
+async function generateVideo(env, plan, origin, requestUrl) {
   const video = await env.AI.run(VIDEO_MODEL, {
-    image: imageUrl,
     prompt: [
       videoPrompt(plan),
       'This is a short living illustration, not a new plot event.',
@@ -191,20 +172,6 @@ export default {
     }
 
     const requestUrl = new URL(request.url);
-
-    if (request.method === 'GET' && requestUrl.pathname.startsWith('/asset/')) {
-      const key = requestUrl.pathname.slice('/asset/'.length);
-      if (!key || !key.startsWith('scene-')) {
-        return new Response('Not found.', { status: 404 });
-      }
-      const object = await env.SCENE_ASSETS.get(key);
-      if (!object) return new Response('Not found.', { status: 404 });
-
-      const headers = new Headers();
-      object.writeHttpMetadata(headers);
-      headers.set('Cache-Control', 'private, max-age=300');
-      return new Response(object.body, { headers });
-    }
 
     if (request.method === 'GET' && requestUrl.pathname === '/video') {
       const target = requestUrl.searchParams.get('url');
@@ -265,30 +232,14 @@ export default {
         return json({ error: 'A valid scenePlan is required.' }, 400, origin);
       }
 
-      const imageDataUri = input && input.imageDataUri;
-      if (typeof imageDataUri !== 'string' || !imageDataUri.startsWith('data:image/')) {
-        return json({ error: 'A generated scene image is required for animation.' }, 400, origin);
-      }
-
-      let assetKey;
       try {
-        assetKey = await storeSceneImage(env, imageDataUri);
-        const imageUrl = new URL('/asset/' + assetKey, requestUrl.origin).toString();
-        return await generateVideo(env, plan, imageUrl, origin, requestUrl);
+        return await generateVideo(env, plan, origin, requestUrl);
       } catch (error) {
         console.error('SuperBook scene animation failed', error);
         return json({
           error: 'Video generation failed.',
           detail: error instanceof Error ? error.message : String(error),
         }, 502, origin);
-      } finally {
-        if (assetKey) {
-          try {
-            await env.SCENE_ASSETS.delete(assetKey);
-          } catch (cleanupError) {
-            console.error('Scene image cleanup failed', cleanupError);
-          }
-        }
       }
     }
 
