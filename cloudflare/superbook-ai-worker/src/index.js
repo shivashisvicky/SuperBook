@@ -236,10 +236,11 @@ export default {
       try {
         return await generateVideo(env, plan, origin, requestUrl);
       } catch (error) {
-        console.error('SuperBook scene animation failed', error);
+        const detail = error instanceof Error ? error.message : String(error);
+        console.error('SuperBook scene animation failed', detail);
         return json({
           error: 'Video generation failed.',
-          detail: error instanceof Error ? error.message : String(error),
+          detail,
         }, 502, origin);
       }
     }
