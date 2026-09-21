@@ -56,11 +56,14 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.byKey(const ValueKey('experience-scene-entry')));
-    // Allow the Material route transition to complete without waiting on the
-    // scene's intentionally repeating animation.
-    await tester.pump(const Duration(seconds: 1));
+    // Include routes during the transition/offstage phase without waiting
+    // on the scene's intentionally repeating animation.
+    await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.byType(ScenePlayerScreen), findsOneWidget);
+    expect(
+      find.byType(ScenePlayerScreen, skipOffstage: false),
+      findsOneWidget,
+    );
     expect(find.text('Narrative beat · intensity 2'), findsOneWidget);
   });
 }
