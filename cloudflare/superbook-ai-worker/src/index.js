@@ -1,6 +1,6 @@
 const TEXT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
-const VIDEO_MODEL = 'alibaba/hh1.1-i2v';
+const VIDEO_MODEL = 'alibaba/hh1.1-t2v';
 const MAX_PASSAGE = 12000;
 
 const sceneSchema = {
@@ -192,10 +192,15 @@ export default {
       let videoError = null;
       try {
         const video = await env.AI.run(VIDEO_MODEL, {
-          image: 'data:image/jpeg;base64,' + image.image,
-          prompt: videoPrompt(plan).slice(0, 2500),
+          prompt: [
+            videoPrompt(plan),
+            'Recreate the same visual composition and period-specific characters described by the scene image prompt.',
+            'This is a short living illustration, not a new plot event.',
+            'Keep movement subtle and localized to the described actions.',
+          ].join(' ').slice(0, 2500),
           duration: 4,
           resolution: '720P',
+          ratio: '16:9',
           watermark: false,
         });
         videoUrl = video && video.video
