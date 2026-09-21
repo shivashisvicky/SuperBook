@@ -284,7 +284,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                                 if (frames.isEmpty) {
                                   return Text('Narrative beat · intensity ${widget.beat.intensity}');
                                 }
-                                final index = (frames.length * _storyController.value).floor().clamp(0, frames.length - 1);
+                                final index = ((frames.length * _storyController.value).floor().clamp(0, frames.length - 1)) as int;
                                 return AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 450),
                                   child: Text(
