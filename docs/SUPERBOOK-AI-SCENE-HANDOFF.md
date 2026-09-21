@@ -2,7 +2,7 @@
 
 **Purpose:** This is the authoritative continuation document for the current SuperBook AI Experience work. A new agent must be able to continue from this exact state without reconstructing the conversation, guessing which branch is current, repeating failed experiments, or reintroducing a known billing mistake.
 
-**Last updated:** 2026-09-22 00:46 IST  
+**Last updated:** 2026-09-22 00:58 IST  
 **Repository:** `shivashisvicky/SuperBook`  
 **Active branch:** `test/superbook-ai-scene-foundation`  
 **Stable branch:** `main`  
@@ -1499,3 +1499,108 @@ Paste the following into the next agent as the continuation instruction:
 > Then determine whether there is a genuinely free T2V option. If there is, verify its current Cloudflare billing classification before implementing it. If there is not, keep the generated still Experience as the current free-tier milestone and leave the provider abstraction ready for a future animation provider.
 >
 > Follow JARVIS-OS discipline: small surgical commits, inspect CI after every push, never call a deployment green without actual Actions success, do not broad-rollback, do not modify unrelated working functionality, and update this handoff after significant changes.
+
+
+---
+
+# 37. 2026-09-22 VERIFICATION: FREE T2V INVESTIGATION
+
+A fresh billing/model-catalog investigation was performed before considering any animation-provider change.
+
+## Cloudflare result
+
+Cloudflare's current AI model catalog lists `alibaba/hh1.1-t2v` as **Third-party**, with pricing listed. The dedicated model page documents the same classification and the `alibaba/hh1.1-t2v` API contract.
+
+Cloudflare's current Workers AI pricing still provides 10,000 Neurons/day on the Free plan, but that allocation applies to Workers AI usage. Third-party models are handled through AI Gateway / Unified Billing and are not made free by the Workers AI allocation.
+
+Result:
+
+```
+alibaba/hh1.1-t2v
+    -> Third-party
+    -> AI Gateway / Unified Billing
+    -> not a no-money T2V option
+```
+
+## Other free candidates checked
+
+### Hugging Face Inference Providers
+
+Hugging Face currently gives Free users a small monthly Inference Providers credit allocation, currently documented as **$0.10/month**, with pay-as-you-go after the included credits. This is not a guaranteed free T2V service and does not satisfy SuperBook's no-money production requirement.
+
+Hugging Face does expose open T2V models such as Wan 2.1 and LTX through inference providers, but the provider infrastructure is billed through the Hugging Face account/provider path. The free credit is an introductory allowance, not an unlimited or durable free backend.
+
+### Hugging Face ZeroGPU Spaces
+
+Hugging Face ZeroGPU Spaces are genuinely free to use within daily quota. Free accounts currently receive 5 minutes/day of GPU quota, while unauthenticated usage receives 2 minutes/day. However, ZeroGPU is a shared Gradio Space runtime with queue/quota behavior, not a stable provider contract for SuperBook's production Worker path. It also consumes the caller's ZeroGPU quota and is therefore unsuitable as the application's dependable animation backend.
+
+A public ZeroGPU Space can remain a future experimental test avenue, but it must not be promoted to the production SceneGenerationProvider without a concrete reliability, quota, API, and ownership decision.
+
+## Decision
+
+**No genuinely free, production-compatible T2V provider has been identified in this verification pass.**
+
+Therefore:
+
+- do not replace the current Cloudflare T2V model;
+- do not add a paid provider;
+- do not add Hugging Face as a hidden billing dependency;
+- do not add R2;
+- do not alter the narrative-driven T2V contract;
+- keep the existing still-image Experience as the no-money milestone;
+- keep `SceneGenerationProvider.generateVideo()` provider-neutral for a future viable provider.
+
+The current architecture is therefore intentionally split:
+
+```
+book passage
+   -> ScenePlan
+   -> generated still
+   -> current free Experience milestone
+
+ScenePlan
+   -> generateVideo()
+   -> dormant/explicit opt-in until a genuinely viable provider exists
+```
+
+## Important source verification
+
+During this continuation pass, the actual PR source was inspected rather than relying only on the previous handoff description. The scene player contained three automatic video-generation paths that contradicted the documented opt-in behavior:
+
+1. cached scenes attempted T2V during `initState()`;
+2. cached scenes attempted T2V inside `_generate()`;
+3. newly generated scenes automatically attempted T2V after image generation.
+
+These were removed surgically. The explicit **Animate story** action remains the only path that calls `_startVideoGeneration()`.
+
+The repair commit is:
+
+```
+d28a68e87b38b35bf09bbd1fe0bd5efc4f35a982
+fix: repair opt-in animation syntax
+```
+
+The preceding surgical removal commit was:
+
+```
+2a8cb57a11ce67d56ba31f25d778710699211f43
+fix: keep story animation explicitly opt-in
+```
+
+The first attempt was intentionally not retained because it introduced a syntax error; CI caught it. The final repair was re-run through CI.
+
+CI run:
+
+```
+35644898070
+SuperBook CI
+SUCCESS
+```
+
+All validation stages completed successfully, including:
+
+- `flutter analyze`
+- `flutter test`
+- `flutter build web --release --pwa-strategy=none --base-href "/SuperBook/test/"`
+
+This section is authoritative over any older statement in this handoff that automatic video generation had already been removed from the source tree.
