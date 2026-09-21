@@ -150,47 +150,162 @@ class GutenbergService {
 
   Book _toBook(GutenbergBookSummary summary, String rawText) {
     final cleaned = _stripGutenbergWrapper(rawText);
-    final blocks = cleaned
-        .replaceAll('\r\n', '\n').replaceAll('\r', '\n')
-        .split(RegExp(r'\n\s*\n'))
-        .map((block) => block.replaceAll(RegExp(r'\s+'), ' ').trim())
-        .where((block) => block.length > 30).toList();
-    final lines = cleaned.split('\n');
-    final markers = <_ChapterMarker>[];
-    for (var i = 0; i < lines.length; i++) {
-      final line = lines[i].trim();
-      final match = RegExp(r'^(?:CHAPTER|Chapter)\s+([IVXLCDM]+|\d+)\.?\s*(.*)$').firstMatch(line);
-      if (match != null) markers.add(_ChapterMarker(i, match.group(2)!));
-    }
+    final lines = cleaned.replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n');
+    final markers = _chapterMarkers(lines);
+    final selectedMarkers = _selectSubstantiveMarkers(lines, markers);
+
+    final blocks = _paragraphs(lines);
     final chapters = <Chapter>[];
-    if (markers.isEmpty) {
+
+    if (selectedMarkers.isEmpty) {
       chapters.add(_chapterFromParagraphs('Book', blocks, 0));
     } else {
-      for (var i = 0; i < markers.length; i++) {
-        final start = markers[i].line;
-        final end = i + 1 < markers.length ? markers[i + 1].line : lines.length;
-        final section = lines.sublist(start + 1, end).join('\n')
-            .split(RegExp(r'\n\s*\n'))
-            .map((p) => p.replaceAll(RegExp(r'\s+'), ' ').trim())
-            .where((p) => p.length > 30).toList();
-        final heading = markers[i].heading.isEmpty ? 'Chapter ${i + 1}' : markers[i].heading;
+      for (var i = 0; i < selectedMarkers.length; i++) {
+        final marker = selectedMarkers[i];
+        final endLine = i + 1 < selectedMarkers.length
+            ? selectedMarkers[i + 1].line
+            : lines.length;
+        final section = _paragraphs(
+          lines.sublist(marker.line + 1, endLine),
+        );
+        final heading = marker.heading.isEmpty
+            ? 'Chapter \${marker.number ?? i + 1}'
+            : marker.heading;
         chapters.add(_chapterFromParagraphs(heading, section, i));
       }
     }
-    final safeChapters = chapters.isEmpty ? [_chapterFromParagraphs('Book', blocks, 0)] : chapters;
+
+    final safeChapters = chapters.isEmpty
+        ? [_chapterFromParagraphs('Book', blocks, 0)]
+        : chapters;
     final beats = [
-      for (var i = 0; i < safeChapters.length; i++) NarrativeBeat(
-        title: safeChapters[i].title,
-        summary: safeChapters[i].passage.first,
-        chapterId: safeChapters[i].id,
-        intensity: _intensityForTheme(safeChapters[i].scene.visualTheme),
-      ),
+      for (var i = 0; i < safeChapters.length; i++)
+        NarrativeBeat(
+          title: safeChapters[i].title,
+          summary: safeChapters[i].passage.first,
+          chapterId: safeChapters[i].id,
+          intensity: _intensityForTheme(safeChapters[i].scene.visualTheme),
+        ),
     ];
+
     return Book(
-      id: 'gutenberg-${summary.id}', title: summary.title, author: summary.author,
-      description: 'Original public-domain text from Project Gutenberg.', chapters: safeChapters,
-      characters: const [], locations: const [], objects: const [], beats: beats,
+      id: 'gutenberg-\${summary.id}',
+      title: summary.title,
+      author: summary.author,
+      description: 'Original public-domain text from Project Gutenberg.',
+      chapters: safeChapters,
+      characters: const [],
+      locations: const [],
+      objects: const [],
+      beats: beats,
     );
+  }
+
+  List<_ChapterMarker> _chapterMarkers(List<String> lines) {
+    final markers = <_ChapterMarker>[];
+    final pattern = RegExp(
+      r'^(?:CHAPTER|Chapter)\s+([IVXLCDM]+|\d+)\.?\s*(.*)$',
+    );
+
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i].trim();
+      final match = pattern.firstMatch(line);
+      if (match == null) continue;
+
+      final numberText = match.group(1)!;
+      final heading = match.group(2)!.trim();
+      markers.add(
+        _ChapterMarker(
+          line: i,
+          number: int.tryParse(numberText) ?? _romanToInt(numberText),
+          heading: heading,
+        ),
+      );
+    }
+    return markers;
+  }
+
+  List<_ChapterMarker> _selectSubstantiveMarkers(
+    List<String> lines,
+    List<_ChapterMarker> markers,
+  ) {
+    if (markers.isEmpty) return const [];
+
+    final selected = <_ChapterMarker>[];
+    for (var i = 0; i < markers.length; i++) {
+      final marker = markers[i];
+      final endLine = i + 1 < markers.length
+          ? markers[i + 1].line
+          : lines.length;
+      final sectionText = lines
+          .sublist(marker.line + 1, endLine)
+          .join(' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+
+      if (_looksLikeChapterBody(sectionText)) {
+        selected.add(marker);
+      }
+    }
+
+    return _removeDuplicateChapterMarkers(selected);
+  }
+
+  bool _looksLikeChapterBody(String text) {
+    if (text.length < 180) return false;
+    final words = text.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
+    if (words.length < 30) return false;
+    final sentenceMarks = RegExp(r'[.!?](?:["’”\')\]]|\s|$)').allMatches(text).length;
+    return sentenceMarks >= 2;
+  }
+
+  List<_ChapterMarker> _removeDuplicateChapterMarkers(
+    List<_ChapterMarker> markers,
+  ) {
+    final result = <_ChapterMarker>[];
+    final seen = <int>{};
+
+    for (final marker in markers) {
+      final number = marker.number;
+      if (number != null && seen.contains(number)) continue;
+      if (number != null) seen.add(number);
+      result.add(marker);
+    }
+    return result;
+  }
+
+  List<String> _paragraphs(List<String> lines) {
+    final text = lines.join('\n');
+    return text
+        .split(RegExp(r'\n\s*\n'))
+        .map((block) => block.replaceAll(RegExp(r'\s+'), ' ').trim())
+        .where((block) => block.length > 30)
+        .toList();
+  }
+
+  int? _romanToInt(String value) {
+    const values = <String, int>{
+      'I': 1,
+      'V': 5,
+      'X': 10,
+      'L': 50,
+      'C': 100,
+      'D': 500,
+      'M': 1000,
+    };
+    var total = 0;
+    var previous = 0;
+    for (final char in value.toUpperCase().split('').reversed) {
+      final current = values[char];
+      if (current == null) return null;
+      if (current < previous) {
+        total -= current;
+      } else {
+        total += current;
+        previous = current;
+      }
+    }
+    return total;
   }
 
   Chapter _chapterFromParagraphs(String title, List<String> paragraphs, int index) {
@@ -267,7 +382,13 @@ class GutenbergService {
 }
 
 class _ChapterMarker {
-  const _ChapterMarker(this.line, this.heading);
+  const _ChapterMarker({
+    required this.line,
+    required this.number,
+    required this.heading,
+  });
+
   final int line;
-    final String heading;
+  final int? number;
+  final String heading;
 }
