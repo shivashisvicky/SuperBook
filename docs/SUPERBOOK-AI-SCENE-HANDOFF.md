@@ -1625,3 +1625,33 @@ All validation stages completed successfully, including:
 - `flutter build web --release --pwa-strategy=none --base-href "/SuperBook/test/"`
 
 This section is authoritative over any older statement in this handoff that automatic video generation had already been removed from the source tree.
+
+---
+
+# 38. 2026-09-22 MOTION PRESENTATION REFINEMENT
+
+The motion-keyframe Experience was visually validated on TEST with two distinct AI-generated story states for the same literary scene. The generated frames preserve the room, characters, clothing, and composition while changing character acting between narrative beats.
+
+A surgical presentation fix was then applied in:
+
+```
+e45513fb8cea950778804a20303ce31f5e6e9510
+fix: fill scene stage and smooth motion transitions
+```
+
+This change:
+- makes the generated still and motion-frame visual fill the complete Scene Player stage instead of leaving intrinsic image sizing to the Stack;
+- keeps the cinematic crop controlled by BoxFit.cover;
+- changes motion-frame transitions from a shorter 650ms switch to a 900ms ease-in-out cross-fade;
+- stacks previous/current frames during the transition so the generated story states blend rather than resize/jump;
+- does not add camera movement, Ken Burns effects, deterministic animation, T2V, R2, or paid infrastructure.
+
+CI for this commit is green:
+- Workflow: SuperBook CI
+- Run: 253
+- Run ID: 35650669864
+- flutter analyze: success
+- flutter test: success
+- flutter build web --release: success
+
+The free AI motion-keyframe architecture remains unchanged. The current animation is still a generated-frame cinematic sequence, not fluid T2V animation.
