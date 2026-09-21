@@ -88,12 +88,14 @@ class Scene {
     required this.moment,
     required this.atmosphere,
     required this.caption,
+    this.visualTheme = 'neutral',
   });
 
   final String title;
   final String moment;
   final String atmosphere;
   final String caption;
+  final String visualTheme;
 }
 
 const demoBook = Book(
