@@ -32,7 +32,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           children: [
             const ListTile(
               title: Text('Contents'),
-              subtitle: Text('Choose a chapter'),
+              subtitle: Text('Choose a section'),
             ),
             for (var i = 0; i < widget.book.chapters.length; i++)
               ListTile(
@@ -280,4 +280,10 @@ class _ExperienceCard extends StatelessWidget {
       ),
     );
   }
+}
+
+
+String _sectionLabel(Chapter chapter) {
+  final title = chapter.title.trim().toLowerCase();
+  return title.startsWith('chapter') ? 'Chapter' : 'Section';
 }
