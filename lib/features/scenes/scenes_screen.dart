@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../domain/book.dart';
+import 'scene_player_screen.dart';
 
 class ScenesScreen extends StatelessWidget {
   const ScenesScreen({super.key, required this.book});
-
   final Book book;
 
   @override
@@ -16,7 +16,7 @@ class ScenesScreen extends StatelessWidget {
         Text('Story moments', style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 6),
         Text(
-          'Cinematic moments stay anchored to narrative beats. They never replace the book.',
+          'Cinematic moments are playable scenes anchored to narrative beats.',
           style: Theme.of(context).textTheme.bodyLarge,
         ),
         const SizedBox(height: 20),
@@ -31,7 +31,6 @@ class ScenesScreen extends StatelessWidget {
 
 class _SceneCard extends StatelessWidget {
   const _SceneCard({required this.book, required this.beat});
-
   final Book book;
   final NarrativeBeat beat;
 
@@ -41,29 +40,9 @@ class _SceneCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => showModalBottomSheet<void>(
-          context: context,
-          showDragHandle: true,
-          builder: (_) => Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(chapter.scene.title, style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 10),
-                Text(chapter.scene.caption, style: Theme.of(context).textTheme.bodyLarge),
-                const SizedBox(height: 16),
-                Text('Moment: \${chapter.scene.moment}'),
-                Text('Atmosphere: \${chapter.scene.atmosphere}'),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Enter scene'),
-                ),
-              ],
-            ),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ScenePlayerScreen(scene: chapter.scene, beat: beat),
           ),
         ),
         child: Padding(
@@ -93,7 +72,7 @@ class _SceneCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('L\${beat.intensity}', style: Theme.of(context).textTheme.labelMedium),
+              Text('L' + beat.intensity.toString(), style: Theme.of(context).textTheme.labelMedium),
             ],
           ),
         ),
