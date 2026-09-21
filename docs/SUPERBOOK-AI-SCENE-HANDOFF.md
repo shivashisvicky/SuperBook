@@ -2,7 +2,7 @@
 
 **Purpose:** This is the authoritative continuation document for the current SuperBook AI Experience work. A new agent must be able to continue from this exact state without reconstructing the conversation, guessing which branch is current, repeating failed experiments, or reintroducing a known billing mistake.
 
-**Last updated:** 2026-09-22 00:58 IST  
+**Last updated:** 2026-09-22 01:20 IST
 **Repository:** `shivashisvicky/SuperBook`  
 **Active branch:** `test/superbook-ai-scene-foundation`  
 **Stable branch:** `main`  
@@ -433,27 +433,32 @@ The player has:
 - explicit animation action
 - regenerate action
 
-### Important recent UX correction
+### Current UX correction
 
-Previously, the app automatically attempted video generation immediately after generating/caching the still image.
-
-That was bad under the current billing constraint because it caused an automatic paid-capable request that was doomed to fail.
-
-The app was changed so story animation is **explicitly opt-in**.
+The TEST Experience is now self-starting for the free still-image path.
 
 Current intended flow:
 
 ```
-Generate scene
+Enter Experience
     |
     v
-Show generated image immediately
+Creating your story moment…
     |
     v
-User may explicitly choose "Animate story"
+AI ScenePlan + generated still
+    |
+    v
+Show the story moment immediately
 ```
 
-Cached scenes should not automatically trigger T2V generation.
+The user no longer needs to press **Generate scene** for a new uncached scene.
+
+The UI no longer exposes the known-doomed **Animate story** action while the only configured T2V model requires paid AI Gateway credits. This prevents a reader from deliberately walking into the known `2021: Insufficient AI Gateway credits` failure.
+
+Cached successful videos can still be played if one ever exists, but the TEST reader does not automatically request T2V and does not present the paid animation request as a normal reader action.
+
+The old generic Ken Burns motion was also removed from the still-image fallback. A generated still is now presented as a still until genuine story animation is available.
 
 This is important and must be preserved.
 
@@ -469,22 +474,11 @@ Bad state: Video generation failed.
 2021: Insufficient AI Gateway credits
 ```
 
-This is now the correct diagnostic behavior.
+That error is real and correctly identifies the current T2V billing boundary, but it came from the explicit animation action.
 
-The UI should not hide the root cause from development/testing.
+Commit `2d53533a6a5326fc1189d0db54a7e490b9419c8c` removes that reader-facing action from the TEST Experience and makes the still scene self-starting. The known paid T2V path is therefore no longer part of the normal reader flow.
 
-However, the eventual production UX should probably translate infrastructure errors into a cleaner reader-facing state, for example:
-
-```
-Story animation is unavailable right now.
-The generated scene is still available.
-```
-
-The raw diagnostic can remain available to development diagnostics/logging.
-
-Do not make that production UX change until the underlying capability decision is settled.
-
----
+Do not replace this with a fake animation, the old stick renderer, or generic Ken Burns motion. The next animation milestone must be a genuine story-driven capability that can operate without violating the user's no-money constraint.
 
 # 13. R2 HISTORY
 
@@ -600,84 +594,69 @@ Do not modify deployment logic casually.
 The AI branch has accumulated many incremental commits. The important recent sequence is:
 
 ```
-97bc724433c4d28568226d65339ab1a1f803f93d
-fix: capture video model error code
-```
-
-Then:
-
-```
-ea298c35cb2494f0d60556838793eede97195ace
-fix: preserve video generation diagnostics
-```
-
-Then:
-
-```
-d9210730665e8e87e186a5d3684e7996c1112d56
-fix: surface animation failure diagnostics
-```
-
-Then automatic video generation was disabled:
-
-```
 b3b5a6842f7923608d668e3e8660bc0d6ea916d3
 fix: stop automatic paid video attempts
 ```
 
-Then cached/generated scene auto-video triggers were removed:
+Then:
 
 ```
 2d22e3e61fa477d10fa575d09f488d3d8dc2bf41
 fix: make story animation explicitly opt-in
 ```
 
-Then an explicit UI action was added:
+Then:
 
 ```
 802f07b18ea95f411a3d8be16da58d97e7d01011
 feat: add explicit story animation action
 ```
 
-That commit initially introduced a duplicated action-row fragment and failed CI.
-
-The exact failure was:
-
-```
-flutter analyze
-
-error • Expected an identifier
-lib/features/scenes/scene_player_screen.dart:406:19
-
-error • Expected to find ')'
-lib/features/scenes/scene_player_screen.dart:406:19
-
-error • Expected an identifier
-lib/features/scenes/scene_player_screen.dart:410:11
-
-error • Expected to find ']'
-lib/features/scenes/scene_player_screen.dart:410:11
-```
-
-The broken row was repaired in:
+The action-row syntax was repaired in:
 
 ```
 ab8e82dd63bf364e3f617cbd1c524726beadfb9a
 fix: repair scene action row syntax
 ```
 
-The AI billing documentation was then corrected in:
+The AI video billing boundary was documented in:
 
 ```
 9a03de2fb6b41cc5dd0f9371111224a559e37210
 docs: correct AI video billing boundary
 ```
 
-**Current code/doc head at the time this handoff was written is therefore based on 9a03de2f.**
+Then the Worker scene-plan normalizer was added in:
 
-A fresh CI run for the latest documentation commit may still be pending. Do not call the latest head green until GitHub Actions reports success.
+```
+dc39b5351527968e41320de1bd0563d2d97dcb05
+fix: normalize AI scene plan responses
+```
 
----
+This tolerates Cloudflare JSON Mode responses arriving as an object, stringified JSON, fenced JSON, or a wrapped `response` object.
+
+The latest TEST UX change is:
+
+```
+2d53533a6a5326fc1189d0db54a7e490b9419c8c
+fix: make story experience self-starting
+```
+
+This commit:
+- automatically starts free still-scene generation when entering an uncached Experience;
+- adds a reader-facing loading state;
+- removes the known-doomed paid T2V action from the reader UI;
+- removes generic Ken Burns motion from the still fallback;
+- preserves cached video playback if a valid video already exists.
+
+CI for `2d53533a6a5326fc1189d0db54a7e490b9419c8c` is green:
+
+- Workflow: **SuperBook CI**
+- Run: **226**
+- Run ID: `35647322394`
+- Analyze, tests, and release web build all succeeded.
+
+Do not call the TEST Pages deployment or Cloudflare Worker deployment green until those deployment systems report the new commit.
 
 # 17. RECENT CI FAILURES AND WHAT THEY MEAN
 
