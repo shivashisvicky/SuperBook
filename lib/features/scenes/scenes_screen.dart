@@ -16,7 +16,7 @@ class ScenesScreen extends StatelessWidget {
         Text('Story moments', style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 6),
         Text(
-          'Cinematic moments are playable scenes anchored to narrative beats.',
+          'AI-generated cinematic moments are anchored to the actual book passage.',
           style: Theme.of(context).textTheme.bodyLarge,
         ),
         const SizedBox(height: 20),
@@ -42,7 +42,11 @@ class _SceneCard extends StatelessWidget {
       child: InkWell(
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ScenePlayerScreen(scene: chapter.scene, beat: beat),
+            builder: (_) => ScenePlayerScreen(
+              book: book,
+              scene: chapter.scene,
+              beat: beat,
+            ),
           ),
         ),
         child: Padding(
@@ -56,7 +60,7 @@ class _SceneCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 ),
-                child: const Icon(Icons.movie_creation_outlined),
+                child: const Icon(Icons.auto_awesome),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -72,7 +76,8 @@ class _SceneCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('L${beat.intensity}', style: Theme.of(context).textTheme.labelMedium),
+              Text('L' + beat.intensity.toString(),
+                  style: Theme.of(context).textTheme.labelMedium),
             ],
           ),
         ),

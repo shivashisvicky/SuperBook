@@ -225,7 +225,7 @@ class _ExperienceCard extends StatelessWidget {
         key: const ValueKey('experience-scene-entry'),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ScenePlayerScreen(scene: scene, beat: beat),
+            builder: (_) => ScenePlayerScreen(book: widget.book, scene: scene, beat: beat),
           ),
         ),
         child: Padding(
