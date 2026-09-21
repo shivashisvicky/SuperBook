@@ -198,12 +198,52 @@ class GutenbergService {
     final first = passage.first;
     return Chapter(
       id: 'chapter-${index + 1}', title: title, passage: passage,
-      scene: Scene(title: title, moment: 'A scene from the original text.',
-        atmosphere: 'A living page waiting to be experienced.',
-        caption: first.length > 150 ? '${first.substring(0, 147)}...' : first),
+      scene: _sceneForChapter(
+        title: title,
+        passage: passage,
+        caption: first.length > 150 ? '${first.substring(0, 147)}...' : first,
+      ),
     );
   }
 
+  Scene _sceneForChapter({
+    required String title,
+    required List<String> passage,
+    required String caption,
+  }) {
+    final text = passage.join(' ').toLowerCase();
+    final theme = _visualThemeFor(text);
+    final atmospheres = <String, String>{
+      'estate': 'Warm drawing rooms, a garden beyond the windows, and the quiet after a family turning point.',
+      'sea': 'Open water, wind, shifting clouds, and a vessel moving through a wide horizon.',
+      'forest': 'Deep trees, filtered light, a narrow path, and the sense that something lies beyond it.',
+      'city': 'A living street, distant windows, moving silhouettes, and the pulse of a crowded city.',
+      'interior': 'A quiet interior shaped by lamplight, furniture, and the people gathered inside.',
+      'night': 'A dark landscape under moving clouds, with a small source of light holding the eye.',
+      'journey': 'A road leads forward through a changing landscape, keeping the next destination just out of sight.',
+      'battle': 'Smoke, movement, scattered light, and opposing forces turn the landscape into a place of action.',
+      'neutral': 'The visual world follows the place, people, and action described in this passage.',
+    };
+    return Scene(
+      title: title,
+      moment: caption,
+      atmosphere: atmospheres[theme]!,
+      caption: caption,
+      visualTheme: theme,
+    );
+  }
+
+  String _visualThemeFor(String text) {
+    if (RegExp(r'\b(?:mrs\.? bennet|bennet|darcy|elizabeth|gardiner|derbyshire|married|marriage|daughter|family|drawing room|garden|parlour|parlor)\b').hasMatch(text)) return 'estate';
+    if (RegExp(r'\b(?:ship|ships|whale|ocean|sea|sailor|sailing|harbour|harbor|captain|mast|deck|wave|waves)\b').hasMatch(text)) return 'sea';
+    if (RegExp(r'\b(?:forest|woods|woodland|tree|trees|grove|wilderness)\b').hasMatch(text)) return 'forest';
+    if (RegExp(r'\b(?:street|city|town|london|paris|market|shop|shops|crowd|carriage|station)\b').hasMatch(text)) return 'city';
+    if (RegExp(r'\b(?:room|house|home|hall|library|study|bedroom|fireplace|table|door|window|lamp|candle)\b').hasMatch(text)) return 'interior';
+    if (RegExp(r'\b(?:night|midnight|moon|moonlight|darkness|stars|starry)\b').hasMatch(text)) return 'night';
+    if (RegExp(r'\b(?:road|journey|travel|traveler|traveller|horse|horses|coach|roadside|departure)\b').hasMatch(text)) return 'journey';
+    if (RegExp(r'\b(?:battle|army|soldier|soldiers|war|weapon|weapons|fight|fought|enemy|cannon)\b').hasMatch(text)) return 'battle';
+    return 'neutral';
+  }
   String _stripGutenbergWrapper(String text) {
     final start = RegExp(r'\*\*\* START OF (?:THE )?PROJECT GUTENBERG EBOOK[^\n]*\*\*\*');
     final end = RegExp(r'\*\*\* END OF (?:THE )?PROJECT GUTENBERG EBOOK[^\n]*\*\*\*');
