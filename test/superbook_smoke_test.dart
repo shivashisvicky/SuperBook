@@ -14,7 +14,10 @@ void main() {
     expect(find.text('LIBRARY'), findsOneWidget);
     expect(find.text('Real books'), findsOneWidget);
     expect(
-      find.text('Public-domain stories from Project Gutenberg.'),
+      find.text(
+        'Public-domain stories from Project Gutenberg. '
+        'Tap a book to download its original text into the reader.',
+      ),
       findsOneWidget,
     );
   });
@@ -37,7 +40,7 @@ void main() {
       const MaterialApp(home: ReaderScreen(book: demoBook)),
     );
     await tester.tap(find.byTooltip('Experience'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('EXPERIENCE'), findsOneWidget);
     expect(
@@ -50,9 +53,9 @@ void main() {
       240,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
-    await tester.tap(find.text('Tap to enter the scene'));
+    await tester.tap(find.byKey(const ValueKey('experience-scene-entry')));
     await tester.pump();
 
     expect(find.byType(ScenePlayerScreen), findsOneWidget);
