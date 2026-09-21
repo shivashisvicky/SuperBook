@@ -1,3 +1,4 @@
+// SuperBook animation path: narrative-driven T2V, no R2 asset handoff.
 const TEXT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
 const VIDEO_MODEL = 'alibaba/hh1.1-t2v';
