@@ -222,6 +222,7 @@ class _ExperienceCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
+        key: const ValueKey('experience-scene-entry'),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ScenePlayerScreen(scene: scene, beat: beat),
