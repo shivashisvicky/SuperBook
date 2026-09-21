@@ -12,6 +12,8 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
   final String endpoint;
   final http.Client _client;
 
+  Uri get _baseUri => Uri.parse(endpoint);
+
   @override
   Future<GeneratedScene> generate({
     required String bookId,
@@ -27,8 +29,8 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
       throw ArgumentError.value(passage, 'passage', 'must not be empty');
     }
 
-    final res = await _client.post(
-      Uri.parse(endpoint),
+    final response = await _client.post(
+      _baseUri,
       headers: const {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -40,19 +42,13 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
         'author': author,
         'passage': passage,
       }),
-    ).timeout(const Duration(seconds: 180));
+    ).timeout(const Duration(seconds: 90));
 
-    Map<String, dynamic> body;
-    try {
-      body = jsonDecode(res.body) as Map<String, dynamic>;
-    } catch (_) {
-      throw StateError('SuperBook AI gateway returned invalid JSON.');
-    }
-
-    if (res.statusCode < 200 || res.statusCode >= 300) {
+    final body = _decodeBody(response);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw StateError(
         body['error'] as String? ??
-            'SuperBook AI gateway failed with HTTP ${res.statusCode}.',
+            'SuperBook AI gateway failed with HTTP ${response.statusCode}.',
       );
     }
 
@@ -68,26 +64,69 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
       throw StateError('SuperBook AI gateway returned an invalid scene image.');
     }
 
-    final video = body['video'];
-    String? videoUrl;
-    int? videoDurationSeconds;
-    if (video is Map) {
-      final url = video['url'];
-      if (url is String && url.isNotEmpty) {
-        videoUrl = url;
-      }
-      final duration = video['durationSeconds'];
-      if (duration is num) {
-        videoDurationSeconds = duration.toInt();
-      }
-    }
-
     return GeneratedScene(
       plan: AiScenePlan.fromJson(Map<String, dynamic>.from(planJson)),
       imageBase64: base64,
       mimeType: mimeType,
-      videoUrl: videoUrl,
-      videoDurationSeconds: videoDurationSeconds,
     );
+  }
+
+  @override
+  Future<GeneratedVideo> generateVideo({
+    required AiScenePlan plan,
+  }) async {
+    if (endpoint.trim().isEmpty) {
+      throw StateError('SuperBook AI scene endpoint is not configured.');
+    }
+
+    final videoEndpoint = _baseUri.replace(
+      path: _baseUri.path.endsWith('/')
+          ? '${_baseUri.path}video'
+          : '${_baseUri.path}/video',
+    );
+
+    final response = await _client.post(
+      videoEndpoint,
+      headers: const {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({'scenePlan': plan.toJson()}),
+    ).timeout(const Duration(seconds: 180));
+
+    final body = _decodeBody(response);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw StateError(
+        body['error'] as String? ??
+            'SuperBook AI video generation failed with HTTP ${response.statusCode}.',
+      );
+    }
+
+    final video = body['video'];
+    if (video is! Map) {
+      throw StateError(
+        body['videoError'] as String? ??
+            'SuperBook AI video generation returned no video.',
+      );
+    }
+
+    final url = video['url'];
+    final duration = video['durationSeconds'];
+    if (url is! String || url.isEmpty || duration is! num) {
+      throw StateError('SuperBook AI video generation returned an invalid video.');
+    }
+
+    return GeneratedVideo(
+      url: url,
+      durationSeconds: duration.toInt(),
+    );
+  }
+
+  Map<String, dynamic> _decodeBody(http.Response response) {
+    try {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw StateError('SuperBook AI gateway returned invalid JSON.');
+    }
   }
 }
