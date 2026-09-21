@@ -59,8 +59,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     _generated = cached;
     if (cached?.hasVideo == true) {
       unawaited(_loadVideo(cached!.videoUrl!));
-    } else if (cached != null) {
-      unawaited(_startVideoGeneration(cached));
     }
   }
 
