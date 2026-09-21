@@ -119,7 +119,7 @@ class GutenbergService {
       throw Exception('HTTP ${response.statusCode}');
     } catch (error) {
       throw Exception(
-        'Could not load Gutenberg data${directError == null ? '' : ': $directError'}. '
+        'Could not load Gutenberg data: $directError. '
         'Browser content fallback also failed: $error',
       );
     }
