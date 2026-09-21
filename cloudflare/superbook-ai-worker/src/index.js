@@ -152,6 +152,7 @@ async function storeSceneImage(env, imageDataUri) {
 
 async function generateVideo(env, plan, imageUrl, origin, requestUrl) {
   const video = await env.AI.run(VIDEO_MODEL, {
+    image: imageUrl,
     prompt: [
       videoPrompt(plan),
       'This is a short living illustration, not a new plot event.',
