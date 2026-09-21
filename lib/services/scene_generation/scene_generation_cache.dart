@@ -12,7 +12,7 @@ class SceneGenerationCache {
     required String chapterId,
     required String passage,
   }) {
-    return bookId + ':' + chapterId + ':' + _stableHash(passage).toString();
+    return '${bookId}:${chapterId}:${_stableHash(passage)}';
   }
 
   static int _stableHash(String value) {
