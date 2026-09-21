@@ -1,5 +1,15 @@
 import '../../domain/experience/ai_scene_plan.dart';
 
+class GeneratedVideo {
+  const GeneratedVideo({
+    required this.url,
+    required this.durationSeconds,
+  });
+
+  final String url;
+  final int durationSeconds;
+}
+
 class GeneratedScene {
   const GeneratedScene({
     required this.plan,
@@ -27,5 +37,9 @@ abstract interface class SceneGenerationProvider {
     required String passage,
     String? author,
     String? title,
+  });
+
+  Future<GeneratedVideo> generateVideo({
+    required AiScenePlan plan,
   });
 }
