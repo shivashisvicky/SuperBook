@@ -9,3 +9,7 @@ binding = "AI"
 
 [observability]
 enabled = true
+
+[[r2_buckets]]
+binding = "SCENE_ASSETS"
+bucket_name = "superbook-ai-scene-assets"
