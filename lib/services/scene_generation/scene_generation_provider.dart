@@ -1,0 +1,25 @@
+import '../../domain/experience/ai_scene_plan.dart';
+
+class GeneratedScene {
+  const GeneratedScene({
+    required this.plan,
+    required this.imageBase64,
+    required this.mimeType,
+  });
+
+  final AiScenePlan plan;
+  final String imageBase64;
+  final String mimeType;
+
+  String get dataUri => 'data:$mimeType;base64,$imageBase64';
+}
+
+abstract interface class SceneGenerationProvider {
+  Future<GeneratedScene> generate({
+    required String bookId,
+    required String chapterId,
+    required String passage,
+    String? author,
+    String? title,
+  });
+}

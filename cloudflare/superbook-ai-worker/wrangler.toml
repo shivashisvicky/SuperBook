@@ -1,0 +1,9 @@
+name = "superbook-ai-scene"
+main = "src/index.js"
+compatibility_date = "2026-09-21"
+
+[ai]
+binding = "AI"
+
+[observability]
+enabled = true
