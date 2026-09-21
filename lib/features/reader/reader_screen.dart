@@ -153,7 +153,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 if (narrationVisible) const _NarrationBar(),
                 if (experienceVisible) ...[
                   const SizedBox(height: 8),
-                  _ExperienceCard(scene: chapter.scene),
+                  _ExperienceCard(
+                    scene: chapter.scene,
+                    beat: widget.book.beats.firstWhere((b) => b.chapterId == chapter.id),
+                  ),
                 ],
                 const SizedBox(height: 28),
                 Wrap(
@@ -209,34 +212,19 @@ class _NarrationBar extends StatelessWidget {
 }
 
 class _ExperienceCard extends StatelessWidget {
-  const _ExperienceCard({required this.scene});
+  const _ExperienceCard({required this.scene, required this.beat});
 
   final Scene scene;
+  final NarrativeBeat beat;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => showModalBottomSheet<void>(
-          context: context,
-          showDragHandle: true,
-          builder: (_) => Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(scene.title, style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 10),
-                Text(scene.caption, style: Theme.of(context).textTheme.bodyLarge),
-                const SizedBox(height: 16),
-                Text('Moment: \${scene.moment}'),
-                Text('Atmosphere: \${scene.atmosphere}'),
-                const SizedBox(height: 18),
-                const Text('Scene Plan · deterministic · intensity 2–3'),
-              ],
-            ),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ScenePlayerScreen(scene: scene, beat: beat),
           ),
         ),
         child: Padding(
