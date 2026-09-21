@@ -60,7 +60,11 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     if (cached?.hasVideo == true) {
       unawaited(_loadVideo(cached!.videoUrl!));
     }
-    if (cached != null) {
+    final cachedMotion = _sceneCache.getMotion(_cacheKey);
+    if (cachedMotion != null && cachedMotion.isNotEmpty) {
+      _motionFrames = cachedMotion;
+    }
+    if (cached != null && cachedMotion == null) {
       unawaited(_prepareMotion(cached));
     } else {
       unawaited(_generate());
@@ -97,6 +101,11 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     if (_motionLoading || _motionFrames.isNotEmpty || _sceneEndpoint.isEmpty) {
       return;
     }
+    final cachedMotion = _sceneCache.getMotion(_cacheKey);
+    if (cachedMotion != null && cachedMotion.isNotEmpty) {
+      setState(() => _motionFrames = cachedMotion);
+      return;
+    }
     final provider = CloudflareSceneProvider(endpoint: _sceneEndpoint);
     setState(() => _motionLoading = true);
     try {
@@ -107,6 +116,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       );
       if (!mounted) return;
       if (frames.isNotEmpty) {
+        _sceneCache.putMotion(_cacheKey, frames);
         _motionFrames = frames;
         setState(() {});
       }
@@ -141,6 +151,8 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     if (force) {
       final oldVideo = _video;
       _video = null;
+      _sceneCache.clearMotion(_cacheKey);
+      _motionFrames = const [];
       await oldVideo?.dispose();
     }
 
@@ -219,6 +231,37 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
   @override
   Widget build(BuildContext context) {
     final generated = _generated;
+    final chapterIndex = widget.book.chapters.indexWhere(
+      (chapter) => chapter.id == widget.beat.chapterId,
+    );
+    final currentIndex = chapterIndex < 0 ? 0 : chapterIndex;
+    final hasPrevious = currentIndex > 0;
+    final hasNext = currentIndex + 1 < widget.book.chapters.length;
+
+    NarrativeBeat beatFor(Chapter chapter) => widget.book.beats.firstWhere(
+          (item) => item.chapterId == chapter.id,
+          orElse: () => NarrativeBeat(
+            title: chapter.title,
+            summary: chapter.passage.first,
+            chapterId: chapter.id,
+            intensity: 1,
+          ),
+        );
+
+    void openChapter(int index) {
+      if (index < 0 || index >= widget.book.chapters.length) return;
+      final chapter = widget.book.chapters[index];
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => ScenePlayerScreen(
+            book: widget.book,
+            scene: chapter.scene,
+            beat: beatFor(chapter),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(backgroundColor: Colors.black, title: Text(widget.scene.title)),
@@ -293,6 +336,27 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                       label: Text(_loading ? 'Creating…' : 'Regenerate'),
                     ),
                   ]),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: hasPrevious ? () => openChapter(currentIndex - 1) : null,
+                        icon: const Icon(Icons.chevron_left),
+                        label: const Text('Previous'),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Chapter ${currentIndex + 1} of ${widget.book.chapters.length}',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                      const Spacer(),
+                      OutlinedButton.icon(
+                        onPressed: hasNext ? () => openChapter(currentIndex + 1) : null,
+                        icon: const Icon(Icons.chevron_right),
+                        label: Text(hasNext ? 'Next' : 'End'),
+                      ),
+                    ],
+                  ),
                 ]),
               ),
             ),
