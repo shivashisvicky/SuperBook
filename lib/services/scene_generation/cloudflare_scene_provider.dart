@@ -72,6 +72,72 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
   }
 
   @override
+  Future<List<GeneratedMotionFrame>> generateMotionFrames({
+    required AiScenePlan plan,
+    required String imageBase64,
+  }) async {
+    if (endpoint.trim().isEmpty) {
+      throw StateError('SuperBook AI scene endpoint is not configured.');
+    }
+    if (imageBase64.trim().isEmpty) {
+      throw ArgumentError.value(imageBase64, 'imageBase64', 'must not be empty');
+    }
+
+    final motionEndpoint = _baseUri.replace(
+      path: _baseUri.path.endsWith('/')
+          ? '\${_baseUri.path}motion'
+          : '\${_baseUri.path}/motion',
+    );
+
+    final response = await _client.post(
+      motionEndpoint,
+      headers: const {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        'scenePlan': plan.toJson(),
+        'imageBase64': imageBase64,
+      }),
+    ).timeout(const Duration(seconds: 150));
+
+    final body = _decodeBody(response);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final message = body['error'] as String? ??
+          'SuperBook AI motion generation failed with HTTP ${response.statusCode}.';
+      final detail = body['detail'] as String?;
+      throw StateError(
+        [
+          message,
+          if (detail != null && detail.isNotEmpty) detail,
+        ].join(' '),
+      );
+    }
+
+    final frames = body['frames'];
+    if (frames is! List) {
+      throw StateError('SuperBook AI motion generation returned no frames.');
+    }
+
+    return frames.whereType<Map>().map((frame) {
+      final base64 = frame['base64'];
+      final mimeType = frame['mimeType'];
+      final beat = frame['beat'];
+      if (base64 is! String ||
+          base64.isEmpty ||
+          mimeType is! String ||
+          beat is! String) {
+        throw StateError('SuperBook AI motion generation returned an invalid frame.');
+      }
+      return GeneratedMotionFrame(
+        base64: base64,
+        mimeType: mimeType,
+        beat: beat,
+      );
+    }).toList();
+  }
+
+  @override
   Future<GeneratedVideo> generateVideo({
     required AiScenePlan plan,
   }) async {
