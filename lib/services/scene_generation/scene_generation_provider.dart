@@ -1,5 +1,19 @@
 import '../../domain/experience/ai_scene_plan.dart';
 
+class GeneratedMotionFrame {
+  const GeneratedMotionFrame({
+    required this.base64,
+    required this.mimeType,
+    required this.beat,
+  });
+
+  final String base64;
+  final String mimeType;
+  final String beat;
+
+  String get dataUri => 'data:$mimeType;base64,$base64';
+}
+
 class GeneratedVideo {
   const GeneratedVideo({
     required this.url,
@@ -42,5 +56,10 @@ abstract interface class SceneGenerationProvider {
 
   Future<GeneratedVideo> generateVideo({
     required AiScenePlan plan,
+  });
+
+  Future<List<GeneratedMotionFrame>> generateMotionFrames({
+    required AiScenePlan plan,
+    required String imageBase64,
   });
 }
