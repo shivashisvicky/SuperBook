@@ -64,7 +64,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                       Text(widget.scene.atmosphere),
                       Row(
                         children: [
-                          Text('Narrative beat · intensity ' + widget.beat.intensity.toString()),
+                          Text('Narrative beat · intensity \${widget.beat.intensity}'),
                           const Spacer(),
                           IconButton(
                             tooltip: controller.isAnimating ? 'Pause scene' : 'Play scene',
