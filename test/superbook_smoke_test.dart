@@ -29,6 +29,6 @@ void main() {
     await tester.tap(find.byTooltip('Experience'));
     await tester.pumpAndSettle();
     expect(find.text('EXPERIENCE'), findsOneWidget);
-    expect(find.text('The old house waits in the rain.'), findsOneWidget);
+    expect(find.text('A quiet house waits at the edge of the storm.'), findsOneWidget);
   });
 }
