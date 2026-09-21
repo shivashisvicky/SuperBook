@@ -2,7 +2,7 @@
 
 **Purpose:** This is the authoritative continuation document for the current SuperBook AI Experience work. A new agent must be able to continue from this exact state without reconstructing the conversation, guessing which branch is current, repeating failed experiments, or reintroducing a known billing mistake.
 
-**Last updated:** 2026-09-22 01:20 IST
+**Last updated:** 2026-09-22 01:30 IST
 **Repository:** `shivashisvicky/SuperBook`  
 **Active branch:** `test/superbook-ai-scene-foundation`  
 **Stable branch:** `main`  
@@ -420,24 +420,35 @@ File:
 
 `lib/features/scenes/scene_player_screen.dart`
 
-The player has:
+The player now provides a **ScenePlan-driven living-story presentation** for generated stills.
+
+It has:
 
 - generated scene image
 - generated narrative summary
 - environment location
 - visual style
 - narrative beat intensity
-- generated video support
-- video playback
 - scene cache
-- explicit animation action
+- automatic still-scene generation on entry for uncached scenes
 - regenerate action
+- a continuous 12-second story choreography loop
+- active narrative-action text driven by `scenePlan.actions`
+- character focus driven by `scenePlan.characters[*].position`
+- subtle focus-light choreography tied to the active character
+- a `Story playing` state indicator
+- cached video playback support when a valid video exists
 
-### Current UX correction
+The new choreography is intentionally **not**:
 
-The TEST Experience is now self-starting for the free still-image path.
+- the old deterministic stick-figure renderer;
+- generic Ken Burns camera movement;
+- a fake T2V request;
+- automatic paid animation generation.
 
-Current intended flow:
+The still image remains the actual AI-generated visual. The ScenePlan now controls the living presentation around it, so the scene continuously progresses through the AI-described actions and character focus without requiring reader button presses.
+
+Current flow:
 
 ```
 Enter Experience
@@ -449,20 +460,30 @@ Creating your story moment…
 AI ScenePlan + generated still
     |
     v
-Show the story moment immediately
+Living Scene choreography starts automatically
+    |
+    +--> active character focus
+    |
+    +--> narrative action progression
+    |
+    +--> subtle cinematic focus lighting
 ```
 
-The user no longer needs to press **Generate scene** for a new uncached scene.
+The TEST build intentionally remains free of the known paid T2V request.
 
-The UI no longer exposes the known-doomed **Animate story** action while the only configured T2V model requires paid AI Gateway credits. This prevents a reader from deliberately walking into the known `2021: Insufficient AI Gateway credits` failure.
+Latest choreography commit:
 
-Cached successful videos can still be played if one ever exists, but the TEST reader does not automatically request T2V and does not present the paid animation request as a normal reader action.
+```
+f3052ea812453316921f5ca340b0b9b02f0c5ec5
+feat: add scene plan driven story choreography
+```
 
-The old generic Ken Burns motion was also removed from the still-image fallback. A generated still is now presented as a still until genuine story animation is available.
+CI is green:
 
-This is important and must be preserved.
-
----
+- Workflow: **SuperBook CI**
+- Run: **230**
+- Run ID: `35648711259`
+- Analyze, tests, and release web build all succeeded.
 
 # 12. CURRENT USER-VISIBLE ERROR
 
