@@ -92,7 +92,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     const LinearProgressIndicator(value: 0.34),
                     const SizedBox(height: 8),
                     Text(
-                      '34% · ' + demoBook.chapters.first.title,
+                      '34% · \${demoBook.chapters.first.title}',
                       style: theme.textTheme.labelMedium,
                     ),
                   ],
@@ -113,17 +113,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.menu_book_outlined),
-                title: Text(demoBook.chapters.length.toString() + ' chapters'),
+                title: Text('\${demoBook.chapters.length} chapters'),
                 subtitle: const Text('Read and resume from the narrative boundary.'),
               ),
               ListTile(
                 leading: const Icon(Icons.people_outline),
-                title: Text(demoBook.characters.length.toString() + ' characters'),
+                title: Text('\${demoBook.characters.length} characters'),
                 subtitle: const Text('Explore who is present in the story.'),
               ),
               ListTile(
                 leading: const Icon(Icons.movie_outlined),
-                title: Text(demoBook.beats.length.toString() + ' narrative moments'),
+                title: Text('\${demoBook.beats.length} narrative moments'),
                 subtitle: const Text('Experience scenes tied to meaningful beats.'),
               ),
             ],
