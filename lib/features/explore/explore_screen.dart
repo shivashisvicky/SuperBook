@@ -20,7 +20,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
       case 'Where is the story?':
         return widget.book.locations.first.description;
       case 'What matters here?':
-        return '\${widget.book.objects.map((e) => e.name).join(' and ')} connect the house to the road ahead.';
+        final objectNames = widget.book.objects.map((e) => e.name).join(' and ');
+        return '\$objectNames connect the house to the road ahead.';
       default:
         return 'Choose a question to explore the story without leaving the book.';
     }
