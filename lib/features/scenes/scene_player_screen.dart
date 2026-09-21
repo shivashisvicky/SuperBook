@@ -85,7 +85,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     }
   }
 
-  Future<void> _generate() async {
+  Future<void> _generate({bool force = false}) async {
     if (_loading) return;
     if (_sceneEndpoint.isEmpty) {
       setState(() {
@@ -106,7 +106,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
         passage: _chapter.passage.join('\n'),
       );
       final cached = _sceneCache.get(key);
-      if (cached != null) {
+      if (cached != null && !force) {
         setState(() => _generated = cached);
         if (cached.hasVideo) await _loadVideo(cached.videoUrl!);
         return;
@@ -212,7 +212,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('EXPERIENCE',
+                    Text('EXPERIENCE · STORY MOMENT',
                         style: Theme.of(context).textTheme.labelLarge),
                     const SizedBox(height: 5),
                     Text(
@@ -246,7 +246,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                         ),
                         const Spacer(),
                         FilledButton.icon(
-                          onPressed: _loading ? null : _generate,
+                          onPressed: _loading ? null : () => _generate(force: generated != null),
                           icon: _loading
                               ? const SizedBox(
                                   width: 16,
