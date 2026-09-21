@@ -204,9 +204,12 @@ class GutenbergService {
 
   String _normalizeChapterHeading(String heading) {
     var value = heading.trim();
-    value = value
-        .replaceFirst(RegExp(r'^[[\\]{}()]+'), '')
-        .replaceFirst(RegExp(r'[[\\]{}()]+
+    while (value.endsWith('.') || value.endsWith('?') || value.endsWith('!')) {
+      value = value.substring(0, value.length - 1).trimRight();
+    }
+    value = value.replaceFirst(RegExp(r'^[[\\]{}()]+'), '').replaceFirst(RegExp(r'[[\\]{}()]+$'), '').trim();
+    return RegExp(r'[A-Za-z0-9]').hasMatch(value) ? value : '';
+  }
 
   List<_ChapterMarker> _chapterMarkers(List<String> lines) {
     final markers = <_ChapterMarker>[];
