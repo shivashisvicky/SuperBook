@@ -64,6 +64,9 @@ void main() {
       find.byType(ScenePlayerScreen, skipOffstage: false),
       findsOneWidget,
     );
-    expect(find.text('Narrative beat · intensity 2'), findsOneWidget);
+    expect(
+      find.text('Narrative beat · intensity 2', skipOffstage: false),
+      findsOneWidget,
+    );
   });
 }
