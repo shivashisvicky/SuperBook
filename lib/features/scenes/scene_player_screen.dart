@@ -335,6 +335,49 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                           'Narrative beat · intensity ${widget.beat.intensity}',
                         ),
                         const Spacer(),
+                        if (generated != null && !generated.hasVideo)
+                          OutlinedButton.icon(
+                            onPressed: _videoLoading
+                                ? null
+                                : () => _startVideoGeneration(generated),
+                            icon: _videoLoading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.movie_creation_outlined),
+                            label: Text(
+                              _videoLoading ? 'Animating…' : 'Animate story',
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        FilledButton.icon(
+                          onPressed: _loading
+                              ? null
+                              : () => _generate(force: generated != null),
+                          icon: _loading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Icon(
+                                  generated == null
+                                      ? Icons.auto_awesome
+                                      : Icons.refresh,
+                                ),
+                          label: Text(
+                            _loading
+                                ? 'Creating scene…'
+                                : generated == null
+                                    ? 'Generate scene'
+                                    : 'Regenerate',
+                          ),
+                        ),
+                      ],
+                    ),
+                        const Spacer(),
                         FilledButton.icon(
                           onPressed: _loading
                               ? null
