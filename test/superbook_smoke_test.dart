@@ -40,7 +40,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tap to enter the scene'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.byType(ScenePlayerScreen), findsOneWidget);
     expect(find.text('Narrative beat · intensity 2'), findsOneWidget);
