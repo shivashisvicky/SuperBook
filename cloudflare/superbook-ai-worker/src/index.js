@@ -79,8 +79,8 @@ const SYSTEM_PROMPT = [
 function cors(origin) {
   return {
     'Access-Control-Allow-Origin': origin && origin !== 'null' ? origin : '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Range',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Vary': 'Origin',
   };
 }
@@ -127,6 +127,37 @@ function validatePlan(plan) {
     typeof plan.environment.location === 'string' &&
     plan.camera &&
     typeof plan.camera.shot === 'string';
+}
+
+async function generateVideo(env, plan, origin, requestUrl) {
+  const video = await env.AI.run(VIDEO_MODEL, {
+    prompt: [
+      videoPrompt(plan),
+      'This is a short living illustration, not a new plot event.',
+      'Keep movement subtle and localized to the described actions.',
+    ].join(' ').slice(0, 2500),
+    duration: 4,
+    resolution: '720P',
+    ratio: '16:9',
+    watermark: false,
+  });
+
+  let videoUrl = video && video.video
+    ? video.video
+    : video && video.result && video.result.video;
+
+  if (typeof videoUrl !== 'string' || videoUrl.length === 0) {
+    throw new Error('Video model returned no video URL.');
+  }
+
+  videoUrl = requestUrl.origin + '/video?url=' + encodeURIComponent(videoUrl);
+
+  return json({
+    video: {
+      url: videoUrl,
+      durationSeconds: 4,
+    },
+  }, 200, origin);
 }
 
 export default {
@@ -185,6 +216,30 @@ export default {
       }
     }
 
+    if (request.method === 'POST' && requestUrl.pathname === '/video') {
+      let input;
+      try {
+        input = await request.json();
+      } catch (_) {
+        return json({ error: 'Request body must be valid JSON.' }, 400, origin);
+      }
+
+      const plan = input && input.scenePlan;
+      if (!validatePlan(plan)) {
+        return json({ error: 'A valid scenePlan is required.' }, 400, origin);
+      }
+
+      try {
+        return await generateVideo(env, plan, origin, requestUrl);
+      } catch (error) {
+        console.error('SuperBook scene animation failed', error);
+        return json({
+          error: 'Video generation failed.',
+          detail: error instanceof Error ? error.message : String(error),
+        }, 502, origin);
+      }
+    }
+
     if (request.method !== 'POST') {
       return json({ error: 'POST required.' }, 405, origin);
     }
@@ -236,35 +291,6 @@ export default {
         return json({ error: 'Image model returned no image.' }, 502, origin);
       }
 
-      let videoUrl = null;
-      let videoError = null;
-      try {
-        const video = await env.AI.run(VIDEO_MODEL, {
-          prompt: [
-            videoPrompt(plan),
-            'Recreate the same visual composition and period-specific characters described by the scene image prompt.',
-            'This is a short living illustration, not a new plot event.',
-            'Keep movement subtle and localized to the described actions.',
-          ].join(' ').slice(0, 2500),
-          duration: 4,
-          resolution: '720P',
-          ratio: '16:9',
-          watermark: false,
-        });
-        videoUrl = video && video.video
-          ? video.video
-          : video && video.result && video.result.video;
-        if (typeof videoUrl === 'string' && videoUrl.length > 0) {
-          videoUrl = requestUrl.origin + '/video?url=' + encodeURIComponent(videoUrl);
-        } else {
-          videoUrl = null;
-          videoError = 'Video model returned no video URL.';
-        }
-      } catch (error) {
-        console.error('SuperBook scene animation failed', error);
-        videoError = error instanceof Error ? error.message : String(error);
-      }
-
       return json({
         schemaVersion: '2',
         scenePlan: plan,
@@ -272,8 +298,7 @@ export default {
           mimeType: 'image/jpeg',
           base64: image.image,
         },
-        video: videoUrl ? { url: videoUrl, durationSeconds: 4 } : null,
-        videoError,
+        video: null,
       }, 200, origin);
     } catch (error) {
       console.error('SuperBook scene generation failed', error);
