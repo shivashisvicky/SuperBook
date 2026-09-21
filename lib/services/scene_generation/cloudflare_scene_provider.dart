@@ -98,10 +98,20 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
 
     final body = _decodeBody(response);
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError(
-        body['error'] as String? ??
-            'SuperBook AI video generation failed with HTTP ${response.statusCode}.',
-      );
+      final message = body['error'] as String? ??
+          'SuperBook AI video generation failed with HTTP ${response.statusCode}.';
+      final detail = body['detail'] as String?;
+      final code = body['code'];
+      final upstreamStatus = body['upstreamStatus'];
+
+      final diagnostics = <String>[
+        message,
+        if (detail != null && detail.isNotEmpty) detail,
+        if (code != null) 'code=$code',
+        if (upstreamStatus != null) 'upstreamStatus=$upstreamStatus',
+      ];
+
+      throw StateError(diagnostics.join(' '));
     }
 
     final video = body['video'];
