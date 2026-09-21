@@ -58,7 +58,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('experience-scene-entry')));
     // Allow the Material route transition to complete without waiting on the
     // scene's intentionally repeating animation.
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.byType(ScenePlayerScreen), findsOneWidget);
     expect(find.text('Narrative beat · intensity 2'), findsOneWidget);
