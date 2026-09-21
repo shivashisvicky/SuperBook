@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:superbook/app.dart';
 import 'package:superbook/features/scenes/scene_player_screen.dart';
+import 'package:superbook/features/scenes/scene_player_screen.dart';
 
 void main() {
   testWidgets('library opens', (tester) async {
@@ -31,6 +32,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('EXPERIENCE'), findsOneWidget);
     expect(find.text('A quiet house waits at the edge of the storm.'), findsOneWidget);
+    await tester.ensureVisible(find.text('Tap to enter the scene'));
+    await tester.tap(find.text('Tap to enter the scene'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ScenePlayerScreen), findsOneWidget);
     expect(find.text('Tap to enter the scene'), findsOneWidget);
     await tester.tap(find.text('Tap to enter the scene'));
     await tester.pump();
