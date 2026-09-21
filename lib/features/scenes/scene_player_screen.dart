@@ -107,7 +107,10 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
 
     try {
       final provider = CloudflareSceneProvider(endpoint: _sceneEndpoint);
-      final video = await provider.generateVideo(\n        plan: scene.plan,\n        imageDataUri: scene.imageDataUri,\n      );
+      final video = await provider.generateVideo(
+        plan: scene.plan,
+        imageDataUri: scene.imageDataUri,
+      );
       if (!mounted || requestId != _videoRequestId) return;
 
       final completed = GeneratedScene(
