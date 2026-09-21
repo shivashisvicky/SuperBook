@@ -2,10 +2,18 @@ import 'scene_generation_provider.dart';
 
 class SceneGenerationCache {
   final Map<String, GeneratedScene> _memory = {};
+  final Map<String, List<GeneratedMotionFrame>> _motion = {};
 
   GeneratedScene? get(String key) => _memory[key];
 
   void put(String key, GeneratedScene scene) => _memory[key] = scene;
+
+  List<GeneratedMotionFrame>? getMotion(String key) => _motion[key];
+
+  void putMotion(String key, List<GeneratedMotionFrame> frames) =>
+      _motion[key] = List.unmodifiable(frames);
+
+  void clearMotion(String key) => _motion.remove(key);
 
   String key({
     required String bookId,
