@@ -155,8 +155,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                   _ExperienceCard(scene: chapter.scene),
                 ],
                 const SizedBox(height: 28),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  runSpacing: 12,
                   children: [
                     OutlinedButton.icon(
                       onPressed: chapterIndex == 0
