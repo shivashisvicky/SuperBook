@@ -36,7 +36,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
             ),
             for (var i = 0; i < widget.book.chapters.length; i++)
               ListTile(
-                leading: CircleAvatar(child: Text('\${i + 1}')),
+                leading: CircleAvatar(child: Text('${i + 1}')),
                 title: Text(widget.book.chapters[i].title),
                 trailing: i == chapterIndex ? const Icon(Icons.check) : null,
                 onTap: () {
@@ -182,7 +182,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       label: const Text('Previous'),
                     ),
                     Text(
-                      'Chapter \${chapterIndex + 1} of \${widget.book.chapters.length}',
+                      'Chapter ${chapterIndex + 1} of ${widget.book.chapters.length}',
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                     OutlinedButton.icon(
