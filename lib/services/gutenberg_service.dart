@@ -183,7 +183,7 @@ class GutenbergService {
         title: safeChapters[i].title,
         summary: safeChapters[i].passage.first,
         chapterId: safeChapters[i].id,
-        intensity: 1,
+        intensity: _intensityForTheme(safeChapters[i].scene.visualTheme),
       ),
     ];
     return Book(
@@ -206,6 +206,19 @@ class GutenbergService {
     );
   }
 
+  int _intensityForTheme(String theme) {
+    switch (theme) {
+      case 'battle':
+        return 3;
+      case 'estate':
+      case 'sea':
+      case 'forest':
+      case 'city':
+        return 2;
+      default:
+        return 1;
+    }
+  }
   Scene _sceneForChapter({
     required String title,
     required List<String> passage,
