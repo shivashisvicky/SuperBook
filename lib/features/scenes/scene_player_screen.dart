@@ -59,6 +59,8 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     _generated = cached;
     if (cached?.hasVideo == true) {
       unawaited(_loadVideo(cached!.videoUrl!));
+    } else if (cached != null) {
+      unawaited(_startVideoGeneration(cached));
     }
   }
 
@@ -165,6 +167,8 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
         setState(() => _generated = cached);
         if (cached.hasVideo) {
           await _loadVideo(cached.videoUrl!);
+        } else {
+          unawaited(_startVideoGeneration(cached));
         }
         return;
       }
@@ -184,7 +188,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
           _generated = generated;
           _loading = false;
         });
-
+        unawaited(_startVideoGeneration(generated));
       }
     } catch (error) {
       if (mounted) {
