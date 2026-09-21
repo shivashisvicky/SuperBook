@@ -170,7 +170,229 @@ class GutenbergService {
         );
         final heading = marker.heading.isEmpty
             ? 'Chapter ${marker.number ?? i + 1}'
-            : marker.heading;
+            : marker.heading.replaceFirst(RegExp(r'[.?!]+
+        chapters.add(_chapterFromParagraphs(heading, section, i));
+      }
+    }
+
+    final safeChapters = chapters.isEmpty
+        ? [_chapterFromParagraphs('Book', blocks, 0)]
+        : chapters;
+    final beats = [
+      for (var i = 0; i < safeChapters.length; i++)
+        NarrativeBeat(
+          title: safeChapters[i].title,
+          summary: safeChapters[i].passage.first,
+          chapterId: safeChapters[i].id,
+          intensity: _intensityForTheme(safeChapters[i].scene.visualTheme),
+        ),
+    ];
+
+    return Book(
+      id: 'gutenberg-${summary.id}',
+      title: summary.title,
+      author: summary.author,
+      description: 'Original public-domain text from Project Gutenberg.',
+      chapters: safeChapters,
+      characters: const [],
+      locations: const [],
+      objects: const [],
+      beats: beats,
+    );
+  }
+
+  List<_ChapterMarker> _chapterMarkers(List<String> lines) {
+    final markers = <_ChapterMarker>[];
+    final pattern = RegExp(
+      r'^(?:CHAPTER|Chapter)\s+([IVXLCDM]+|\d+)\.?\s*(.*)$',
+    );
+
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i].trim();
+      final match = pattern.firstMatch(line);
+      if (match == null) continue;
+
+      final numberText = match.group(1)!;
+      final heading = match.group(2)!.trim();
+      markers.add(
+        _ChapterMarker(
+          line: i,
+          number: int.tryParse(numberText) ?? _romanToInt(numberText),
+          heading: heading,
+        ),
+      );
+    }
+    return markers;
+  }
+
+  List<_ChapterMarker> _selectSubstantiveMarkers(
+    List<String> lines,
+    List<_ChapterMarker> markers,
+  ) {
+    if (markers.isEmpty) return const [];
+
+    final selected = <_ChapterMarker>[];
+    for (var i = 0; i < markers.length; i++) {
+      final marker = markers[i];
+      final endLine = i + 1 < markers.length
+          ? markers[i + 1].line
+          : lines.length;
+      final sectionText = lines
+          .sublist(marker.line + 1, endLine)
+          .join(' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+
+      if (_looksLikeChapterBody(sectionText)) {
+        selected.add(marker);
+      }
+    }
+
+    return _removeDuplicateChapterMarkers(selected);
+  }
+
+  bool _looksLikeChapterBody(String text) {
+    if (text.length < 180) return false;
+    final words = text.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
+    if (words.length < 30) return false;
+    final sentenceMarks = RegExp(r'[.!?]').allMatches(text).length;
+    return sentenceMarks >= 2;
+  }
+
+  List<_ChapterMarker> _removeDuplicateChapterMarkers(
+    List<_ChapterMarker> markers,
+  ) {
+    final result = <_ChapterMarker>[];
+    final seen = <int>{};
+
+    for (final marker in markers) {
+      final number = marker.number;
+      if (number != null && seen.contains(number)) continue;
+      if (number != null) seen.add(number);
+      result.add(marker);
+    }
+    return result;
+  }
+
+  List<String> _paragraphs(List<String> lines) {
+    final text = lines.join('\n');
+    return text
+        .split(RegExp(r'\n\s*\n'))
+        .map((block) => block.replaceAll(RegExp(r'\s+'), ' ').trim())
+        .where((block) => block.length > 30)
+        .toList();
+  }
+
+  int? _romanToInt(String value) {
+    const values = <String, int>{
+      'I': 1,
+      'V': 5,
+      'X': 10,
+      'L': 50,
+      'C': 100,
+      'D': 500,
+      'M': 1000,
+    };
+    var total = 0;
+    var previous = 0;
+    for (final char in value.toUpperCase().split('').reversed) {
+      final current = values[char];
+      if (current == null) return null;
+      if (current < previous) {
+        total -= current;
+      } else {
+        total += current;
+        previous = current;
+      }
+    }
+    return total;
+  }
+
+  Chapter _chapterFromParagraphs(String title, List<String> paragraphs, int index) {
+    final passage = paragraphs.isEmpty ? const ['This chapter contains no readable text in the downloaded edition.'] : paragraphs;
+    final first = passage.first;
+    return Chapter(
+      id: 'chapter-${index + 1}', title: title, passage: passage,
+      scene: _sceneForChapter(
+        title: title,
+        passage: passage,
+        caption: first.length > 150 ? '${first.substring(0, 147)}...' : first,
+      ),
+    );
+  }
+
+  int _intensityForTheme(String theme) {
+    switch (theme) {
+      case 'battle':
+        return 3;
+      case 'estate':
+      case 'sea':
+      case 'forest':
+      case 'city':
+        return 2;
+      default:
+        return 1;
+    }
+  }
+  Scene _sceneForChapter({
+    required String title,
+    required List<String> passage,
+    required String caption,
+  }) {
+    final text = passage.join(' ').toLowerCase();
+    final theme = _visualThemeFor(text);
+    final atmospheres = <String, String>{
+      'estate': 'Warm drawing rooms, a garden beyond the windows, and the quiet after a family turning point.',
+      'sea': 'Open water, wind, shifting clouds, and a vessel moving through a wide horizon.',
+      'forest': 'Deep trees, filtered light, a narrow path, and the sense that something lies beyond it.',
+      'city': 'A living street, distant windows, moving silhouettes, and the pulse of a crowded city.',
+      'interior': 'A quiet interior shaped by lamplight, furniture, and the people gathered inside.',
+      'night': 'A dark landscape under moving clouds, with a small source of light holding the eye.',
+      'journey': 'A road leads forward through a changing landscape, keeping the next destination just out of sight.',
+      'battle': 'Smoke, movement, scattered light, and opposing forces turn the landscape into a place of action.',
+      'neutral': 'The visual world follows the place, people, and action described in this passage.',
+    };
+    return Scene(
+      title: title,
+      moment: caption,
+      atmosphere: atmospheres[theme]!,
+      caption: caption,
+      visualTheme: theme,
+    );
+  }
+
+  String _visualThemeFor(String text) {
+    if (RegExp(r'\b(?:mrs\.? bennet|bennet|darcy|elizabeth|gardiner|derbyshire|married|marriage|daughter|family|drawing room|garden|parlour|parlor)\b').hasMatch(text)) return 'estate';
+    if (RegExp(r'\b(?:ship|ships|whale|ocean|sea|sailor|sailing|harbour|harbor|captain|mast|deck|wave|waves)\b').hasMatch(text)) return 'sea';
+    if (RegExp(r'\b(?:forest|woods|woodland|tree|trees|grove|wilderness)\b').hasMatch(text)) return 'forest';
+    if (RegExp(r'\b(?:street|city|town|london|paris|market|shop|shops|crowd|carriage|station)\b').hasMatch(text)) return 'city';
+    if (RegExp(r'\b(?:room|house|home|hall|library|study|bedroom|fireplace|table|door|window|lamp|candle)\b').hasMatch(text)) return 'interior';
+    if (RegExp(r'\b(?:night|midnight|moon|moonlight|darkness|stars|starry)\b').hasMatch(text)) return 'night';
+    if (RegExp(r'\b(?:road|journey|travel|traveler|traveller|horse|horses|coach|roadside|departure)\b').hasMatch(text)) return 'journey';
+    if (RegExp(r'\b(?:battle|army|soldier|soldiers|war|weapon|weapons|fight|fought|enemy|cannon)\b').hasMatch(text)) return 'battle';
+    return 'neutral';
+  }
+  String _stripGutenbergWrapper(String text) {
+    final start = RegExp(r'\*\*\* START OF (?:THE )?PROJECT GUTENBERG EBOOK[^\n]*\*\*\*');
+    final end = RegExp(r'\*\*\* END OF (?:THE )?PROJECT GUTENBERG EBOOK[^\n]*\*\*\*');
+    final startMatch = start.firstMatch(text);
+    final endMatch = end.firstMatch(text);
+    return text.substring(startMatch?.end ?? 0, endMatch?.start ?? text.length).trim();
+  }
+}
+
+class _ChapterMarker {
+  const _ChapterMarker({
+    required this.line,
+    required this.number,
+    required this.heading,
+  });
+
+  final int line;
+  final int? number;
+  final String heading;
+}
+), '').trim();
         chapters.add(_chapterFromParagraphs(heading, section, i));
       }
     }
