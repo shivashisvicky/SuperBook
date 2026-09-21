@@ -33,7 +33,6 @@ class ScenePlayerScreen extends StatefulWidget {
 class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     with SingleTickerProviderStateMixin {
   GeneratedScene? _generated;
-  String? _error;
   bool _loading = false;
   VideoPlayerController? _video;
   late final AnimationController _storyController;
@@ -91,9 +90,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       await controller.play();
     } catch (error) {
       await controller.dispose();
-      if (mounted) {
-        setState(() => _error = 'Generated animation could not be loaded: $error');
-      }
     }
   }
 
@@ -155,7 +151,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
 
     setState(() {
       _loading = true;
-      _error = null;
     });
 
     try {
@@ -284,7 +279,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                                 if (frames.isEmpty) {
                                   return Text('Narrative beat · intensity ${widget.beat.intensity}');
                                 }
-                                final index = ((frames.length * _storyController.value).floor().clamp(0, frames.length - 1)) as int;
+                                final index = (frames.length * _storyController.value).floor().clamp(0, frames.length - 1);
                                 return AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 450),
                                   child: Text(
