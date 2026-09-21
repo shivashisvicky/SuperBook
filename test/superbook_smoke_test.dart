@@ -39,10 +39,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    final sceneEntry = find.ancestor(
-      of: find.text('Tap to enter the scene'),
-      matching: find.byType(InkWell),
-    );
+    final sceneEntry = find.byKey(const ValueKey('experience-scene-entry'));
     expect(sceneEntry, findsOneWidget);
     await tester.tap(sceneEntry);
     await tester.pump(const Duration(milliseconds: 500));
