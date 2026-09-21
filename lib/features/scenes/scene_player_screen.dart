@@ -199,12 +199,14 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       );
     }
     if (_motionFrames.isEmpty) {
-      return Image.memory(
-        base64Decode(generated.imageBase64),
-        fit: BoxFit.cover,
-        gaplessPlayback: true,
-        errorBuilder: (_, __, ___) => const Center(
-          child: Text('Generated scene image could not be decoded.'),
+      return SizedBox.expand(
+        child: Image.memory(
+          base64Decode(generated.imageBase64),
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => const Center(
+            child: Text('Generated scene image could not be decoded.'),
+          ),
         ),
       );
     }
@@ -326,22 +328,37 @@ class _MotionFrameVisual extends StatelessWidget {
   final List<GeneratedMotionFrame> frames;
   final Animation<double> controller;
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: controller,
-    builder: (context, _) {
-      final index = (frames.length * controller.value).floor().clamp(0, frames.length - 1);
-      final frame = frames[index];
-      return AnimatedSwitcher(
-        duration: const Duration(milliseconds: 650),
-        switchInCurve: Curves.easeOut,
-        switchOutCurve: Curves.easeIn,
-        child: Image.memory(
-          base64Decode(frame.base64),
-          key: ValueKey<String>(frame.base64),
-          fit: BoxFit.cover,
-          gaplessPlayback: true,
-        ),
-      );
-    },
+  Widget build(BuildContext context) => SizedBox.expand(
+    child: AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final index = (frames.length * controller.value).floor().clamp(0, frames.length - 1);
+        final frame = frames[index];
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 900),
+          switchInCurve: Curves.easeInOutCubic,
+          switchOutCurve: Curves.easeInOutCubic,
+          layoutBuilder: (currentChild, previousChildren) => Stack(
+            fit: StackFit.expand,
+            children: [
+              ...previousChildren,
+              if (currentChild != null) currentChild,
+            ],
+          ),
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: child,
+          ),
+          child: Image.memory(
+            base64Decode(frame.base64),
+            key: ValueKey<String>(frame.base64),
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+          ),
+        );
+      },
+    ),
   );
 }
