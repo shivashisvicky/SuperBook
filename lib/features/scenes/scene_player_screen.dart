@@ -136,12 +136,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
 
   Future<void> _generate({bool force = false}) async {
     if (_loading) return;
-    if (_sceneEndpoint.isEmpty) {
-      setState(() {
-        _error = 'AI scene generation is not configured for this build yet.';
-      });
-      return;
-    }
+    if (_sceneEndpoint.isEmpty) return;
 
     if (force) {
       final oldVideo = _video;
@@ -181,13 +176,8 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
         });
         unawaited(_prepareMotion(generated));
       }
-    } catch (error) {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _error = error.toString();
-        });
-      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
     } finally {
       if (mounted && _loading) {
         setState(() => _loading = false);
