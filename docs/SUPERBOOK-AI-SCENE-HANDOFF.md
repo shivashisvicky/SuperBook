@@ -2,7 +2,7 @@
 
 **Purpose:** This is the authoritative continuation document for the current SuperBook AI Experience work. A new agent must be able to continue from this exact state without reconstructing the conversation, guessing which branch is current, repeating failed experiments, or reintroducing a known billing mistake.
 
-**Last updated:** 2026-09-22 01:30 IST
+**Last updated:** 2026-09-22 01:45 IST
 **Repository:** `shivashisvicky/SuperBook`  
 **Active branch:** `test/superbook-ai-scene-foundation`  
 **Stable branch:** `main`  
@@ -420,70 +420,91 @@ File:
 
 `lib/features/scenes/scene_player_screen.dart`
 
-The player now provides a **ScenePlan-driven living-story presentation** for generated stills.
+The previous lightweight choreography experiment was rejected by the user because it only animated UI/focus effects over one static image. That implementation is no longer the intended animation path.
 
-It has:
+The current direction is **AI-generated motion keyframes**.
 
-- generated scene image
-- generated narrative summary
-- environment location
-- visual style
-- narrative beat intensity
-- scene cache
-- automatic still-scene generation on entry for uncached scenes
-- regenerate action
-- a continuous 12-second story choreography loop
-- active narrative-action text driven by `scenePlan.actions`
-- character focus driven by `scenePlan.characters[*].position`
-- subtle focus-light choreography tied to the active character
-- a `Story playing` state indicator
-- cached video playback support when a valid video exists
-
-The new choreography is intentionally **not**:
-
-- the old deterministic stick-figure renderer;
-- generic Ken Burns camera movement;
-- a fake T2V request;
-- automatic paid animation generation.
-
-The still image remains the actual AI-generated visual. The ScenePlan now controls the living presentation around it, so the scene continuously progresses through the AI-described actions and character focus without requiring reader button presses.
-
-Current flow:
+Flow:
 
 ```
 Enter Experience
     |
     v
-Creating your story moment…
-    |
-    v
 AI ScenePlan + generated still
     |
     v
-Living Scene choreography starts automatically
+Resize still to a reference image below 512px
     |
-    +--> active character focus
+    v
+FLUX.2 [klein] 4B image-to-image keyframes
     |
-    +--> narrative action progression
+    +--> narrative action 1
+    +--> narrative action 2
+    +--> narrative action 3
     |
-    +--> subtle cinematic focus lighting
+    v
+Cross-fade the generated keyframes as a continuous story sequence
 ```
 
-The TEST build intentionally remains free of the known paid T2V request.
+The keyframes are generated from the same reference scene and ScenePlan so the model is instructed to preserve:
 
-Latest choreography commit:
+- the same room and period;
+- the same characters and clothing;
+- the same identities;
+- the same composition and lighting;
+- only the physical acting needed for the current narrative beat.
+
+This is intentionally different from:
+
+- the old deterministic stick renderer;
+- generic Ken Burns movement;
+- UI-only focus animation;
+- the paid Alibaba HappyHorse T2V path.
+
+The new Worker endpoint is:
+
+`POST /motion`
+
+It uses:
+
+`@cf/black-forest-labs/flux-2-klein-4b`
+
+The model supports reference-image editing and is a Cloudflare-hosted Workers AI model. Cloudflare currently lists it at 26.05 Neurons per 512x512 output tile, while the Workers AI free allocation is 10,000 Neurons/day. The current restricted-model list does not include FLUX.2 [klein] 4B.
+
+The reader receives the original still immediately. Motion generation happens asynchronously. If motion generation fails for any reason, the still remains the fallback and the infrastructure error is not surfaced as a reader-facing red error.
+
+Latest relevant commits:
 
 ```
-f3052ea812453316921f5ca340b0b9b02f0c5ec5
-feat: add scene plan driven story choreography
+411198d9bb969c5812cdead2dad494d5e09cea91
+feat: add free AI motion keyframes
+
+da00154efa6f165de069d4fd02b122dd9827ea1d
+feat: add motion frame provider contract
+
+be27b8878a402d9d5803375771a20ebff44278fd
+feat: connect AI motion frame generation
+
+83923feff40b690dcf835bffb9736c1add3a10a1
+fix: build motion endpoint path correctly
+
+4b62ba0f9ad27708537be6cb5d7f351656592119
+fix: normalize motion frame index
+
+e17d18e5f0ed51334209348702b8dde93c8be260
+fix: silence reader scene infrastructure errors
 ```
 
-CI is green:
+The final Flutter commit is CI green:
 
 - Workflow: **SuperBook CI**
-- Run: **230**
-- Run ID: `35648711259`
-- Analyze, tests, and release web build all succeeded.
+- Run: **249**
+- Run ID: `35649688397`
+- Analyze succeeded
+- Tests succeeded
+- Release web build succeeded
+
+Do not call the Cloudflare Worker deployment or TEST Pages deployment green until their deployment systems report the current branch head.
 
 # 12. CURRENT USER-VISIBLE ERROR
 
