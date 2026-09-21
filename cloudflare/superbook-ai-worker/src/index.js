@@ -117,6 +117,36 @@ function videoPrompt(plan) {
   ].join(' ');
 }
 
+function parseScenePlan(reasoning) {
+  const candidate = reasoning && reasoning.response !== undefined
+    ? reasoning.response
+    : reasoning;
+
+  if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+    return candidate;
+  }
+
+  if (typeof candidate !== 'string') return null;
+
+  const text = candidate
+    .replace(/^\s*\`\`\`(?:json)?\s*/i, '')
+    .replace(/\s*\`\`\`\s*$/i, '')
+    .trim();
+
+  try {
+    return JSON.parse(text);
+  } catch (_) {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try {
+      return JSON.parse(text.slice(start, end + 1));
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
 function validatePlan(plan) {
   return plan &&
     typeof plan.sceneSummary === 'string' &&
@@ -286,7 +316,7 @@ export default {
         max_tokens: 1800,
       });
 
-      const plan = reasoning && reasoning.response;
+      const plan = parseScenePlan(reasoning);
       if (!validatePlan(plan)) {
         return json({ error: 'AI returned an invalid scene plan.' }, 502, origin);
       }
