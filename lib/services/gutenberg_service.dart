@@ -35,11 +35,7 @@ class GutenbergService {
   }
 
   Future<List<GutenbergBookSummary>> _search(String url) async {
-    final response = await _client.get(Uri.parse(url));
-    if (response.statusCode != 200) {
-      throw Exception('Gutenberg catalog request failed (${response.statusCode}).');
-    }
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = await _getJson(url);
     final results = data['results'] as List<dynamic>? ?? const [];
     return results.map((item) {
       final map = item as Map<String, dynamic>;
@@ -61,9 +57,7 @@ class GutenbergService {
   Future<Book> loadBook(GutenbergBookSummary summary) async {
     final cached = _cache[summary.id];
     if (cached != null) return cached;
-    final response = await _client.get(Uri.parse('https://gutendex.com/books/${summary.id}'));
-    if (response.statusCode != 200) throw Exception('Could not load book ${summary.title}.');
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = await _getJson('https://gutendex.com/books/${summary.id}');
     final formats = data['formats'] as Map<String, dynamic>? ?? const {};
     final textUrls = _textUrls(summary.id, formats);
     if (textUrls.isEmpty) {
@@ -100,6 +94,47 @@ class GutenbergService {
     return book;
   }
 
+  Future<Map<String, dynamic>> _getJson(String url) async {
+    Object? directError;
+
+    try {
+      final response = await _client
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        return _decodeJsonObject(response.body);
+      }
+      directError = 'HTTP ${response.statusCode}';
+    } catch (error) {
+      directError = error;
+    }
+
+    try {
+      final response = await _client
+          .get(Uri.parse('https://r.jina.ai/${url}'))
+          .timeout(const Duration(seconds: 20));
+      if (response.statusCode == 200) {
+        return _decodeJsonObject(response.body);
+      }
+      throw Exception('HTTP ${response.statusCode}');
+    } catch (error) {
+      throw Exception(
+        'Could not load Gutenberg data${directError == null ? '' : ': ${directError}'}. '
+        'Browser content fallback also failed: ${error}',
+      );
+    }
+  }
+
+  Map<String, dynamic> _decodeJsonObject(String body) {
+    try {
+      return jsonDecode(body) as Map<String, dynamic>;
+    } on FormatException {
+      final start = body.indexOf('{');
+      final end = body.lastIndexOf('}');
+      if (start < 0 || end <= start) rethrow;
+      return jsonDecode(body.substring(start, end + 1)) as Map<String, dynamic>;
+    }
+  }
   List<String> _textUrls(int bookId, Map<String, dynamic> formats) {
     final sourceUrl =
         'https://www.gutenberg.org/cache/epub/$bookId/pg$bookId.txt';
