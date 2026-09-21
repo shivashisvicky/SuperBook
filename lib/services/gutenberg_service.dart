@@ -251,6 +251,7 @@ class GutenbergService {
   bool _looksLikeStructuralHeading(String line) {
     final value = line.trim();
     if (value.length < 5 || value.length > 120 || !RegExp(r'[A-Za-z]').hasMatch(value)) return false;
+    if (RegExp(r'^[IVXLCDM]{1,8}\\.?\\s+').hasMatch(value)) return false;
     const excluded = {'CONTENTS', 'ILLUSTRATIONS', 'PREFACE', 'INTRODUCTION', 'APPENDIX', 'NOTES', 'TRANSCRIBER NOTES', 'PROJECT GUTENBERG'};
     if (excluded.contains(value.toUpperCase())) return false;
     final letters = value.replaceAll(RegExp(r'[^A-Za-z]'), '');
