@@ -33,7 +33,11 @@ void main() {
     expect(find.text('EXPERIENCE'), findsOneWidget);
     expect(find.text('A quiet house waits at the edge of the storm.'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -420));
+    await tester.scrollUntilVisible(
+      find.text('Tap to enter the scene'),
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tap to enter the scene'));
     await tester.pumpAndSettle();
