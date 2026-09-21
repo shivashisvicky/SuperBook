@@ -29,9 +29,17 @@ The deployed Worker URL becomes the SuperBook AI scene endpoint.
 
 Do not put a Cloudflare API token in Flutter, GitHub Pages, or source control.
 
-## Free-tier development
+## Billing boundary: important correction
 
-Workers AI provides a free daily allocation of 10,000 Neurons. SuperBook must treat that allocation as a hard ceiling for this project. When the account reaches the free daily limit, further inference should fail rather than triggering paid usage.
+The text planner and image generator currently use Workers AI models under the `@cf/` namespace and can use the Workers AI free allocation. The current story-animation model is different: `alibaba/hh1.1-t2v` is classified by Cloudflare as a **third-party** model. It therefore does **not** belong to the no-cost Workers AI allocation. Cloudflare routes third-party models through AI Gateway / Unified Billing, and the account must have AI Gateway credits or another supported billing arrangement before this model can generate video.
+
+The live test account returned this exact error on the SuperBook `/video` request:
+
+    2021: Insufficient AI Gateway credits
+
+Therefore SuperBook's current T2V animation path is intentionally **blocked by the user's no-money constraint**. Do not tell the user that `alibaba/hh1.1-t2v` is free. Do not ask the user to add AI Gateway credits, enable Unified Billing, add a Workers Paid plan, or subscribe to R2 unless the user explicitly changes the billing requirement.
+
+Workers AI's separate free allocation remains 10,000 Neurons/day, but that statement does not make the Alibaba HappyHorse T2V model free. The distinction is critical.
 
 Generated scenes should be cached and repeated generation should be avoided. The cache identity is:
 
