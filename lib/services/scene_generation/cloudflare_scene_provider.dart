@@ -83,11 +83,10 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
       throw ArgumentError.value(imageBase64, 'imageBase64', 'must not be empty');
     }
 
-    final motionEndpoint = _baseUri.replace(
-      path: _baseUri.path.endsWith('/')
-          ? _baseUri.path + 'motion'
-          : _baseUri.path + '/motion',
-    );
+    final motionPath = _baseUri.path.endsWith('/')
+        ? '${_baseUri.path}motion'
+        : '${_baseUri.path}/motion';
+    final motionEndpoint = _baseUri.replace(path: motionPath);
 
     final response = await _client.post(
       motionEndpoint,
