@@ -196,8 +196,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                     Row(
                       children: [
                         Text(
-                          'Narrative beat · intensity ' +
-                              widget.beat.intensity.toString(),
+                          'Narrative beat · intensity ${widget.beat.intensity}',
                         ),
                         const Spacer(),
                         FilledButton.icon(
