@@ -212,8 +212,8 @@ class GutenbergService {
 
   List<_ChapterMarker> _chapterMarkers(List<String> lines) {
     final markers = <_ChapterMarker>[];
-    final chapterPattern = RegExp(r'^(?:CHAPTER|Chapter)\\s+([IVXLCDM]+|\\d+)\\.?\\s*(.*)$');
-    final adventurePattern = RegExp(r'^(?:ADVENTURE|STORY|PART|BOOK)\\s+([IVXLCDM]+|\\d+)\\.?\\s*[-—:.]?\\s*(.+)$', caseSensitive: false);
+    final chapterPattern = RegExp(r'^(?:CHAPTER|Chapter)\s+([IVXLCDM]+|\d+)\\.?\s*(.*)$');
+    final adventurePattern = RegExp(r'^(?:ADVENTURE|STORY|PART|BOOK)\s+([IVXLCDM]+|\d+)\\.?\s*[-—:.]?\s*(.+)$', caseSensitive: false);
     final romanPattern = RegExp(r'^([IVXLCDM]{1,8})\\.?$');
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i].trim();
@@ -244,7 +244,7 @@ class GutenbergService {
   }
 
   bool _hasSubstantiveBody(List<String> lines, int markerLine) {
-    final text = lines.sublist(markerLine + 1).take(80).join(' ').replaceAll(RegExp(r'\\s+'), ' ').trim();
+    final text = lines.sublist(markerLine + 1).take(80).join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
     return _looksLikeChapterBody(text);
   }
 
@@ -259,7 +259,7 @@ class GutenbergService {
     return lowerLetters.length / letters.length < 0.35;
   }
 
-  String _cleanStructuralHeading(String value) => value.replaceAll(RegExp(r'\\s+'), ' ').replaceAll(RegExp(r'^[|—–:.-]+|[|—–:.-]+$'), '').trim();
+  String _cleanStructuralHeading(String value) => value.replaceAll(RegExp(r'\s+'), ' ').replaceAll(RegExp(r'^[|—–:.-]+|[|—–:.-]+$'), '').trim();
   List<_ChapterMarker> _selectSubstantiveMarkers(
     List<String> lines,
     List<_ChapterMarker> markers,
