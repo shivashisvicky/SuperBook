@@ -130,11 +130,14 @@ function validatePlan(plan) {
 }
 
 async function storeSceneImage(env, imageDataUri) {
-  const match = /^data:(image\\/[^;]+);base64,(.+)$/.exec(imageDataUri);
-  if (!match) throw new Error('Invalid scene image data.');
+  const separator = imageDataUri.indexOf(',');
+  const header = separator >= 0 ? imageDataUri.slice(0, separator) : '';
+  const payload = separator >= 0 ? imageDataUri.slice(separator + 1) : '';
+  const mimeMatch = /^data:(.+);base64$/.exec(header);
+  if (!mimeMatch || !payload) throw new Error('Invalid scene image data.');
 
-  const mimeType = match[1];
-  const binary = atob(match[2]);
+  const mimeType = mimeMatch[1];
+  const binary = atob(payload);
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index++) {
     bytes[index] = binary.charCodeAt(index);
@@ -261,14 +264,30 @@ export default {
         return json({ error: 'A valid scenePlan is required.' }, 400, origin);
       }
 
+      const imageDataUri = input && input.imageDataUri;
+      if (typeof imageDataUri !== 'string' || !imageDataUri.startsWith('data:image/')) {
+        return json({ error: 'A generated scene image is required for animation.' }, 400, origin);
+      }
+
+      let assetKey;
       try {
-        return await generateVideo(env, plan, origin, requestUrl);
+        assetKey = await storeSceneImage(env, imageDataUri);
+        const imageUrl = new URL('/asset/' + assetKey, requestUrl.origin).toString();
+        return await generateVideo(env, plan, imageUrl, origin, requestUrl);
       } catch (error) {
         console.error('SuperBook scene animation failed', error);
         return json({
           error: 'Video generation failed.',
           detail: error instanceof Error ? error.message : String(error),
         }, 502, origin);
+      } finally {
+        if (assetKey) {
+          try {
+            await env.SCENE_ASSETS.delete(assetKey);
+          } catch (cleanupError) {
+            console.error('Scene image cleanup failed', cleanupError);
+          }
+        }
       }
     }
 
