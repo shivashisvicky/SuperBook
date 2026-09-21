@@ -8,9 +8,15 @@ import 'package:superbook/features/scenes/scene_player_screen.dart';
 void main() {
   testWidgets('library shows the real-book catalog', (tester) async {
     await tester.pumpWidget(const SuperBookApp());
+    await tester.tap(find.text('Library'));
+    await tester.pump();
+
     expect(find.text('LIBRARY'), findsOneWidget);
     expect(find.text('Real books'), findsOneWidget);
-    expect(find.text('Public-domain stories from Project Gutenberg.'), findsOneWidget);
+    expect(
+      find.text('Public-domain stories from Project Gutenberg.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('reader opens', (tester) async {
@@ -34,7 +40,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('EXPERIENCE'), findsOneWidget);
-    expect(find.text('A quiet house waits at the edge of the storm.'), findsOneWidget);
+    expect(
+      find.text('A quiet house waits at the edge of the storm.'),
+      findsOneWidget,
+    );
 
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('experience-scene-entry')),
@@ -44,7 +53,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Tap to enter the scene'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.byType(ScenePlayerScreen), findsOneWidget);
     expect(find.text('Narrative beat · intensity 2'), findsOneWidget);
