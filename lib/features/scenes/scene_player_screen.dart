@@ -129,7 +129,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       if (mounted && requestId == _videoRequestId) {
         setState(() {
           _videoLoading = false;
-          _error = 'Scene image is ready, but animation is still unavailable.';
+          _error = 'Animation generation failed: $error';
         });
       }
     }
