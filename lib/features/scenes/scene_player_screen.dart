@@ -121,7 +121,10 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
         title: widget.book.title,
       );
       _sceneCache.put(key, generated);
-      if (mounted) setState(() => _generated = generated);
+      if (mounted) {
+        setState(() => _generated = generated);
+        if (generated.hasVideo) await _loadVideo(generated.videoUrl!);
+      }
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
     } finally {
