@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -33,10 +34,18 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
   GeneratedScene? _generated;
   String? _error;
   bool _loading = false;
+  bool _videoLoading = false;
+  int _videoRequestId = 0;
   VideoPlayerController? _video;
 
   Chapter get _chapter =>
       widget.book.chapters.firstWhere((chapter) => chapter.id == widget.beat.chapterId);
+
+  String get _cacheKey => _sceneCache.key(
+        bookId: widget.book.id,
+        chapterId: widget.beat.chapterId,
+        passage: _chapter.passage.join('\n'),
+      );
 
   @override
   void initState() {
@@ -45,19 +54,19 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       vsync: this,
       duration: const Duration(seconds: 18),
     )..repeat(reverse: true);
-    final key = _sceneCache.key(
-      bookId: widget.book.id,
-      chapterId: widget.beat.chapterId,
-      passage: _chapter.passage.join('\n'),
-    );
-    _generated = _sceneCache.get(key);
-    if (_generated?.hasVideo == true) {
-      _loadVideo(_generated!.videoUrl!);
+
+    final cached = _sceneCache.get(_cacheKey);
+    _generated = cached;
+    if (cached?.hasVideo == true) {
+      unawaited(_loadVideo(cached!.videoUrl!));
+    } else if (cached != null) {
+      unawaited(_startVideoGeneration(cached));
     }
   }
 
   @override
   void dispose() {
+    _videoRequestId++;
     _motion.dispose();
     _video?.dispose();
     super.dispose();
@@ -85,6 +94,45 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     }
   }
 
+  Future<void> _startVideoGeneration(GeneratedScene scene) async {
+    if (_videoLoading || scene.hasVideo || _sceneEndpoint.isEmpty) return;
+
+    final requestId = ++_videoRequestId;
+    if (mounted) {
+      setState(() {
+        _videoLoading = true;
+        _error = null;
+      });
+    }
+
+    try {
+      final provider = CloudflareSceneProvider(endpoint: _sceneEndpoint);
+      final video = await provider.generateVideo(plan: scene.plan);
+      if (!mounted || requestId != _videoRequestId) return;
+
+      final completed = GeneratedScene(
+        plan: scene.plan,
+        imageBase64: scene.imageBase64,
+        mimeType: scene.mimeType,
+        videoUrl: video.url,
+        videoDurationSeconds: video.durationSeconds,
+      );
+      _sceneCache.put(_cacheKey, completed);
+      setState(() {
+        _generated = completed;
+        _videoLoading = false;
+      });
+      await _loadVideo(video.url);
+    } catch (error) {
+      if (mounted && requestId == _videoRequestId) {
+        setState(() {
+          _videoLoading = false;
+          _error = 'Scene image is ready, but animation is still unavailable.';
+        });
+      }
+    }
+  }
+
   Future<void> _generate({bool force = false}) async {
     if (_loading) return;
     if (_sceneEndpoint.isEmpty) {
@@ -94,21 +142,32 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       return;
     }
 
+    if (force) {
+      _videoRequestId++;
+      final oldVideo = _video;
+      _video = null;
+      await oldVideo?.dispose();
+      if (mounted) {
+        setState(() {
+          _videoLoading = false;
+        });
+      }
+    }
+
     setState(() {
       _loading = true;
       _error = null;
     });
 
     try {
-      final key = _sceneCache.key(
-        bookId: widget.book.id,
-        chapterId: widget.beat.chapterId,
-        passage: _chapter.passage.join('\n'),
-      );
-      final cached = _sceneCache.get(key);
+      final cached = _sceneCache.get(_cacheKey);
       if (cached != null && !force) {
         setState(() => _generated = cached);
-        if (cached.hasVideo) await _loadVideo(cached.videoUrl!);
+        if (cached.hasVideo) {
+          await _loadVideo(cached.videoUrl!);
+        } else {
+          unawaited(_startVideoGeneration(cached));
+        }
         return;
       }
 
@@ -120,15 +179,26 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
         author: widget.book.author,
         title: widget.book.title,
       );
-      _sceneCache.put(key, generated);
+      _sceneCache.put(_cacheKey, generated);
+
       if (mounted) {
-        setState(() => _generated = generated);
-        if (generated.hasVideo) await _loadVideo(generated.videoUrl!);
+        setState(() {
+          _generated = generated;
+          _loading = false;
+        });
+        unawaited(_startVideoGeneration(generated));
       }
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = error.toString();
+        });
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && _loading) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -215,8 +285,10 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('EXPERIENCE · STORY MOMENT',
-                        style: Theme.of(context).textTheme.labelLarge),
+                    Text(
+                      'EXPERIENCE · STORY MOMENT',
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
                     const SizedBox(height: 5),
                     Text(
                       generated?.plan.sceneSummary ?? widget.scene.caption,
@@ -232,6 +304,23 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                       ),
                     ] else
                       Text(widget.scene.atmosphere),
+                    if (_videoLoading) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Adding motion to the scene…',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ],
                     if (_error != null) ...[
                       const SizedBox(height: 10),
                       Text(
@@ -249,7 +338,9 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                         ),
                         const Spacer(),
                         FilledButton.icon(
-                          onPressed: _loading ? null : () => _generate(force: generated != null),
+                          onPressed: _loading
+                              ? null
+                              : () => _generate(force: generated != null),
                           icon: _loading
                               ? const SizedBox(
                                   width: 16,
@@ -263,7 +354,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                                 ),
                           label: Text(
                             _loading
-                                ? 'Generating…'
+                                ? 'Creating scene…'
                                 : generated == null
                                     ? 'Generate scene'
                                     : 'Regenerate',
