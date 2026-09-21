@@ -111,7 +111,7 @@ class GutenbergService {
 
     try {
       final response = await _client
-          .get(Uri.parse('https://r.jina.ai/${url}'))
+          .get(Uri.parse('https://r.jina.ai/http://${Uri.parse(url).host}${Uri.parse(url).path}${Uri.parse(url).query.isEmpty ? '' : '?${Uri.parse(url).query}'}'))
           .timeout(const Duration(seconds: 20));
       if (response.statusCode == 200) {
         return _decodeJsonObject(response.body);
@@ -119,8 +119,8 @@ class GutenbergService {
       throw Exception('HTTP ${response.statusCode}');
     } catch (error) {
       throw Exception(
-        'Could not load Gutenberg data${directError == null ? '' : ': ${directError}'}. '
-        'Browser content fallback also failed: ${error}',
+        'Could not load Gutenberg data${directError == null ? '' : ': $directError'}. '
+        'Browser content fallback also failed: $error',
       );
     }
   }
@@ -139,7 +139,7 @@ class GutenbergService {
     final sourceUrl =
         'https://www.gutenberg.org/cache/epub/$bookId/pg$bookId.txt';
     return [
-      'https://r.jina.ai/$sourceUrl',
+      'https://r.jina.ai/http://www.gutenberg.org/cache/epub/$bookId/pg$bookId.txt',
       for (final entry in formats.entries)
         if (entry.key.startsWith('text/plain') &&
             entry.value is String &&
