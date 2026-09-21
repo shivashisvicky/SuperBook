@@ -27,7 +27,8 @@ class GeneratedScene {
 
   bool get hasVideo => videoUrl != null && videoUrl!.isNotEmpty;
 
-  String get dataUri => 'data:$mimeType;base64,$imageBase64';
+  String get imageDataUri => 'data:$mimeType;base64,$imageBase64';
+  String get dataUri => imageDataUri;
 }
 
 abstract interface class SceneGenerationProvider {
@@ -41,5 +42,6 @@ abstract interface class SceneGenerationProvider {
 
   Future<GeneratedVideo> generateVideo({
     required AiScenePlan plan,
+    required String imageDataUri,
   });
 }
