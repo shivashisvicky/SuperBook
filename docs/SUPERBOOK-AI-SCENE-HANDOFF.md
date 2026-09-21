@@ -1655,3 +1655,64 @@ CI for this commit is green:
 - flutter build web --release: success
 
 The free AI motion-keyframe architecture remains unchanged. The current animation is still a generated-frame cinematic sequence, not fluid T2V animation.
+
+# 39. 2026-09-22 READER-FIRST GUTENBERG STRUCTURE REFINEMENT
+
+The current product direction has been corrected based on TEST validation of real Gutenberg books.
+
+## Problem observed
+
+Some books, including Sherlock Holmes material, do not use literal `CHAPTER ...` headings. The previous parser could collapse an entire book or collection into one giant reading unit.
+
+Project Gutenberg / Arthur Conan Doyle material commonly uses structures such as `ADVENTURE I. A SCANDAL IN BOHEMIA` and Roman-numeral sections. The parser must preserve the source's logical structure rather than assuming every work is a conventional chaptered novel.
+
+## Implemented
+
+Branch:
+
+`test/superbook-ai-scene-foundation`
+
+Parser commit:
+
+`dfff8f12e827aa68346231c35d9b70c793f40ea0`
+
+The Gutenberg parser now recognizes:
+
+- conventional `CHAPTER I` / `CHAPTER 1`;
+- `ADVENTURE I`, `STORY I`, `PART I`, and `BOOK I` style headings;
+- standalone Roman-numeral section headings when followed by substantive prose;
+- substantive all-caps structural headings, while excluding common front-matter headings and Roman-numeral table-of-contents lines.
+
+The existing table-of-contents filtering remains in place so a contents listing is not treated as story prose.
+
+Reader UX commit:
+
+`9612a01758ecaddc523b9d1cba2fd0e36289c4f3`
+
+Reader navigation now uses "Section" terminology for non-Chapter structures while retaining "Chapter" for conventional chapter titles.
+
+Tests cover:
+
+- existing Moby-Dick-style CHAPTER parsing;
+- Sherlock-style ADVENTURE headings;
+- standalone Roman-numeral sections.
+
+## Product direction
+
+The Experience layer remains optional and cached. The canonical product flow is now:
+
+`real book structure -> reader -> meaningful story section -> optional AI Experience`
+
+Do not generate AI scenes for every section by default. Reading must remain useful and responsive without waiting for AI media generation.
+
+## Validation
+
+Latest head:
+
+`dfff8f12e827aa68346231c35d9b70c793f40ea0`
+
+SuperBook CI runs 278 and 279: success.
+
+TEST Pages run 171: success.
+
+No paid infrastructure, R2, AI Gateway credits, or T2V changes were introduced by this reader-structure refinement.
