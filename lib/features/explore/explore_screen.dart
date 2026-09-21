@@ -21,7 +21,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         return widget.book.locations.first.description;
       case 'What matters here?':
         final objectNames = widget.book.objects.map((e) => e.name).join(' and ');
-        return '\$objectNames connect the house to the road ahead.';
+        return '$objectNames connect the house to the road ahead.';
       default:
         return 'Choose a question to explore the story without leaving the book.';
     }
@@ -69,7 +69,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               .map((character) => ListTile(
                     leading: const CircleAvatar(child: Icon(Icons.person_outline)),
                     title: Text(character.name),
-                    subtitle: Text('\${character.role} · \${character.description}'),
+                    subtitle: Text('${character.role} · ${character.description}'),
                   ))
               .toList(),
         ),
