@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/book.dart';
 import '../explore/explore_screen.dart';
+import '../scenes/scene_player_screen.dart';
 
 class ReaderScreen extends StatefulWidget {
   const ReaderScreen({super.key, required this.book});
