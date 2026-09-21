@@ -5,11 +5,17 @@ class GeneratedScene {
     required this.plan,
     required this.imageBase64,
     required this.mimeType,
+    this.videoUrl,
+    this.videoDurationSeconds,
   });
 
   final AiScenePlan plan;
   final String imageBase64;
   final String mimeType;
+  final String? videoUrl;
+  final int? videoDurationSeconds;
+
+  bool get hasVideo => videoUrl != null && videoUrl!.isNotEmpty;
 
   String get dataUri => 'data:$mimeType;base64,$imageBase64';
 }
