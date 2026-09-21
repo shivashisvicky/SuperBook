@@ -72,7 +72,7 @@ class _SceneCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('L' + beat.intensity.toString(), style: Theme.of(context).textTheme.labelMedium),
+              Text('L\${beat.intensity}', style: Theme.of(context).textTheme.labelMedium),
             ],
           ),
         ),
