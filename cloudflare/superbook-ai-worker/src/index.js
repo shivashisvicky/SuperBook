@@ -129,7 +129,25 @@ function validatePlan(plan) {
     typeof plan.camera.shot === 'string';
 }
 
-async function generateVideo(env, plan, imageDataUri, origin, requestUrl) {
+async function storeSceneImage(env, imageDataUri) {
+  const match = /^data:(image\\/[^;]+);base64,(.+)$/.exec(imageDataUri);
+  if (!match) throw new Error('Invalid scene image data.');
+
+  const mimeType = match[1];
+  const binary = atob(match[2]);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  const key = `scene-${crypto.randomUUID()}`;
+  await env.SCENE_ASSETS.put(key, bytes, {
+    httpMetadata: { contentType: mimeType, cacheControl: 'private, max-age=300' },
+  });
+  return key;
+}
+
+async function generateVideo(env, plan, imageUrl, origin, requestUrl) {
   const video = await env.AI.run(VIDEO_MODEL, {
     prompt: [
       videoPrompt(plan),
@@ -169,6 +187,20 @@ export default {
     }
 
     const requestUrl = new URL(request.url);
+
+    if (request.method === 'GET' && requestUrl.pathname.startsWith('/asset/')) {
+      const key = requestUrl.pathname.slice('/asset/'.length);
+      if (!key || !key.startsWith('scene-')) {
+        return new Response('Not found.', { status: 404 });
+      }
+      const object = await env.SCENE_ASSETS.get(key);
+      if (!object) return new Response('Not found.', { status: 404 });
+
+      const headers = new Headers();
+      object.writeHttpMetadata(headers);
+      headers.set('Cache-Control', 'private, max-age=300');
+      return new Response(object.body, { headers });
+    }
 
     if (request.method === 'GET' && requestUrl.pathname === '/video') {
       const target = requestUrl.searchParams.get('url');
