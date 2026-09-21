@@ -42,6 +42,5 @@ abstract interface class SceneGenerationProvider {
 
   Future<GeneratedVideo> generateVideo({
     required AiScenePlan plan,
-    required String imageDataUri,
   });
 }
