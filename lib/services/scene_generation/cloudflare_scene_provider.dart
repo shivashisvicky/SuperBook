@@ -85,8 +85,8 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
 
     final motionEndpoint = _baseUri.replace(
       path: _baseUri.path.endsWith('/')
-          ? '\${_baseUri.path}motion'
-          : '\${_baseUri.path}/motion',
+          ? _baseUri.path + 'motion'
+          : _baseUri.path + '/motion',
     );
 
     final response = await _client.post(
