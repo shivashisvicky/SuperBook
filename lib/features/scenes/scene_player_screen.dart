@@ -346,7 +346,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                       ),
                       const Spacer(),
                       Text(
-                        'Chapter ${currentIndex + 1} of ${widget.book.chapters.length}',
+                        '${widget.scene.title.toLowerCase().startsWith('chapter') ? 'Chapter' : 'Section'} ${currentIndex + 1} of ${widget.book.chapters.length}',
                         style: Theme.of(context).textTheme.labelMedium,
                       ),
                       const Spacer(),
