@@ -39,8 +39,13 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Tap to enter the scene'));
-    await tester.pump(const Duration(milliseconds: 200));
+    final sceneEntry = find.ancestor(
+      of: find.text('Tap to enter the scene'),
+      matching: find.byType(InkWell),
+    );
+    expect(sceneEntry, findsOneWidget);
+    await tester.tap(sceneEntry);
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(ScenePlayerScreen), findsOneWidget);
     expect(find.text('Narrative beat · intensity 2'), findsOneWidget);
