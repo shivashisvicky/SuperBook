@@ -20,8 +20,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       case 'Where is the story?':
         return widget.book.locations.first.description;
       case 'What matters here?':
-        return widget.book.objects.map((e) => e.name).join(' and ') +
-            ' connect the house to the road ahead.';
+        return '\${widget.book.objects.map((e) => e.name).join(' and ')} connect the house to the road ahead.';
       default:
         return 'Choose a question to explore the story without leaving the book.';
     }
@@ -69,7 +68,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               .map((character) => ListTile(
                     leading: const CircleAvatar(child: Icon(Icons.person_outline)),
                     title: Text(character.name),
-                    subtitle: Text(character.role + ' · ' + character.description),
+                    subtitle: Text('\${character.role} · \${character.description}'),
                   ))
               .toList(),
         ),
