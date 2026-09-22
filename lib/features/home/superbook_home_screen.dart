@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/book.dart';
+
 import '../../services/current_book_store.dart';
 import '../../services/open_library_service.dart';
 import '../reader/reader_screen.dart';
