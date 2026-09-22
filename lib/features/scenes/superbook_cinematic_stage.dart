@@ -61,8 +61,8 @@ class _SuperBookCinematicStageState extends State<SuperBookCinematicStage>
                 child: Transform(
                   alignment: Alignment.center,
                   transform: Matrix4.identity()
-                    ..translate(dx, dy)
-                    ..scale(scale, scale),
+                    ..translateByDouble(dx, dy, 0, 1)
+                    ..scaleByDouble(scale, scale, 1, 1),
                   child: Image.memory(
                     bytes,
                     fit: BoxFit.cover,
