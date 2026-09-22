@@ -198,7 +198,9 @@ length before the next part of the story begins.
 CHAPTER V.
 Sun Tzu explains the chapter with enough substantive prose to establish a real
 section. The discussion continues with several complete sentences and remains
-part of the same chapter.
+part of the same chapter. The narrative continues with a further complete
+description of the commander and the army, giving this section more than enough
+substantive prose for the parser to recognize the chapter boundary correctly.
 
 * X 2JBJI ff IH S 1
 31. This is OCR noise from the scanned page and must remain inside the chapter.
