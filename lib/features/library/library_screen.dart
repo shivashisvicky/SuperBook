@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/current_book_store.dart';
 import '../../services/open_library_service.dart';
 import '../reader/reader_screen.dart';
 
@@ -41,6 +42,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
     setState(() => _loadingId = summary.id);
     try {
       final book = await _service.loadBook(summary);
+      await CurrentBookStore.instance.setCurrent(
+        summary: summary,
+        book: book,
+      );
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => ReaderScreen(book: book)),
