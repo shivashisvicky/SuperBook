@@ -293,4 +293,103 @@ This reference marker must also remain ordinary chapter text.
     expect(book.chapters.last.passage.join(' '), contains('Cf. III.'));
   });
 
+
+  test('Gutenberg parser keeps all 13 titled Art of War chapters', () {
+    const text = '''
+*** START OF THE PROJECT GUTENBERG EBOOK TEST ***
+
+CONTENTS
+I. LAYING PLANS
+II. WAGING WAR
+III. ATTACK BY STRATAGEM
+IV. TACTICAL DISPOSITIONS
+V. ENERGY
+VI. WEAK POINTS AND STRONG
+VII. MANŒUVERING
+VIII. VARIATION OF TACTICS
+IX. THE ARMY ON THE MARCH
+X. TERRAIN
+XI. THE NINE SITUATIONS
+XII. THE ATTACK BY FIRE
+XIII. THE USE OF SPIES
+
+I. LAYING PLANS.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. Sun Tzu explains the five constant factors of warfare and the importance of calculation.
+
+II. WAGING WAR.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The army considers the costs and conduct of a prolonged campaign.
+
+III. ATTACK BY STRATAGEM.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The commander considers how to take the enemy whole and avoid needless siege operations.
+
+IV. TACTICAL DISPOSITIONS.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The army arranges its position before engaging the enemy.
+
+V. ENERGY.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The commander organizes direct and indirect methods and controls the force.
+
+VI. WEAK POINTS AND STRONG.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The army moves toward weakness and avoids strength when choosing its point of attack.
+
+VII. MANŒUVERING.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The army moves carefully and maintains communication while maneuvering.
+
+VIII. VARIATION OF TACTICS.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The commander changes methods according to circumstances and terrain.
+
+IX. THE ARMY ON THE MARCH.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The soldiers observe signs on the march and interpret the condition of the enemy.
+
+X. TERRAIN.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The commander studies the ground and understands the different kinds of terrain.
+
+XI. THE NINE SITUATIONS.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The army responds differently to dispersed, difficult, and desperate situations.
+
+XII. THE ATTACK BY FIRE.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. Fire is used according to conditions, weather, and the position of the enemy.
+
+XIII. THE USE OF SPIES.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. Intelligence is gathered through different kinds of spies and used to understand the enemy.
+
+C
+This OCR artifact looks like a Roman numeral but is not a chapter heading.
+Cf. III. § 13 (i)
+This reference must remain ordinary chapter text.
+
+*** END OF THE PROJECT GUTENBERG EBOOK TEST ***
+''';
+    const summary = GutenbergBookSummary(
+      id: 17405,
+      title: 'The Art of War',
+      author: 'Sunzi',
+      downloadCount: 0,
+      coverUrl: null,
+    );
+
+    final service = GutenbergService();
+    final book = service.parseText(summary, text);
+
+    expect(book.chapters, hasLength(13));
+    expect(
+      book.chapters.map((chapter) => chapter.title),
+      [
+        'Chapter I',
+        'Chapter II',
+        'Chapter III',
+        'Chapter IV',
+        'Chapter V',
+        'Chapter VI',
+        'Chapter VII',
+        'Chapter VIII',
+        'Chapter IX',
+        'Chapter X',
+        'Chapter XI',
+        'Chapter XII',
+        'Chapter XIII',
+      ],
+    );
+    expect(book.chapters.last.passage.join(' '), contains('Cf. III.'));
+  });
+
 }
