@@ -92,11 +92,11 @@ class GutenbergService {
     try {
       return await _firstSuccessful<String>([
         _getText(
-          'https://www.gutenberg.org/cache/epub/' + bookId.toString() + '/pg' + bookId.toString() + '.txt',
+          'https://www.gutenberg.org/cache/epub/$bookId/pg$bookId.txt',
           timeout: const Duration(seconds: 8),
         ),
         _getText(
-          'https://r.jina.ai/http://www.gutenberg.org/cache/epub/' + bookId.toString() + '/pg' + bookId.toString() + '.txt',
+          'https://r.jina.ai/http://www.gutenberg.org/cache/epub/$bookId/pg$bookId.txt',
           timeout: const Duration(seconds: 8),
         ),
       ]);
@@ -107,11 +107,11 @@ class GutenbergService {
     // Gutendex is metadata/fallback discovery only. It never replaces the
     // canonical Gutenberg text when the canonical URL is available.
     try {
-      final data = await _getJson('https://gutendex.com/books/' + bookId.toString());
+      final data = await _getJson('https://gutendex.com/books/$bookId');
       final formats = data['formats'] as Map<String, dynamic>? ?? const {};
       final urls = _textUrls(bookId, formats);
       if (urls.isEmpty) {
-        throw Exception('No plain-text edition is available for Gutenberg #' + bookId.toString() + '.');
+        throw Exception('No plain-text edition is available for Gutenberg #$bookId.');
       }
       return await _firstSuccessful<String>([
         for (final url in urls)
@@ -119,9 +119,9 @@ class GutenbergService {
       ]);
     } catch (fallbackError) {
       throw Exception(
-        'Could not download canonical Gutenberg #' + bookId.toString() + '. '
-        'Canonical transport failed: ' + canonicalError.toString() + '. '
-        'Metadata fallback failed: ' + fallbackError.toString(),
+        'Could not download canonical Gutenberg #$bookId. '
+        'Canonical transport failed: $canonicalError. '
+        'Metadata fallback failed: $fallbackError',
       );
     }
   }
@@ -132,7 +132,7 @@ class GutenbergService {
   }) async {
     final response = await _client.get(Uri.parse(url)).timeout(timeout);
     if (response.statusCode != 200) {
-      throw Exception('HTTP ' + response.statusCode.toString());
+      throw Exception('HTTP ${response.statusCode}');
     }
     return _decodeText(response.bodyBytes);
   }
