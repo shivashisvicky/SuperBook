@@ -413,8 +413,12 @@ export default {
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: context },
         ],
-        temperature: 0.2,
-        max_tokens: 320,
+        response_format: {
+          type: 'json_schema',
+          json_schema: sceneSchema,
+        },
+        temperature: 0.1,
+        max_tokens: 448,
       });
 
       const plan = parseScenePlan(reasoning);
