@@ -54,7 +54,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     super.initState();
     _storyController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 7200),
+      duration: const Duration(milliseconds: 5400),
     )..repeat();
     final cached = _sceneCache.get(_cacheKey);
     _generated = cached;
@@ -263,9 +263,17 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       );
     }
 
+    final sectionKind = widget.scene.title.toLowerCase().startsWith('chapter') ? 'Chapter' : 'Section';
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(backgroundColor: Colors.black, title: Text(widget.scene.title)),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text('$sectionKind ${currentIndex + 1}'),
+        foregroundColor: Colors.white,
+      ),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -497,7 +505,7 @@ class _MotionFrameVisual extends StatelessWidget {
         final index = (frames.length * controller.value).floor().clamp(0, frames.length - 1);
         final frame = frames[index];
         return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 900),
+          duration: const Duration(milliseconds: 700),
           switchInCurve: Curves.easeInOutCubic,
           switchOutCurve: Curves.easeInOutCubic,
           layoutBuilder: (currentChild, previousChildren) => Stack(
