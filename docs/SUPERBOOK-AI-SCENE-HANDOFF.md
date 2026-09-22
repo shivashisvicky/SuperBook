@@ -2,7 +2,7 @@
 
 **Purpose:** This is the authoritative continuation document for the current SuperBook AI Experience work. A new agent must be able to continue from this exact state without reconstructing the conversation, guessing which branch is current, repeating failed experiments, or reintroducing a known billing mistake.
 
-**Last updated:** 2026-09-22 01:45 IST
+**Last updated:** 2026-09-22 01:58 IST
 **Repository:** `shivashisvicky/SuperBook`  
 **Active branch:** `test/superbook-ai-scene-foundation`  
 **Stable branch:** `main`  
@@ -1801,3 +1801,4 @@ The Library is now:
 `provider discovery -> trusted public text -> existing reader/parser -> optional AI Experience`
 
 The catalog provider is no longer a single point of failure for the entire Library.
+\n---\n\n# 41. 2026-09-22 Worker + Gutenberg parser repair\n\n- The Cloudflare Workers Build for commit `b0f0be45` failed because `cloudflare/superbook-ai-worker/src/index.js` was truncated at the image response (`src/index.js:442:33`).\n- The Worker source was repaired without changing the model architecture. Cloudflare subsequently reported a successful production deployment for commit `647c63fb`.\n- The latest Flutter CI run for commit `cbfc6207` is green, including analyze, all tests, and web release build.\n- The Art of War catalog entry exposed OCR/page-reference debris as reader-visible sections, including `* X 2JBJI ff IH S 1` and `Cf. III. § 13 (i)`. These are not real chapters. The parser now treats explicit numbered chapter/adventure/roman sections as authoritative and rejects OCR/reference noise as structural headings.\n- Regression coverage was added for this exact OCR pattern. Do not restore generic all-caps structural headings as chapter boundaries when explicit numbered sections are present.\n
