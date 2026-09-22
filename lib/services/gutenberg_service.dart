@@ -301,7 +301,7 @@ class GutenbergService {
 
   bool _isExplicitSectionMarker(_ChapterMarker marker) {
     return marker.number != null &&
-        RegExp(r'^(?:Chapter|Adventure|Story|Part|Book)\\b', caseSensitive: false)
+        RegExp(r'^(?:Chapter|Adventure|Story|Part|Book)\b', caseSensitive: false)
             .hasMatch(marker.heading.trim());
   }
 
