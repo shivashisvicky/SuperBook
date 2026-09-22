@@ -1,4 +1,5 @@
 // SuperBook scene path: AI direction + generated keyframe + local Flutter stage. T2V remains explicit/disabled by default.
+// Live smoke-test harness: deployment must pass the API contract before UI verification.
 const TEXT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
 const MOTION_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
