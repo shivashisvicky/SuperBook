@@ -26,7 +26,8 @@ class CurrentBookStore {
   }
 
   Future<void> _restore() async {
-    final raw = await _prefs.getString(_summaryKey);
+    try {
+      final raw = await _prefs.getString(_summaryKey);
     if (raw == null || raw.isEmpty) return;
 
     try {
@@ -45,7 +46,13 @@ class CurrentBookStore {
       );
       currentChapterIndex.value = await _prefs.getInt(_chapterKey) ?? 0;
     } catch (_) {
-      await clear();
+      currentSummary.value = null;
+      currentBook.value = null;
+      currentChapterIndex.value = 0;
+    }
+    } catch (_) {
+      // Persistence is optional. The reader remains fully usable in hosts
+      // where the shared-preferences platform is not initialized.
     }
   }
 
@@ -58,19 +65,23 @@ class CurrentBookStore {
     currentBook.value = book;
     currentChapterIndex.value = chapterIndex;
 
-    await _prefs.setString(
-      _summaryKey,
-      jsonEncode({
-        'id': summary.id,
-        'title': summary.title,
-        'author': summary.author,
-        'downloadCount': summary.downloadCount,
-        'coverUrl': summary.coverUrl,
-        'archiveIds': summary.archiveIds,
-        'gutenbergId': summary.gutenbergId,
-      }),
-    );
-    await _prefs.setInt(_chapterKey, chapterIndex);
+    try {
+      await _prefs.setString(
+        _summaryKey,
+        jsonEncode({
+          'id': summary.id,
+          'title': summary.title,
+          'author': summary.author,
+          'downloadCount': summary.downloadCount,
+          'coverUrl': summary.coverUrl,
+          'archiveIds': summary.archiveIds,
+          'gutenbergId': summary.gutenbergId,
+        }),
+      );
+      await _prefs.setInt(_chapterKey, chapterIndex);
+    } catch (_) {
+      // In-memory current state is still authoritative for the active session.
+    }
   }
 
   Future<Book?> loadCurrent() async {
@@ -88,15 +99,23 @@ class CurrentBookStore {
 
   Future<void> setChapter(int index) async {
     currentChapterIndex.value = index;
-    await _prefs.setInt(_chapterKey, index);
+    try {
+      await _prefs.setInt(_chapterKey, index);
+    } catch (_) {
+      // Ignore storage failures while keeping the active reader position.
+    }
   }
 
   Future<void> clear() async {
     currentBook.value = null;
     currentSummary.value = null;
     currentChapterIndex.value = 0;
-    await _prefs.remove(_summaryKey);
-    await _prefs.remove(_chapterKey);
+    try {
+      await _prefs.remove(_summaryKey);
+      await _prefs.remove(_chapterKey);
+    } catch (_) {
+      // Nothing else is required to clear the active in-memory state.
+    }
   }
 
   void dispose() {
