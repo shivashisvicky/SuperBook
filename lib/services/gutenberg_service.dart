@@ -295,13 +295,13 @@ class GutenbergService {
 
     final substantive = _removeDuplicateChapterMarkers(selected);
     final firstExplicit = substantive.indexWhere(_isExplicitSectionMarker);
-    if (firstExplicit <= 0) return substantive;
+    if (firstExplicit < 0) return substantive;
 
-    // Gutenberg editions often place all-caps title-page or front-matter
-    // headings before the first real CHAPTER/ADVENTURE marker. Once a
-    // conventional numbered section is established, those preamble headings
-    // must not become reader-visible chapters.
-    return substantive.sublist(firstExplicit);
+    // Once a source uses explicit numbered sections, only those numbered
+    // markers are reader-visible sections. Commentary, OCR artifacts, page
+    // references, and other structural headings inside the same edition are
+    // not chapter boundaries.
+    return substantive.where(_isExplicitSectionMarker).toList();
   }
 
   bool _isExplicitSectionMarker(_ChapterMarker marker) => marker.number != null;
