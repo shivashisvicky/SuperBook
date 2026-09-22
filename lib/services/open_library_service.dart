@@ -377,26 +377,4 @@ class OpenLibraryService {
     return null;
   }
 
-  Future<String> _loadGutenbergText(int id) async {
-    final urls = [
-      'https://www.gutenberg.org/cache/epub/$id/pg$id.txt',
-      'https://www.gutenberg.org/files/$id/$id-8.txt',
-      'https://www.gutenberg.org/files/$id/$id.txt',
-    ];
-    Object? lastError;
-    for (final url in urls) {
-      try {
-        final response = await _client
-            .get(Uri.parse(url))
-            .timeout(const Duration(seconds: 20));
-        if (response.statusCode == 200) {
-          return utf8.decode(response.bodyBytes, allowMalformed: true);
-        }
-        lastError = 'HTTP ${response.statusCode}';
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    throw Exception('Gutenberg text unavailable: $lastError');
-  }
 }
