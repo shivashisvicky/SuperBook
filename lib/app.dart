@@ -1,38 +1,16 @@
 import 'package:flutter/material.dart';
+
 import 'domain/book.dart';
-import 'services/current_book_store.dart';
 import 'features/explore/explore_screen.dart';
 import 'features/home/superbook_home_screen.dart';
 import 'features/library/library_screen.dart';
 import 'features/reader/reader_screen.dart';
 import 'features/scenes/scenes_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'services/current_book_store.dart';
 
 class SuperBookApp extends StatelessWidget {
   const SuperBookApp({super.key});
-
-  Book? _currentBook;
-  final _store = CurrentBookStore.instance;
-
-  @override
-  void initState() {
-    super.initState();
-    _store.currentBook.addListener(_onCurrentBookChanged);
-    _store.restore().then((_) async {
-      final book = await _store.loadCurrent();
-      if (mounted) setState(() => _currentBook = book);
-    });
-  }
-
-  void _onCurrentBookChanged() {
-    if (mounted) setState(() => _currentBook = _store.currentBook.value);
-  }
-
-  @override
-  void dispose() {
-    _store.currentBook.removeListener(_onCurrentBookChanged);
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +35,29 @@ class _SuperBookShell extends StatefulWidget {
 }
 
 class _SuperBookShellState extends State<_SuperBookShell> {
+  final _store = CurrentBookStore.instance;
   int index = 0;
+  Book? _currentBook;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentBook = _store.currentBook.value;
+    _store.currentBook.addListener(_onCurrentBookChanged);
+    _store.restore();
+  }
+
+  void _onCurrentBookChanged() {
+    if (mounted) {
+      setState(() => _currentBook = _store.currentBook.value);
+    }
+  }
+
+  @override
+  void dispose() {
+    _store.currentBook.removeListener(_onCurrentBookChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +77,9 @@ class _SuperBookShellState extends State<_SuperBookShell> {
             tooltip: 'Open current book',
             onPressed: (index == 2 || index == 3) && _currentBook != null
                 ? () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => ReaderScreen(book: _currentBook!)),
+                      MaterialPageRoute(
+                        builder: (_) => ReaderScreen(book: _currentBook!),
+                      ),
                     )
                 : null,
             icon: const Icon(Icons.menu_book_outlined),
@@ -89,11 +91,31 @@ class _SuperBookShellState extends State<_SuperBookShell> {
         selectedIndex: index,
         onDestinationSelected: (value) => setState(() => index = value),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.auto_stories_outlined), selectedIcon: Icon(Icons.auto_stories), label: 'Library'),
-          NavigationDestination(icon: Icon(Icons.travel_explore_outlined), selectedIcon: Icon(Icons.travel_explore), label: 'Explore'),
-          NavigationDestination(icon: Icon(Icons.movie_outlined), selectedIcon: Icon(Icons.movie), label: 'Experience'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.auto_stories_outlined),
+            selectedIcon: Icon(Icons.auto_stories),
+            label: 'Library',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.travel_explore_outlined),
+            selectedIcon: Icon(Icons.travel_explore),
+            label: 'Explore',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.movie_outlined),
+            selectedIcon: Icon(Icons.movie),
+            label: 'Experience',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ],
       ),
     );
