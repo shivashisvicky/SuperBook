@@ -28,16 +28,38 @@ class ScenePlayerScreen extends StatefulWidget {
   State<ScenePlayerScreen> createState() => _ScenePlayerScreenState();
 }
 
-class _ScenePlayerScreenState extends State<ScenePlayerScreen>
-    with SingleTickerProviderStateMixin {
+class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   GeneratedScene? _generated;
   bool _loading = false;
   VideoPlayerController? _video;
-  late final AnimationController _storyController;
+  bool _detailsExpanded = false;
+  String? _generationError;
+
+  Chapter get _chapter => widget.book.chapters.firstWhere(
+        (chapter) => chapter.id == widget.beat.chapterId,
+      );
+
+  String get _cacheKey => _sceneCache.key(
+        bookId: widget.book.id,
+        chapterId: widget.beat.chapterId,
+        passage: _chapter.passage.join('\n'),
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    final cached = _sceneCache.get(_cacheKey);
+    _generated = cached;
+    if (cached?.hasVideo == true) {
+      unawaited(_loadVideo(cached!.videoUrl!));
+    }
+    if (cached == null) {
+      unawaited(_generate());
+    }
+  }
 
   @override
   void dispose() {
-    _storyController.dispose();
     _video?.dispose();
     super.dispose();
   }
@@ -56,18 +78,17 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       setState(() => _video = controller);
       await old?.dispose();
       await controller.play();
-    } catch (error) {
+    } catch (_) {
       await controller.dispose();
     }
   }
-
-
 
   Future<void> _generate({bool force = false}) async {
     if (_loading) return;
     if (_sceneEndpoint.isEmpty) {
       if (mounted) {
-        setState(() => _generationError = 'AI scene endpoint is not configured for this build.');
+        setState(() => _generationError =
+            'AI scene endpoint is not configured for this build.');
       }
       return;
     }
@@ -109,14 +130,13 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
           _loading = false;
           _generationError = null;
         });
-        // The local cinematic stage animates the generated keyframe without
-        // another model call. AI motion can be layered on later as opt-in.
       }
     } catch (error) {
       if (mounted) {
         setState(() {
           _loading = false;
-          _generationError = error.toString().replaceFirst('Bad state: ', '');
+          _generationError =
+              error.toString().replaceFirst('Bad state: ', '');
         });
       }
     } finally {
@@ -201,39 +221,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
               SizedBox(height: 14),
               Text('Creating your story moment…', style: TextStyle(fontSize: 16)),
             ])),
-          if (generated == null && !_loading && _errorMessage != null)
-            Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 28),
-                padding: const EdgeInsets.fromLTRB(18, 16, 12, 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xE60A0D13),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.cloud_off, color: Colors.white70),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: Colors.white),
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: 'Retry scene generation',
-                      onPressed: _loading ? null : () => _generate(force: true),
-                      icon: const Icon(Icons.refresh),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           if (generated == null && !_loading && _generationError != null)
             Positioned(
               left: 24,
@@ -244,8 +231,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                 onRetry: _generate,
               ),
             ),
-          if (generated != null && _motionLoading)
-            const Positioned(top: 20, right: 18, child: _MotionBuildingPill()),
           Positioned(
             left: 14,
             right: 14,
