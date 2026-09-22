@@ -4,7 +4,8 @@ SuperBook cinematic Experience is built around the story itself:
 
 1. **Scene Director:** a text model reads a real book passage and produces a constrained `AiScenePlan`, including the reader-facing story summary, characters, setting, actions, camera, lighting, motion, and visual prompt.
 2. **Visual Generator:** an image model creates an immediate visual interpretation of the moment.
-3. **Story Animator:** a text-to-video model turns the same narrative plan and summary into a short cinematic sequence. The animation is not generated from a generic motion loop and does not require an R2 image handoff.
+3. **Local Story Stage:** Flutter turns the generated keyframe and scene plan into a continuously playable 2.5D cinematic moment using local camera motion, atmosphere, depth movement, and timing. No second AI inference is required to play the scene.
+4. **Optional AI motion:** the Worker still exposes motion-frame generation for future explicit opt-in experiments. It is not called automatically when a scene opens.
 
 The Flutter app never receives a provider secret. It calls a small Cloudflare Worker gateway.
 
@@ -14,7 +15,7 @@ The reference gateway uses Cloudflare Workers AI:
 
 - Text planning: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`
 - Image generation: `@cf/black-forest-labs/flux-1-schnell`
-- Story animation: `alibaba/hh1.1-t2v`
+- Optional story animation: `alibaba/hh1.1-t2v` (disabled by default)
 
 The animation prompt is derived from the generated `sceneSummary` plus the scene's concrete characters, environment, actions, camera, lighting, and motion. The video model therefore receives the story context rather than merely being told to move an image.
 
@@ -31,7 +32,7 @@ Do not put a Cloudflare API token in Flutter, GitHub Pages, or source control.
 
 ## Billing boundary: important correction
 
-The text planner and image generator currently use Workers AI models under the `@cf/` namespace and can use the Workers AI free allocation. The current story-animation model is different: `alibaba/hh1.1-t2v` is classified by Cloudflare as a **third-party** model. It therefore does **not** belong to the no-cost Workers AI allocation. Cloudflare routes third-party models through AI Gateway / Unified Billing, and the account must have AI Gateway credits or another supported billing arrangement before this model can generate video.
+The text planner and image generator currently use Workers AI models under the `@cf/` namespace and can use the Workers AI free allocation. The text planner requests structured JSON directly from the model, with a deliberately bounded 448-token completion budget. The app caches generated scenes by book/chapter/passage identity, and the local stage does not consume additional model tokens during playback. The current story-animation model is different: `alibaba/hh1.1-t2v` is classified by Cloudflare as a **third-party** model. It therefore does **not** belong to the no-cost Workers AI allocation. Cloudflare routes third-party models through AI Gateway / Unified Billing, and the account must have AI Gateway credits or another supported billing arrangement before this model can generate video.
 
 The live test account returned this exact error on the SuperBook `/video` request:
 
@@ -59,18 +60,21 @@ The generated `sceneSummary` is the bridge between the book and the animation. I
 
 The video model must not invent a new plot event, introduce unrelated characters, or turn the Experience into a generic motion effect.
 
-## Performance strategy
+## Performance and token strategy
 
-Scene creation and animation are deliberately staged:
+Scene creation is deliberately staged:
 
     passage
       -> AI scene plan + image
       -> show scene
-      -> independently generate story animation
-      -> attach video when ready
+      -> local SuperBook cinematic stage
 
-This lets the reader see the generated scene without waiting for the full video generation request to complete.
+The expensive part happens once per scene identity. Playback itself is local Flutter animation, so replaying or watching a scene does not spend another AI inference. Cloud motion/T2V remains explicit future work rather than an automatic runtime dependency.
 
 ## Future rendering
 
-The generated video is the first cinematic animation layer. Later work can add multi-shot sequences, narration synchronization, ambient audio, chapter-level scene continuity, and offline caching while continuing to use the same narrative plan and source passage as the canonical story context.
+## Local rendering architecture
+
+The current Experience foundation is intentionally a small purpose-built stage rather than a general-purpose game engine. The AI owns **what the scene means**: characters, environment, actions, camera intent, lighting, and visual style. Flutter owns **how it plays**: camera drift, gentle scale/parallax, atmospheric particles, lighting bloom, timing, and lifecycle.
+
+This keeps the runtime deterministic, fast, and free of per-frame inference. It also leaves room for future reusable character rigs, props, layered backgrounds, narration synchronization, and explicit AI-assisted acting without throwing away the current scene-plan contract.
