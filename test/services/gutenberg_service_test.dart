@@ -81,6 +81,51 @@ the table while the landlord prepared their supper.
     );
   });
 
+  test('Gutenberg parser drops front-matter headings before the first real chapter', () {
+    const text = '''
+*** START OF THE PROJECT GUTENBERG EBOOK PRIDE AND PREJUDICE ***
+
+PRIDE AND PREJUDICE
+JANE AUSTEN
+
+CONTENTS
+CHAPTER I. An introductory contents entry.
+CHAPTER II. Another contents entry.
+
+TITLE PAGE
+
+PRIDE AND PREJUDICE
+BY JANE AUSTEN
+
+CHAPTER I.
+It is a truth universally acknowledged that a single man in possession of a good
+fortune must be in want of a wife. However little known the feelings or views of
+such a man may be on his first entering a neighbourhood, this truth is so well fixed.
+
+CHAPTER II.
+Mr. Bennet was among the earliest of those who waited on Mr. Bingley. He had
+always intended to visit him, although he had assured his wife that he would not.
+The family discussed the matter at length in the drawing room.
+
+*** END OF THE PROJECT GUTENBERG EBOOK PRIDE AND PREJUDICE ***
+''';
+    const summary = GutenbergBookSummary(
+      id: 1342,
+      title: 'Pride and Prejudice',
+      author: 'Jane Austen',
+      downloadCount: 0,
+      coverUrl: null,
+    );
+
+    final service = GutenbergService();
+    final book = service.parseText(summary, text);
+
+    expect(book.chapters, hasLength(2));
+    expect(book.chapters.first.title, 'Chapter I');
+    expect(book.chapters.first.passage.first, contains('truth universally acknowledged'));
+    expect(book.chapters[1].title, 'Chapter II');
+  });
+
   test('Gutenberg parser recognizes Sherlock-style adventure headings', () async {
     const text = '''
 *** START OF THE PROJECT GUTENBERG EBOOK TEST ***
