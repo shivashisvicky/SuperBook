@@ -409,16 +409,16 @@ Chapter II.
 Mr. Bennet continues the story with enough substantive prose to establish the second real chapter. The family discusses the recent visit and the social expectations surrounding the new acquaintance with several complete sentences.
 
 Chapter XX.
-The story reaches a later chapter with enough substantive prose to establish a real chapter boundary. Mr. Collins was not left long to the silent contemplation of his successful love, and the family continues the discussion with several complete sentences.
+The story reaches a later chapter with enough substantive prose to establish a real chapter boundary. Mr. Collins was not left long to the silent contemplation of his successful love, and the family continues the discussion with several complete sentences. The next chapter continues with additional narrative detail so the parser can distinguish a genuine chapter from front matter and reference material. The following passage adds more complete sentences about the characters, their conversation, and the events that follow. Several further sentences keep this chapter substantive and make its boundary unambiguous for the reader.
 
 Chapter XXI.
-The next chapter contains enough substantive prose to establish a real chapter boundary. The characters continue their conversation and consider what should happen next with several complete sentences.
+The next chapter contains enough substantive prose to establish a real chapter boundary. The characters continue their conversation and consider what should happen next with several complete sentences. The next chapter continues with additional narrative detail so the parser can distinguish a genuine chapter from front matter and reference material. The following passage adds more complete sentences about the characters, their conversation, and the events that follow. Several further sentences keep this chapter substantive and make its boundary unambiguous for the reader.
 
 Chapter XXII.
-The next chapter contains enough substantive prose to establish a real chapter boundary. The household discusses the social situation and the consequences of recent events with several complete sentences.
+The next chapter contains enough substantive prose to establish a real chapter boundary. The household discusses the social situation and the consequences of recent events with several complete sentences. The next chapter continues with additional narrative detail so the parser can distinguish a genuine chapter from front matter and reference material. The following passage adds more complete sentences about the characters, their conversation, and the events that follow. Several further sentences keep this chapter substantive and make its boundary unambiguous for the reader.
 
 Chapter XXIII.
-The next chapter contains enough substantive prose to establish a real chapter boundary. The characters continue the story and prepare for the following developments with several complete sentences.
+The next chapter contains enough substantive prose to establish a real chapter boundary. The characters continue the story and prepare for the following developments with several complete sentences. The next chapter continues with additional narrative detail so the parser can distinguish a genuine chapter from front matter and reference material. The following passage adds more complete sentences about the characters, their conversation, and the events that follow. Several further sentences keep this chapter substantive and make its boundary unambiguous for the reader.
 
 *** END OF THE PROJECT GUTENBERG EBOOK TEST ***
 ''';
