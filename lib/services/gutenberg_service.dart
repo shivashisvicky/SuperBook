@@ -225,7 +225,12 @@ class GutenbergService {
       final chapterMatch = chapterPattern.firstMatch(line);
       if (chapterMatch != null) {
         final numberText = chapterMatch.group(1)!;
-        markers.add(_ChapterMarker(line: i, number: int.tryParse(numberText) ?? _romanToInt(numberText), heading: chapterMatch.group(2)!.trim()));
+        final subtitle = chapterMatch.group(2)!.trim();
+        markers.add(_ChapterMarker(
+          line: i,
+          number: int.tryParse(numberText) ?? _romanToInt(numberText),
+          heading: subtitle.isEmpty ? 'Chapter $numberText' : subtitle,
+        ));
         continue;
       }
       final adventureMatch = adventurePattern.firstMatch(line);
