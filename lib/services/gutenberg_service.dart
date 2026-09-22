@@ -153,15 +153,18 @@ class GutenbergService {
     Object? lastError;
 
     for (final attempt in attempts) {
-      attempt.then((value) {
-        if (!completer.isCompleted) completer.complete(value);
-      }).catchError((error) {
-        lastError = error;
-        remaining -= 1;
-        if (remaining == 0 && !completer.isCompleted) {
-          completer.completeError(lastError!);
-        }
-      });
+      attempt.then(
+        (value) {
+          if (!completer.isCompleted) completer.complete(value);
+        },
+        onError: (Object error, StackTrace stack) {
+          lastError = error;
+          remaining -= 1;
+          if (remaining == 0 && !completer.isCompleted) {
+            completer.completeError(lastError!, stack);
+          }
+        },
+      );
     }
 
     return completer.future;
