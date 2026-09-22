@@ -2171,7 +2171,9 @@ The AI ScenePlan remains the contract between literary understanding and visual 
 The branch must remain CI-green before the user is asked to validate the Experience.
 
 Current implementation commit:
-`bf209c85bd60423592b3ebc7adafd649a8bdd64`
+`736ade2d9c74c550fa0e15ef73efceb3d50c36ee`
+
+CI verification: Run 475 (`35774996387`) is GREEN. Flutter analyze, all Flutter tests, and the release web build all passed.
 
 The latest CI run before this section was still validating the renderer cleanup. Do not describe the branch as green until a complete CI run passes analyze, tests, and web build.
 
