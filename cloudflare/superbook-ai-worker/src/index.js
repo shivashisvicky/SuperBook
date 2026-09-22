@@ -1,9 +1,9 @@
 // SuperBook animation path: narrative-driven T2V, no R2 asset handoff.
-const TEXT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+const TEXT_MODEL = '@cf/ibm-granite/granite-4.0-h-micro';
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
 const MOTION_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
 const VIDEO_MODEL = 'alibaba/hh1.1-t2v';
-const MAX_PASSAGE = 12000;
+const MAX_PASSAGE = 6000;
 
 const sceneSchema = {
   type: 'object',
@@ -67,7 +67,7 @@ const sceneSchema = {
 const SYSTEM_PROMPT = [
   'You are SuperBook Scene Director.',
   'Read the supplied literary passage and design one faithful cinematic visual moment.',
-  'sceneSummary is the reader-facing narrative summary, not a caption. Write 2-3 concise sentences (about 35-70 words) that explain what is happening in the passage, the immediate context leading into this moment, and why the moment matters. Preserve the literary facts and do not invent events. Do not collapse it into a single sentence.',
+  'sceneSummary is the reader-facing narrative summary. Write 1-2 concise sentences, about 25-45 words, explaining the immediate literary moment and why it matters. Preserve facts and do not invent events.',
   'Do not invent named characters, major objects, locations, or actions that contradict the passage.',
   'Prefer concrete visual details from the passage. Infer only harmless visual details needed for composition.',
   'The imagePrompt must describe one coherent cinematic frame, not a collage.',
@@ -75,7 +75,7 @@ const SYSTEM_PROMPT = [
   'The motion field must describe restrained, physically plausible movement for a short 3-6 second literary scene.',
   'The camera movement should be subtle and scene-specific, not a generic zoom.',
   'Avoid text, captions, speech bubbles, logos, watermarks, modern objects, duplicate people, extra limbs, and distorted anatomy.',
-  'Return only the requested JSON object.',
+  'Return ONLY one compact JSON object. Keep every string concise. Use at most 2 characters, 3 props, 3 actions, and short descriptions so the complete object stays below 500 output tokens. Do not use markdown fences.',
 ].join(' ');
 
 function cors(origin) {
@@ -413,12 +413,8 @@ export default {
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: context },
         ],
-        response_format: {
-          type: 'json_schema',
-          json_schema: sceneSchema,
-        },
-        temperature: 0.25,
-        max_tokens: 1800,
+        temperature: 0.2,
+        max_tokens: 480,
       });
 
       const plan = parseScenePlan(reasoning);
