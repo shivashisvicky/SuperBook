@@ -2220,3 +2220,28 @@ Fix in `c3bb02c5d119f9c92d4029e270e9a441c148d106`:
 - no additional AI call, paid service, or automatic motion generation introduced
 
 This keeps the token discipline while giving the structured object enough room to finish. The Worker deployment must report this commit before TEST can be retested.
+
+## 47. Live Worker API smoke-test gate (2026-09-22)
+
+The scene API is now tested before UI verification.
+
+- Added `.github/workflows/superbook-worker-smoke.yml`.
+- The smoke workflow waits for the deployed Worker health contract at:
+  `https://superbook-ai-scene.shivashisvicky112.workers.dev/health`
+- It then calls the live scene-generation POST endpoint with a representative literary passage.
+- The response contract is checked for:
+  - HTTP 200
+  - schemaVersion 2
+  - complete ScenePlan fields
+  - character/prop/action bounds
+  - camera, lighting, motion and imagePrompt fields
+  - non-empty generated image payload
+- The first live smoke run on the current branch passed:
+  - Run: 35779915668
+  - Commit: bf0c4a1fa8069496951a531a70274fc730e31250
+  - Result: success
+  - Live Worker returned HTTP 200
+  - ScenePlan parsed successfully
+  - Generated image payload was present
+- This means UI testing should only begin after the live Worker smoke test is green.
+- Do not treat the smoke test as proof that every literary passage will produce a valid scene. It is a deployment/API contract gate, not a full model-evaluation suite.
