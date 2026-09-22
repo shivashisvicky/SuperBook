@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'domain/book.dart';
+import 'services/current_book_store.dart';
 import 'features/explore/explore_screen.dart';
 import 'features/home/superbook_home_screen.dart';
 import 'features/library/library_screen.dart';
@@ -9,6 +10,29 @@ import 'features/settings/settings_screen.dart';
 
 class SuperBookApp extends StatelessWidget {
   const SuperBookApp({super.key});
+
+  Book? _currentBook;
+  final _store = CurrentBookStore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _store.currentBook.addListener(_onCurrentBookChanged);
+    _store.restore().then((_) async {
+      final book = await _store.loadCurrent();
+      if (mounted) setState(() => _currentBook = book);
+    });
+  }
+
+  void _onCurrentBookChanged() {
+    if (mounted) setState(() => _currentBook = _store.currentBook.value);
+  }
+
+  @override
+  void dispose() {
+    _store.currentBook.removeListener(_onCurrentBookChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,8 +64,8 @@ class _SuperBookShellState extends State<_SuperBookShell> {
     final screens = [
       SuperBookHomeScreen(onOpenLibrary: () => setState(() => index = 1)),
       const LibraryScreen(),
-      ExploreScreen(book: demoBook),
-      ScenesScreen(book: demoBook),
+      ExploreScreen(book: _currentBook ?? demoBook),
+      ScenesScreen(book: _currentBook ?? demoBook),
       const SettingsScreen(),
     ];
 
@@ -51,9 +75,9 @@ class _SuperBookShellState extends State<_SuperBookShell> {
         actions: [
           IconButton(
             tooltip: 'Open current book',
-            onPressed: index == 2 || index == 3
+            onPressed: (index == 2 || index == 3) && _currentBook != null
                 ? () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ReaderScreen(book: demoBook)),
+                      MaterialPageRoute(builder: (_) => ReaderScreen(book: _currentBook!)),
                     )
                 : null,
             icon: const Icon(Icons.menu_book_outlined),
