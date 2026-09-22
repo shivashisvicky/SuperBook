@@ -38,6 +38,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
   late final AnimationController _storyController;
   List<GeneratedMotionFrame> _motionFrames = const [];
   bool _motionLoading = false;
+  bool _detailsExpanded = false;
 
   Chapter get _chapter =>
       widget.book.chapters.firstWhere((chapter) => chapter.id == widget.beat.chapterId);
@@ -278,93 +279,190 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
           if (generated != null && _motionLoading)
             const Positioned(top: 20, right: 18, child: _MotionBuildingPill()),
           Positioned(
-            left: 18, right: 18, bottom: 18,
-            child: Card(
-              color: const Color(0xE610141C),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('EXPERIENCE · STORY MOMENT', style: Theme.of(context).textTheme.labelLarge),
-                  const SizedBox(height: 5),
-                  Text(
-                    generated?.plan.sceneSummary ?? widget.scene.caption,
-                    style: Theme.of(context).textTheme.titleMedium,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 7),
-                  if (generated != null)
-                    Text(
-                      generated.plan.environment.location,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    )
-                  else
-                    Text(widget.scene.atmosphere),
-                  const SizedBox(height: 9),
-                  Row(children: [
-                    Expanded(
-                      child: generated == null
-                          ? Text('Narrative beat · intensity ${widget.beat.intensity}')
-                          : AnimatedBuilder(
-                              animation: _storyController,
-                              builder: (context, _) {
-                                final frames = _motionFrames;
-                                if (frames.isEmpty) {
-                                  return Text('Narrative beat · intensity ${widget.beat.intensity}');
-                                }
-                                final index = (frames.length * _storyController.value).floor().clamp(0, frames.length - 1);
-                                return AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 450),
-                                  child: Text(
-                                    frames[index].beat,
-                                    key: ValueKey<String>(frames[index].beat),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                    const SizedBox(width: 12),
-                    FilledButton.icon(
-                      onPressed: _loading ? null : () => _generate(force: generated != null),
-                      icon: _loading
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.refresh),
-                      label: Text(_loading ? 'Creating…' : 'Regenerate'),
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: hasPrevious ? () => openChapter(currentIndex - 1) : null,
-                        icon: const Icon(Icons.chevron_left),
-                        label: const Text('Previous'),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${widget.scene.title.toLowerCase().startsWith('chapter') ? 'Chapter' : 'Section'} ${currentIndex + 1} of ${widget.book.chapters.length}',
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                      const Spacer(),
-                      OutlinedButton.icon(
-                        onPressed: hasNext ? () => openChapter(currentIndex + 1) : null,
-                        icon: const Icon(Icons.chevron_right),
-                        label: Text(hasNext ? 'Next' : 'End'),
-                      ),
-                    ],
-                  ),
-                ]),
+            left: 14,
+            right: 14,
+            bottom: 14,
+            child: SafeArea(
+              top: false,
+              child: _StoryMomentOverlay(
+                expanded: _detailsExpanded,
+                title: widget.scene.title,
+                summary: generated?.plan.sceneSummary ?? widget.scene.caption,
+                location: generated?.plan.environment.location ?? widget.scene.atmosphere,
+                motionBeat: _motionFrames.isEmpty ? null : _motionFrames.first.beat,
+                currentIndex: currentIndex,
+                total: widget.book.chapters.length,
+                hasPrevious: hasPrevious,
+                hasNext: hasNext,
+                loading: _loading,
+                onToggle: () => setState(() => _detailsExpanded = !_detailsExpanded),
+                onRegenerate: () => _generate(force: generated != null),
+                onPrevious: hasPrevious ? () => openChapter(currentIndex - 1) : null,
+                onNext: hasNext ? () => openChapter(currentIndex + 1) : null,
               ),
             ),
           ),
+
         ],
       ),
     );
   }
+}
+
+class _StoryMomentOverlay extends StatelessWidget {
+  const _StoryMomentOverlay({
+    required this.expanded,
+    required this.title,
+    required this.summary,
+    required this.location,
+    required this.motionBeat,
+    required this.currentIndex,
+    required this.total,
+    required this.hasPrevious,
+    required this.hasNext,
+    required this.loading,
+    required this.onToggle,
+    required this.onRegenerate,
+    required this.onPrevious,
+    required this.onNext,
+  });
+
+  final bool expanded;
+  final String title;
+  final String summary;
+  final String location;
+  final String? motionBeat;
+  final int currentIndex;
+  final int total;
+  final bool hasPrevious;
+  final bool hasNext;
+  final bool loading;
+  final VoidCallback onToggle;
+  final VoidCallback onRegenerate;
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      child: Material(
+        color: const Color(0xD90A0D13),
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onToggle,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(14, expanded ? 13 : 9, 10, 9),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.auto_awesome_motion, size: 17),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        motionBeat == null ? 'Story moment' : 'Story moment · animated',
+                        style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (motionBeat != null)
+                      const Padding(
+                        padding: EdgeInsets.only(right: 5),
+                        child: _LiveDot(),
+                      ),
+                    IconButton(
+                      tooltip: expanded ? 'Hide story details' : 'Show story details',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: onToggle,
+                      icon: Icon(expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up),
+                    ),
+                  ],
+                ),
+                if (expanded) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      summary,
+                      style: theme.textTheme.bodyMedium,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      location,
+                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Previous section',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: onPrevious,
+                      icon: const Icon(Icons.chevron_left),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          '${currentIndex + 1} / $total',
+                          style: theme.textTheme.labelMedium,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Regenerate scene',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: loading ? null : onRegenerate,
+                      icon: loading
+                          ? const SizedBox(
+                              width: 17,
+                              height: 17,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.refresh),
+                    ),
+                    IconButton(
+                      tooltip: hasNext ? 'Next section' : 'End',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: onNext,
+                      icon: const Icon(Icons.chevron_right),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveDot extends StatelessWidget {
+  const _LiveDot();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 7,
+    height: 7,
+    decoration: const BoxDecoration(
+      color: Color(0xFFB8F2C2),
+      shape: BoxShape.circle,
+    ),
+  );
 }
 
 class _MotionBuildingPill extends StatelessWidget {
