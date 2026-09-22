@@ -239,4 +239,58 @@ story text before the end of the downloaded section.
     expect(book.chapters.first.passage.join(' '), contains('Cf. III.'));
   });
 
+  test('Gutenberg parser recognizes Roman-numbered titled chapters', () {
+    const text = '''
+*** START OF THE PROJECT GUTENBERG EBOOK TEST ***
+
+CONTENTS
+I. LAYING PLANS
+II. WAGING WAR
+III. ATTACK BY STRATAGEM
+
+I. LAYING PLANS.
+Sun Tzu begins the first chapter with enough substantive prose to establish a
+real section. The discussion continues with several complete sentences about
+the state, the army, and the five constant factors of warfare.
+
+II. WAGING WAR.
+Sun Tzu begins the second chapter with enough substantive prose to establish
+another real section. The discussion continues with several complete sentences
+about the costs and conduct of warfare.
+
+III. ATTACK BY STRATAGEM.
+Sun Tzu begins the third chapter with enough substantive prose to establish a
+third real section. The discussion continues with several complete sentences
+about taking the enemy whole and avoiding unnecessary siege operations.
+
+* X 2JBJI ff IH S 1
+This OCR line must remain inside the third chapter rather than becoming a new
+section.
+
+Cf. III. § 13 (i)
+This reference marker must also remain ordinary chapter text.
+
+*** END OF THE PROJECT GUTENBERG EBOOK TEST ***
+''';
+    const summary = GutenbergBookSummary(
+      id: 17405,
+      title: 'The Art of War',
+      author: 'Sunzi',
+      downloadCount: 0,
+      coverUrl: null,
+    );
+
+    final service = GutenbergService();
+    final book = service.parseText(summary, text);
+
+    expect(book.chapters, hasLength(3));
+    expect(book.chapters.map((chapter) => chapter.title), [
+      'Chapter I',
+      'Chapter II',
+      'Chapter III',
+    ]);
+    expect(book.chapters.last.passage.join(' '), contains('2JBJI'));
+    expect(book.chapters.last.passage.join(' '), contains('Cf. III.'));
+  });
+
 }
