@@ -3,7 +3,7 @@ const TEXT_MODEL = '@cf/ibm-granite/granite-4.0-h-micro';
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
 const MOTION_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
 const VIDEO_MODEL = 'alibaba/hh1.1-t2v';
-const MAX_PASSAGE = 6000;
+const MAX_PASSAGE = 3600;
 
 const sceneSchema = {
   type: 'object',
@@ -414,7 +414,7 @@ export default {
           { role: 'user', content: context },
         ],
         temperature: 0.2,
-        max_tokens: 480,
+        max_tokens: 320,
       });
 
       const plan = parseScenePlan(reasoning);
