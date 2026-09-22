@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -23,6 +24,8 @@ class GutenbergService {
   GutenbergService({http.Client? client}) : _client = client ?? http.Client();
   final http.Client _client;
   final Map<int, Book> _cache = {};
+  final Map<int, String> _rawTextCache = {};
+  final Map<int, Future<String>> _rawTextInFlight = {};
 
   Future<List<GutenbergBookSummary>> popularBooks() =>
       _search('https://gutendex.com/books?languages=en&copyright=false');
@@ -57,41 +60,111 @@ class GutenbergService {
   Future<Book> loadBook(GutenbergBookSummary summary) async {
     final cached = _cache[summary.id];
     if (cached != null) return cached;
-    final data = await _getJson('https://gutendex.com/books/${summary.id}');
-    final formats = data['formats'] as Map<String, dynamic>? ?? const {};
-    final textUrls = _textUrls(summary.id, formats);
-    if (textUrls.isEmpty) {
-      throw Exception('No plain-text edition is available for ${summary.title}.');
-    }
 
-    http.Response? textResponse;
-    Object? lastError;
-
-    for (final textUrl in textUrls) {
-      try {
-        final response = await _client
-            .get(Uri.parse(textUrl))
-            .timeout(const Duration(seconds: 20));
-        if (response.statusCode == 200) {
-          textResponse = response;
-          break;
-        }
-        lastError = 'HTTP ${response.statusCode}';
-      } catch (error) {
-        lastError = error;
-      }
-    }
-
-    if (textResponse == null) {
-      throw Exception(
-        'Could not download ${summary.title}${lastError == null ? '' : ': $lastError'}.',
-      );
-    }
-
-    final text = utf8.decode(textResponse.bodyBytes, allowMalformed: true);
+    final text = await _loadRawText(summary.id);
     final book = _toBook(summary, text);
     _cache[summary.id] = book;
     return book;
+  }
+
+  Future<String> _loadRawText(int bookId) async {
+    final cached = _rawTextCache[bookId];
+    if (cached != null) return cached;
+
+    final existing = _rawTextInFlight[bookId];
+    if (existing != null) return existing;
+
+    final future = _acquireRawText(bookId);
+    _rawTextInFlight[bookId] = future;
+    try {
+      final text = await future;
+      _rawTextCache[bookId] = text;
+      return text;
+    } finally {
+      if (identical(_rawTextInFlight[bookId], future)) {
+        _rawTextInFlight.remove(bookId);
+      }
+    }
+  }
+
+  Future<String> _acquireRawText(int bookId) async {
+    Object? canonicalError;
+    try {
+      return await _firstSuccessful<String>([
+        _getText(
+          'https://www.gutenberg.org/cache/epub/' + bookId.toString() + '/pg' + bookId.toString() + '.txt',
+          timeout: const Duration(seconds: 8),
+        ),
+        _getText(
+          'https://r.jina.ai/http://www.gutenberg.org/cache/epub/' + bookId.toString() + '/pg' + bookId.toString() + '.txt',
+          timeout: const Duration(seconds: 8),
+        ),
+      ]);
+    } catch (error) {
+      canonicalError = error;
+    }
+
+    // Gutendex is metadata/fallback discovery only. It never replaces the
+    // canonical Gutenberg text when the canonical URL is available.
+    try {
+      final data = await _getJson('https://gutendex.com/books/' + bookId.toString());
+      final formats = data['formats'] as Map<String, dynamic>? ?? const {};
+      final urls = _textUrls(bookId, formats);
+      if (urls.isEmpty) {
+        throw Exception('No plain-text edition is available for Gutenberg #' + bookId.toString() + '.');
+      }
+      return await _firstSuccessful<String>([
+        for (final url in urls)
+          _getText(url, timeout: const Duration(seconds: 8)),
+      ]);
+    } catch (fallbackError) {
+      throw Exception(
+        'Could not download canonical Gutenberg #' + bookId.toString() + '. '
+        'Canonical transport failed: ' + canonicalError.toString() + '. '
+        'Metadata fallback failed: ' + fallbackError.toString(),
+      );
+    }
+  }
+
+  Future<String> _getText(
+    String url, {
+    required Duration timeout,
+  }) async {
+    final response = await _client.get(Uri.parse(url)).timeout(timeout);
+    if (response.statusCode != 200) {
+      throw Exception('HTTP ' + response.statusCode.toString());
+    }
+    return _decodeText(response.bodyBytes);
+  }
+
+  String _decodeText(List<int> bytes) {
+    try {
+      return utf8.decode(bytes, allowMalformed: false);
+    } on FormatException {
+      // Legacy single-byte fallback preserves every byte instead of silently
+      // inserting Unicode replacement characters.
+      return latin1.decode(bytes);
+    }
+  }
+
+  Future<T> _firstSuccessful<T>(List<Future<T>> attempts) {
+    final completer = Completer<T>();
+    var remaining = attempts.length;
+    Object? lastError;
+
+    for (final attempt in attempts) {
+      attempt.then((value) {
+        if (!completer.isCompleted) completer.complete(value);
+      }).catchError((error) {
+        lastError = error;
+        remaining -= 1;
+        if (remaining == 0 && !completer.isCompleted) {
+          completer.completeError(lastError!);
+        }
+      });
+    }
+
+    return completer.future;
   }
 
   Book parseText(GutenbergBookSummary summary, String rawText) {
