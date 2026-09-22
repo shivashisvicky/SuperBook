@@ -6,6 +6,7 @@ on:
       - 'test/**'
     paths:
       - 'cloudflare/superbook-ai-worker/**'
+      - '.github/workflows/superbook-worker-smoke.yml'
   workflow_dispatch:
 
 permissions:
