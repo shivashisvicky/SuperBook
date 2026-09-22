@@ -1,7 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -65,22 +62,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
   }
 
 
-  Future<String> _resizeReferenceImage(String imageBase64) async {
-    final bytes = base64Decode(imageBase64);
-    final codec = await ui.instantiateImageCodec(
-      Uint8List.fromList(bytes),
-      targetWidth: 500,
-      allowUpscaling: false,
-    );
-    final frame = await codec.getNextFrame();
-    final data = await frame.image.toByteData(format: ui.ImageByteFormat.png);
-    frame.image.dispose();
-    codec.dispose();
-    if (data == null) {
-      throw StateError('Could not prepare the scene reference image.');
-    }
-    return base64Encode(data.buffer.asUint8List());
-  }
 
   Future<void> _generate({bool force = false}) async {
     if (_loading) return;
