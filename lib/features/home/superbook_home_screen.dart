@@ -65,6 +65,9 @@ class _SuperBookHomeScreenState extends State<SuperBookHomeScreen> {
                 : book.chapters[
                     chapterIndex.clamp(0, book.chapters.length - 1)
                   ].title;
+            final progress = chapterCount == null || chapterCount == 0
+                ? 0.0
+                : (chapterIndex + 1) / chapterCount;
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
@@ -87,6 +90,7 @@ class _SuperBookHomeScreenState extends State<SuperBookHomeScreen> {
                     summary: summary,
                     chapterTitle: chapterTitle,
                     loading: _opening,
+                    progress: progress.clamp(0.0, 1.0),
                     onTap: _openCurrent,
                   ),
                 const SizedBox(height: 28),
@@ -153,12 +157,14 @@ class _ContinueCard extends StatelessWidget {
     required this.summary,
     required this.chapterTitle,
     required this.loading,
+    required this.progress,
     required this.onTap,
   });
 
   final LibraryBookSummary summary;
   final String chapterTitle;
   final bool loading;
+  final double progress;
   final VoidCallback onTap;
 
   @override
@@ -200,13 +206,7 @@ class _ContinueCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(chapterTitle, style: theme.textTheme.bodySmall),
                     const SizedBox(height: 12),
-                    loading
-                        ? const LinearProgressIndicator()
-                        : LinearProgressIndicator(
-                            value: chapterTitle == 'Reader ready'
-                                ? 0
-                                : null,
-                          ),
+                    LinearProgressIndicator(value: progress),
                   ],
                 ),
               ),
