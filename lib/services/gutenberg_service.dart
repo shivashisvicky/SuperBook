@@ -391,14 +391,13 @@ class GutenbergService {
   }
 
   List<_ChapterMarker> _sortNumberedMarkers(List<_ChapterMarker> markers) {
-    final sorted = [...markers];
-    sorted.sort((a, b) {
-      final aNumber = a.number ?? 1 << 30;
-      final bNumber = b.number ?? 1 << 30;
-      final byNumber = aNumber.compareTo(bNumber);
-      return byNumber != 0 ? byNumber : a.line.compareTo(b.line);
-    });
-    return sorted;
+    // Marker positions are source coordinates. They must remain in source-line
+    // order because _toBook uses adjacent markers to slice the source text.
+    // Logical chapter numbering is metadata, not a safe ordering operation for
+    // source slicing.
+    final ordered = [...markers];
+    ordered.sort((a, b) => a.line.compareTo(b.line));
+    return ordered;
   }
 
   bool _isExplicitSectionMarker(_ChapterMarker marker) => marker.number != null;
