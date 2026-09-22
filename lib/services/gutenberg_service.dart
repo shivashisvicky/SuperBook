@@ -374,7 +374,7 @@ class GutenbergService {
       // these markers can be trusted even when their contents entry has no
       // prose body between it and the next heading. Duplicate numbers resolve
       // to the later occurrence, which is the real chapter in the text.
-      return titledRomanMarkers;
+      return _sortNumberedMarkers(titledRomanMarkers);
     }
 
     final substantive = _removeDuplicateChapterMarkers(selected);
@@ -385,7 +385,20 @@ class GutenbergService {
     // markers are reader-visible sections. Commentary, OCR artifacts, page
     // references, and other structural headings inside the same edition are
     // not chapter boundaries.
-    return substantive.where(_isExplicitSectionMarker).toList();
+    return _sortNumberedMarkers(
+      substantive.where(_isExplicitSectionMarker).toList(),
+    );
+  }
+
+  List<_ChapterMarker> _sortNumberedMarkers(List<_ChapterMarker> markers) {
+    final sorted = [...markers];
+    sorted.sort((a, b) {
+      final aNumber = a.number ?? 1 << 30;
+      final bNumber = b.number ?? 1 << 30;
+      final byNumber = aNumber.compareTo(bNumber);
+      return byNumber != 0 ? byNumber : a.line.compareTo(b.line);
+    });
+    return sorted;
   }
 
   bool _isExplicitSectionMarker(_ChapterMarker marker) => marker.number != null;
