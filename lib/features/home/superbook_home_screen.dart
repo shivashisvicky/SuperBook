@@ -202,7 +202,11 @@ class _ContinueCard extends StatelessWidget {
                     const SizedBox(height: 12),
                     loading
                         ? const LinearProgressIndicator()
-                        : const LinearProgressIndicator(value: 0),
+                        : LinearProgressIndicator(
+                            value: chapterTitle == 'Reader ready'
+                                ? 0
+                                : null,
+                          ),
                   ],
                 ),
               ),
