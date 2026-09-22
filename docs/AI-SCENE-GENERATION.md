@@ -13,7 +13,7 @@ The Flutter app never receives a provider secret. It calls a small Cloudflare Wo
 
 The reference gateway uses Cloudflare Workers AI:
 
-- Text planning: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`
+- Text planning: `@cf/meta/llama-3.3-70b-instruct-fp8-fast` (Workers AI JSON Mode compatible)
 - Image generation: `@cf/black-forest-labs/flux-1-schnell`
 - Optional story animation: `alibaba/hh1.1-t2v` (disabled by default)
 
