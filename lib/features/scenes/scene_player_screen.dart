@@ -42,7 +42,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   String get _cacheKey => _sceneCache.key(
         bookId: widget.book.id,
         chapterId: widget.beat.chapterId,
-        passage: _chapter.passage.join('\\n'),
+        passage: _chapter.passage.join('\n'),
       );
 
   @override
@@ -121,7 +121,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       final generated = await provider.generate(
         bookId: widget.book.id,
         chapterId: widget.beat.chapterId,
-        passage: _chapter.passage.join('\\n'),
+        passage: _chapter.passage.join('\n'),
         author: widget.book.author,
         title: widget.book.title,
       );
