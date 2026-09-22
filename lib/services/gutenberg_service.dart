@@ -316,6 +316,7 @@ class GutenbergService {
           line: i,
           number: int.tryParse(numberText) ?? _romanToInt(numberText),
           heading: subtitle.isEmpty ? 'Chapter $numberText' : subtitle,
+          isExplicitChapterHeading: true,
         ));
         continue;
       }
@@ -418,6 +419,15 @@ class GutenbergService {
   ) {
     if (markers.isEmpty) return const [];
 
+    final explicitChapterMarkers = _removeDuplicateChapterMarkers(
+      markers.where((marker) => marker.isExplicitChapterHeading).toList(),
+    );
+    if (explicitChapterMarkers.isNotEmpty) {
+      // A literal CHAPTER heading is a source-structure contract. Do not
+      // discard short chapters merely because their prose is brief.
+      return _sortNumberedMarkers(explicitChapterMarkers);
+    }
+
     final selected = <_ChapterMarker>[];
     for (var i = 0; i < markers.length; i++) {
       final marker = markers[i];
@@ -515,7 +525,7 @@ class GutenbergService {
     return text
         .split(RegExp(r'\n\s*\n'))
         .map((block) => block.replaceAll(RegExp(r'\s+'), ' ').trim())
-        .where((block) => block.length > 30)
+        .where((block) => block.isNotEmpty)
         .toList();
   }
 
@@ -623,10 +633,12 @@ class _ChapterMarker {
     required this.number,
     required this.heading,
     this.isTitledRomanHeading = false,
+    this.isExplicitChapterHeading = false,
   });
 
   final int line;
   final int? number;
   final String heading;
   final bool isTitledRomanHeading;
+  final bool isExplicitChapterHeading;
 }
