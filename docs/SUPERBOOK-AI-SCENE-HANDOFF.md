@@ -2201,3 +2201,22 @@ Commits:
 - `bf364442a2ac35375c54aa69cc8590cdcef10fbb` documentation alignment
 
 Deployment verification is still separate. Do not call TEST Pages or the live Worker green until the corresponding deployment systems report these commits.
+
+
+---
+
+## 46. 2026-09-23 SCENE PLAN COMPACTNESS FIX
+
+The live Worker log showed the request reaches the Worker and returns HTTP 502, while the Flutter UI surfaces the `AI returned an invalid scene plan` branch. Cloudflare JSON Mode explicitly supports the selected Llama 3.3 70B model, but also documents that schema compliance is not guaranteed for complex outputs.
+
+The previous schema allowed unbounded character/prop/action arrays while the prompt asked for compact output and the Worker capped generation at 448 tokens. That created an avoidable truncation/partial-plan risk.
+
+Fix in `c3bb02c5d119f9c92d4029e270e9a441c148d106`:
+- characters hard-capped at 2 in the JSON schema
+- props hard-capped at 3
+- actions hard-capped at 3
+- server validation now checks the complete ScenePlan contract
+- planner output budget raised only to 640 tokens, still tightly bounded and far below an unconstrained completion
+- no additional AI call, paid service, or automatic motion generation introduced
+
+This keeps the token discipline while giving the structured object enough room to finish. The Worker deployment must report this commit before TEST can be retested.
