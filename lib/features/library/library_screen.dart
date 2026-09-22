@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../services/gutenberg_service.dart';
+import '../../services/open_library_service.dart';
 import '../reader/reader_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
@@ -12,10 +12,10 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen> {
   final _searchController = TextEditingController();
-  final _service = GutenbergService();
-  late Future<List<GutenbergBookSummary>> _books;
+  final _service = OpenLibraryService();
+  late Future<List<LibraryBookSummary>> _books;
   String _query = '';
-  int? _loadingId;
+  String? _loadingId;
 
   @override
   void initState() {
@@ -37,7 +37,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     });
   }
 
-  Future<void> _openBook(GutenbergBookSummary summary) async {
+  Future<void> _openBook(LibraryBookSummary summary) async {
     setState(() => _loadingId = summary.id);
     try {
       final book = await _service.loadBook(summary);
@@ -58,7 +58,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return FutureBuilder<List<GutenbergBookSummary>>(
+    return FutureBuilder<List<LibraryBookSummary>>(
       future: _books,
       builder: (context, snapshot) {
         return ListView(
@@ -82,7 +82,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 hintText: 'Search authors or titles',
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
-                  tooltip: 'Search Gutenberg',
+                  tooltip: 'Search books',
                   onPressed: _search,
                   icon: const Icon(Icons.arrow_forward),
                 ),
@@ -104,7 +104,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     children: [
                       const Icon(Icons.cloud_off_outlined, size: 36),
                       const SizedBox(height: 12),
-                      const Text('Gutenberg is unavailable right now.'),
+                      const Text('The book catalog is unavailable right now.'),
                       const SizedBox(height: 12),
                       FilledButton(
                         onPressed: _search,
@@ -117,7 +117,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             else if (snapshot.data?.isEmpty ?? true)
               const Padding(
                 padding: EdgeInsets.all(32),
-                child: Center(child: Text('No Gutenberg books match that search.')),
+                child: Center(child: Text('No public-domain books match that search.')),
               )
             else
               ...snapshot.data!.take(12).map(
@@ -132,12 +132,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ),
             const SizedBox(height: 12),
             Text(
-              _query.isEmpty ? 'Popular on Gutenberg' : 'Search results',
+              _query.isEmpty ? 'Popular public-domain books' : 'Search results',
               style: theme.textTheme.labelLarge,
             ),
             const SizedBox(height: 6),
             Text(
-              'The catalog is real. The text is the original Gutenberg edition. SuperBook’s narrative and scene layers will be built on top of it.',
+              'The catalog comes from Open Library. Public-domain text is loaded from trusted open-book sources, with a local classic-book fallback if a catalog service is unavailable.',
               style: theme.textTheme.bodySmall,
             ),
           ],
@@ -154,7 +154,7 @@ class _BookCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final GutenbergBookSummary book;
+  final LibraryBookSummary book;
   final bool loading;
   final VoidCallback onTap;
 
