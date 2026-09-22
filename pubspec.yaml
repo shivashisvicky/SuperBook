@@ -17,6 +17,7 @@ dependencies:
   isar: ^3.1.0
   isar_flutter_libs: ^3.1.0
   just_audio: ^0.9.36
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
