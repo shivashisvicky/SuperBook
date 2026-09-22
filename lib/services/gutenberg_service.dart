@@ -299,12 +299,7 @@ class GutenbergService {
     return substantive.sublist(firstExplicit);
   }
 
-  bool _isExplicitSectionMarker(_ChapterMarker marker) {
-    return marker.number != null &&
-        RegExp(r'^(?:Chapter|Adventure|Story|Part|Book)\b', caseSensitive: false)
-            .hasMatch(marker.heading.trim());
-  }
-
+  bool _isExplicitSectionMarker(_ChapterMarker marker) => marker.number != null;
   bool _looksLikeChapterBody(String text) {
     if (text.length < 180) return false;
     final words = text.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
