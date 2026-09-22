@@ -39,6 +39,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
   List<GeneratedMotionFrame> _motionFrames = const [];
   bool _motionLoading = false;
   bool _detailsExpanded = false;
+  String? _errorMessage;
   String? _generationError;
 
   Chapter get _chapter =>
@@ -297,6 +298,39 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
               SizedBox(height: 14),
               Text('Creating your story moment…', style: TextStyle(fontSize: 16)),
             ])),
+          if (generated == null && !_loading && _errorMessage != null)
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 28),
+                padding: const EdgeInsets.fromLTRB(18, 16, 12, 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xE60A0D13),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.cloud_off, color: Colors.white70),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.white),
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Retry scene generation',
+                      onPressed: _loading ? null : () => _generate(force: true),
+                      icon: const Icon(Icons.refresh),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           if (generated == null && !_loading && _generationError != null)
             Positioned(
               left: 24,
