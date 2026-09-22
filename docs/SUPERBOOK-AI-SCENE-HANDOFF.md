@@ -2177,3 +2177,27 @@ CI verification: Run 475 (`35774996387`) is GREEN. Flutter analyze, all Flutter 
 
 The latest CI run before this section was still validating the renderer cleanup. Do not describe the branch as green until a complete CI run passes analyze, tests, and web build.
 
+
+
+---
+
+## 45. 2026-09-23 JSON-MODE MODEL COMPATIBILITY FIX
+
+The TEST screenshot showed the exact failure state: the Flutter reader reached the AI gateway, but the Worker returned `AI returned an invalid scene plan.` before image generation.
+
+Root cause:
+- `cloudflare/superbook-ai-worker/src/index.js` was using `@cf/ibm-granite/granite-4.0-h-micro` for the Scene Director.
+- Cloudflare's current Workers AI JSON Mode supported-model list does not include Granite 4.0 h-micro.
+- The Worker was correctly asking for `response_format.type = json_schema`, but the selected model was not a supported JSON Mode model, so the returned payload could not be relied upon as the required scene object.
+
+Fix committed on `test/superbook-ai-scene-foundation`:
+- Scene Director switched to `@cf/meta/llama-3.3-70b-instruct-fp8-fast`, which Cloudflare currently lists as JSON Mode compatible.
+- The existing 448-token completion cap remains in place.
+- No paid provider, AI Gateway credits, Workers Paid, R2, or T2V dependency was introduced.
+- Flutter scene playback architecture was not changed.
+
+Commits:
+- `22a9200e503cb3aa85899e2f7416142759b552b7` Worker model fix
+- `bf364442a2ac35375c54aa69cc8590cdcef10fbb` documentation alignment
+
+Deployment verification is still separate. Do not call TEST Pages or the live Worker green until the corresponding deployment systems report these commits.
