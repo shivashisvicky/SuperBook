@@ -1,0 +1,109 @@
+name: SuperBook Worker API Smoke Test
+
+on:
+  push:
+    branches:
+      - 'test/**'
+    paths:
+      - 'cloudflare/superbook-ai-worker/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker-smoke:
+    name: Live Worker scene-generation smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Wait for the pushed Worker deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://superbook-ai-scene.shivashisvicky112.workers.dev/health"
+
+          for attempt in $(seq 1 12); do
+            echo "Health check attempt $attempt/12"
+            if curl --silent --show-error --fail --max-time 20 "$url" -o health.json; then
+              if jq -e '.ok == true and .service == "superbook-ai-scene" and .sceneSchemaVersion == "2"' health.json >/dev/null; then
+                echo "Worker health endpoint is live."
+                jq '{ok, service, textModel, imageModel, sceneSchemaVersion}' health.json
+                exit 0
+              fi
+            fi
+            sleep 15
+          done
+
+          echo "Worker deployment did not expose the expected health contract."
+          test -f health.json && jq '.' health.json || true
+          exit 1
+
+      - name: Call live scene-generation API
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat > request.json <<'JSON'
+          {
+            "bookId": "superbook-smoke",
+            "chapterId": "smoke-1",
+            "title": "Beowulf",
+            "author": "Anonymous",
+            "passage": "Then came the shadow-walker in the darkness. The hall stood quiet while the warriors slept, and the great doors held against the night."
+          }
+          JSON
+
+          status="$(curl             --silent             --show-error             --max-time 150             --output response.json             --write-out '%{http_code}'             --header 'Content-Type: application/json'             --header 'Accept: application/json'             --header 'Origin: https://shivashisvicky.github.io'             --data @request.json             'https://superbook-ai-scene.shivashisvicky112.workers.dev/')"
+
+          echo "Worker HTTP status: $status"
+
+          if [ "$status" != "200" ]; then
+            echo "Worker returned a non-success response:"
+            jq 'del(.image.base64)' response.json 2>/dev/null || cat response.json
+            exit 1
+          fi
+
+          jq -e '
+            (.schemaVersion == "2") and
+            (.scenePlan | type == "object") and
+            (.scenePlan.schemaVersion | type == "string") and
+            (.scenePlan.sceneSummary | type == "string") and
+            (.scenePlan.visualStyle | type == "string") and
+            (.scenePlan.characters | type == "array") and
+            ((.scenePlan.characters | length) <= 2) and
+            (.scenePlan.environment.location | type == "string") and
+            (.scenePlan.environment.time | type == "string") and
+            (.scenePlan.environment.description | type == "string") and
+            (.scenePlan.props | type == "array") and
+            ((.scenePlan.props | length) <= 3) and
+            (.scenePlan.actions | type == "array") and
+            ((.scenePlan.actions | length) <= 3) and
+            (.scenePlan.camera.shot | type == "string") and
+            (.scenePlan.camera.angle | type == "string") and
+            (.scenePlan.camera.movement | type == "string") and
+            (.scenePlan.lighting | type == "string") and
+            (.scenePlan.motion | type == "string") and
+            (.scenePlan.imagePrompt | type == "string") and
+            (.image | type == "object") and
+            (.image.mimeType | type == "string") and
+            (.image.base64 | type == "string") and
+            ((.image.base64 | length) > 0)
+          ' response.json >/dev/null
+
+          echo "Live Worker scene contract passed."
+          jq '{
+            schemaVersion,
+            scenePlan: {
+              schemaVersion: .scenePlan.schemaVersion,
+              sceneSummary: .scenePlan.sceneSummary,
+              characters: (.scenePlan.characters | length),
+              props: (.scenePlan.props | length),
+              actions: (.scenePlan.actions | length),
+              imagePromptPresent: ((.scenePlan.imagePrompt | length) > 0)
+            },
+            image: {
+              mimeType: .image.mimeType,
+              base64Present: ((.image.base64 | length) > 0)
+            }
+          }' response.json
