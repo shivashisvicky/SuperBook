@@ -29,7 +29,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byType(AppBar),
-        matching: find.text('The Old House'),
+        matching: find.text(demoBook.chapters.first.title),
       ),
       findsOneWidget,
     );
