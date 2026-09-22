@@ -18,7 +18,7 @@ class CurrentBookStore {
   final currentSummary = ValueNotifier<LibraryBookSummary?>(null);
   final currentChapterIndex = ValueNotifier<int>(0);
 
-  final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
+  late final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
   Future<void>? _restoreFuture;
 
   Future<void> restore() {
