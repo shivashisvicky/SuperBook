@@ -392,4 +392,46 @@ This reference must remain ordinary chapter text.
     expect(book.chapters.last.passage.join(' '), contains('Cf. III.'));
   });
 
+  test('Gutenberg parser preserves conventional chapter order after contents', () async {
+    const text = '''
+*** START OF THE PROJECT GUTENBERG EBOOK TEST ***
+
+CONTENTS
+Chapter XX.
+Chapter XXI.
+Chapter XXII.
+Chapter XXIII.
+
+Chapter I.
+Elizabeth begins the story with enough substantive prose to establish the first real chapter. The family discusses a new neighbour and the implications of his arrival in the neighbourhood with several complete sentences.
+
+Chapter II.
+Mr. Bennet continues the story with enough substantive prose to establish the second real chapter. The family discusses the recent visit and the social expectations surrounding the new acquaintance with several complete sentences.
+
+Chapter XX.
+The story reaches a later chapter with enough substantive prose to establish a real chapter boundary. Mr. Collins was not left long to the silent contemplation of his successful love, and the family continues the discussion with several complete sentences.
+
+Chapter XXI.
+The next chapter contains enough substantive prose to establish a real chapter boundary. The characters continue their conversation and consider what should happen next with several complete sentences.
+
+Chapter XXII.
+The next chapter contains enough substantive prose to establish a real chapter boundary. The household discusses the social situation and the consequences of recent events with several complete sentences.
+
+Chapter XXIII.
+The next chapter contains enough substantive prose to establish a real chapter boundary. The characters continue the story and prepare for the following developments with several complete sentences.
+
+*** END OF THE PROJECT GUTENBERG EBOOK TEST ***
+''';
+    const summary = GutenbergBookSummary(id: 1342, title: 'Pride and Prejudice', author: 'Jane Austen', downloadCount: 0, coverUrl: null);
+    final book = GutenbergService().parseText(summary, text);
+    expect(book.chapters.map((chapter) => chapter.title), [
+      'Chapter I',
+      'Chapter II',
+      'Chapter XX',
+      'Chapter XXI',
+      'Chapter XXII',
+      'Chapter XXIII',
+    ]);
+  });
+
 }
