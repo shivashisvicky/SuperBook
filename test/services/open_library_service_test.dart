@@ -82,7 +82,7 @@ The investigation continued through several complete sentences.
 
     expect(book.title, 'Test Holmes');
     expect(book.chapters, hasLength(1));
-    expect(book.chapters.first.title, 'Chapter 1');
+    expect(book.chapters.first.title, 'Chapter I');
     expect(book.chapters.first.passage.first, contains('Holmes examined the note'));
   });
 
