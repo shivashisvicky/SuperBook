@@ -143,12 +143,13 @@ class GutenbergService {
     final sourceUrl =
         'https://www.gutenberg.org/cache/epub/$bookId/pg$bookId.txt';
     return [
-      'https://r.jina.ai/http://www.gutenberg.org/cache/epub/$bookId/pg$bookId.txt',
+      sourceUrl,
       for (final entry in formats.entries)
         if (entry.key.startsWith('text/plain') &&
             entry.value is String &&
             entry.value != sourceUrl)
           entry.value as String,
+      'https://r.jina.ai/http://www.gutenberg.org/cache/epub/$bookId/pg$bookId.txt',
     ];
   }
 
@@ -358,18 +359,20 @@ class GutenbergService {
       }
     }
 
-    final substantive = _removeDuplicateChapterMarkers(selected);
-    final hasTitledRomanSections =
-        substantive.any((marker) => marker.isTitledRomanHeading);
-    if (hasTitledRomanSections) {
+    final titledRomanMarkers =
+        _removeDuplicateChapterMarkers(
+          markers.where((marker) => marker.isTitledRomanHeading).toList(),
+        );
+    if (titledRomanMarkers.isNotEmpty) {
       // Some scanned editions use headings like "I. LAYING PLANS" rather
-      // than "CHAPTER I". Once that form is present, ignore standalone Roman
-      // numerals and OCR/reference debris that happen to look numbered.
-      return substantive
-          .where((marker) => marker.isTitledRomanHeading)
-          .toList();
+      // than "CHAPTER I". The heading validator is intentionally strict, so
+      // these markers can be trusted even when their contents entry has no
+      // prose body between it and the next heading. Duplicate numbers resolve
+      // to the later occurrence, which is the real chapter in the text.
+      return titledRomanMarkers;
     }
 
+    final substantive = _removeDuplicateChapterMarkers(selected);
     final firstExplicit = substantive.indexWhere(_isExplicitSectionMarker);
     if (firstExplicit < 0) return substantive;
 
