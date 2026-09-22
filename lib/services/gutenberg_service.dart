@@ -229,8 +229,9 @@ class GutenbergService {
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i].trim();
       if (line.isEmpty) continue;
+      final headingLine = line.replaceFirst(RegExp(r'^#{1,6}\s+'), '');
 
-      final chapterMatch = chapterPattern.firstMatch(line);
+      final chapterMatch = chapterPattern.firstMatch(headingLine);
       if (chapterMatch != null) {
         final numberText = chapterMatch.group(1)!;
         final subtitle = chapterMatch.group(2)!.trim();
@@ -242,9 +243,9 @@ class GutenbergService {
         continue;
       }
 
-      final adventureMatch = adventurePattern.firstMatch(line);
+      final adventureMatch = adventurePattern.firstMatch(headingLine);
       if (adventureMatch != null &&
-          _looksLikeStructuralHeading(line) &&
+          _looksLikeStructuralHeading(headingLine) &&
           _hasSubstantiveBody(lines, i)) {
         final numberText = adventureMatch.group(1)!;
         markers.add(_ChapterMarker(
@@ -255,7 +256,7 @@ class GutenbergService {
         continue;
       }
 
-      final romanHeadingMatch = romanHeadingPattern.firstMatch(line);
+      final romanHeadingMatch = romanHeadingPattern.firstMatch(headingLine);
       if (romanHeadingMatch != null) {
         final roman = romanHeadingMatch.group(1)!;
         final subtitle = romanHeadingMatch.group(2)!.trim().replaceFirst(
@@ -274,7 +275,7 @@ class GutenbergService {
         }
       }
 
-      final romanMatch = romanPattern.firstMatch(line);
+      final romanMatch = romanPattern.firstMatch(headingLine);
       if (romanMatch != null && _hasSubstantiveBody(lines, i)) {
         final roman = romanMatch.group(1)!;
         markers.add(_ChapterMarker(
@@ -285,7 +286,7 @@ class GutenbergService {
         continue;
       }
 
-      if (_looksLikeStructuralHeading(line) &&
+      if (_looksLikeStructuralHeading(headingLine) &&
           _hasSubstantiveBody(lines, i)) {
         markers.add(_ChapterMarker(
           line: i,
@@ -388,15 +389,25 @@ class GutenbergService {
   List<_ChapterMarker> _removeDuplicateChapterMarkers(
     List<_ChapterMarker> markers,
   ) {
-    final result = <_ChapterMarker>[];
-    final seen = <int>{};
+    final lastByNumber = <int, _ChapterMarker>{};
+    final unnumbered = <_ChapterMarker>[];
 
     for (final marker in markers) {
       final number = marker.number;
-      if (number != null && seen.contains(number)) continue;
-      if (number != null) seen.add(number);
-      result.add(marker);
+      if (number == null) {
+        unnumbered.add(marker);
+      } else {
+        // Gutenberg editions commonly repeat every chapter heading in a
+        // table of contents before the actual chapter. Keep the last
+        // occurrence so the reader boundary points at the real chapter.
+        lastByNumber[number] = marker;
+      }
     }
+
+    final result = <_ChapterMarker>[
+      ...unnumbered,
+      ...lastByNumber.values,
+    ]..sort((a, b) => a.line.compareTo(b.line));
     return result;
   }
 
