@@ -29,10 +29,12 @@ class LibraryBookSummary {
 }
 
 class OpenLibraryService {
-  OpenLibraryService({http.Client? client}) : _client = client ?? http.Client();
+  OpenLibraryService({http.Client? client}) : _client = client ?? http.Client() {
+    _gutenberg = GutenbergService(client: _client);
+  }
 
   final http.Client _client;
-  final GutenbergService _gutenberg = GutenbergService();
+  late final GutenbergService _gutenberg;
   final Map<String, Book> _cache = {};
   final Map<String, String> _rawTextCache = {};
   final Map<String, Future<String>> _rawTextInFlight = {};
