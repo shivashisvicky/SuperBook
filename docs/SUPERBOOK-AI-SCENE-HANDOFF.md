@@ -1855,7 +1855,7 @@ This section is authoritative over older reader/catalog assumptions.
 
 Repository: https://github.com/shivashisvicky/SuperBook
 Branch: test/superbook-ai-scene-foundation
-HEAD: 65905fd2e176e5ca4b2491a8fb24e3e40b7efad0
+HEAD: 6d0575deaba6a09d3c49d20db19339022f7fdb3f
 TEST Pages: https://shivashisvicky.github.io/SuperBook/test/
 PR #2: https://github.com/shivashisvicky/SuperBook/pull/2
 Worker: https://superbook-ai-scene.shivashisvicky112.workers.dev
@@ -2075,3 +2075,35 @@ Freeze AI scene work until the reader is stable. Generated still Experience work
 T2V alibaba/hh1.1-t2v is blocked by 2021: Insufficient AI Gateway credits. User requires NO MONEY. Do not add credits, Unified Billing, Workers Paid, R2, or paid providers.
 
 Use small surgical commits. Inspect Actions after every push. Never call a deployment green without actual CI success. Do not broad-rollback working AI scene functionality.
+
+
+## Recovery status: 2026-09-23
+
+The book-pipeline recovery is now implemented on this branch. The important engineering changes are:
+
+- Explicit Gutenberg chapter markers are source-line ordered and no longer globally numeric-sorted.
+- Literal CHAPTER headings are treated as source-structure contracts, so short real chapters are preserved instead of being discarded by prose-length heuristics.
+- Open Library discovery now promotes canonical Gutenberg IDs to first-class source identity, with curated canonical IDs for the seven acceptance books.
+- When a Gutenberg ID is known, canonical Gutenberg plain text is authoritative. Internet Archive is only the fallback path.
+- Canonical Gutenberg acquisition is bounded and raced across two transports, with raw-text caching and in-flight request deduplication.
+- Fallback IA text decoding no longer silently allows malformed UTF-8 replacement characters.
+- Home no longer uses demoBook. A real selected book becomes the current/last-opened book and is persisted when platform storage is available.
+- Reader section position is persisted as part of current-book state.
+- The existing AI-generated still-image Experience path was not rolled back or replaced.
+- No T2V credits, Workers Paid, Unified Billing, R2, or paid third-party provider was introduced.
+
+### Verification
+
+CI Run 445 / ID 35772879163 is GREEN for commit 6d0575deaba6a09d3c49d20db19339022f7fdb3f.
+
+The green run proves:
+
+- flutter analyze passes.
+- flutter test passes, including the live canonical Gutenberg acceptance matrix for IDs 1342, 1661, 2701, 84, 345, 1400, and 174.
+- flutter build web --release --pwa-strategy=none --base-href "/SuperBook/test/" passes.
+
+The live acceptance matrix verifies source identity, clean literary-body parsing, section counts, opening passage content, absence of Unicode replacement characters, absence of Gutenberg license sections, and absence of the known license/TOC contamination strings.
+
+Pride and Prejudice #1342 is the immediate canary and now resolves through canonical Gutenberg rather than an Internet Archive edition. The parser preserves its chapter structure without source-marker reordering.
+
+The TEST Pages URL remains the final user-facing validation surface. Do not call the deployment green merely because the CI build is green. Verify the published TEST surface before asking for focused user validation.
