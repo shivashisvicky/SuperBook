@@ -212,7 +212,10 @@ The surrounding text continues with more complete sentences and commentary.
 CHAPTER VI.
 The next chapter begins here with enough substantive prose to establish a real
 section. The discussion continues with several complete sentences and remains
-part of the next chapter.
+part of the next chapter. The soldiers prepare their positions while the
+commander studies the ground and considers the changing circumstances. The
+argument continues through another complete thought, giving the parser ample
+story text before the end of the downloaded section.
 
 *** END OF THE PROJECT GUTENBERG EBOOK TEST ***
 ''';
