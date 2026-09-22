@@ -1,5 +1,5 @@
 // SuperBook scene path: AI direction + generated keyframe + local Flutter stage. T2V remains explicit/disabled by default.
-const TEXT_MODEL = '@cf/ibm-granite/granite-4.0-h-micro';
+const TEXT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
 const MOTION_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
 const VIDEO_MODEL = 'alibaba/hh1.1-t2v';
