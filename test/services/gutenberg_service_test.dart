@@ -251,17 +251,17 @@ III. ATTACK BY STRATAGEM
 I. LAYING PLANS.
 Sun Tzu begins the first chapter with enough substantive prose to establish a
 real section. The discussion continues with several complete sentences about
-the state, the army, and the five constant factors of warfare.
+the state, the army, and the five constant factors of warfare. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references.
 
 II. WAGING WAR.
 Sun Tzu begins the second chapter with enough substantive prose to establish
 another real section. The discussion continues with several complete sentences
-about the costs and conduct of warfare.
+about the costs and conduct of warfare. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references.
 
 III. ATTACK BY STRATAGEM.
 Sun Tzu begins the third chapter with enough substantive prose to establish a
 third real section. The discussion continues with several complete sentences
-about taking the enemy whole and avoiding unnecessary siege operations.
+about taking the enemy whole and avoiding unnecessary siege operations. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references.
 
 * X 2JBJI ff IH S 1
 This OCR line must remain inside the third chapter rather than becoming a new
@@ -314,43 +314,43 @@ XII. THE ATTACK BY FIRE
 XIII. THE USE OF SPIES
 
 I. LAYING PLANS.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. Sun Tzu explains the five constant factors of warfare and the importance of calculation.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. Sun Tzu explains the five constant factors of warfare and the importance of calculation.
 
 II. WAGING WAR.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. The army considers the costs and conduct of a prolonged campaign.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. The army considers the costs and conduct of a prolonged campaign.
 
 III. ATTACK BY STRATAGEM.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. The commander considers how to take the enemy whole and avoid needless siege operations.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. The commander considers how to take the enemy whole and avoid needless siege operations.
 
 IV. TACTICAL DISPOSITIONS.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. The army arranges its position before engaging the enemy.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. The army arranges its position before engaging the enemy.
 
 V. ENERGY.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. The commander organizes direct and indirect methods and controls the force.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. The commander organizes direct and indirect methods and controls the force.
 
 VI. WEAK POINTS AND STRONG.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. The army moves toward weakness and avoids strength when choosing its point of attack.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. The army moves toward weakness and avoids strength when choosing its point of attack.
 
 VII. MANŒUVERING.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. The army moves carefully and maintains communication while maneuvering.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. The army moves carefully and maintains communication while maneuvering.
 
 VIII. VARIATION OF TACTICS.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. The commander changes methods according to circumstances and terrain.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. The commander changes methods according to circumstances and terrain.
 
 IX. THE ARMY ON THE MARCH.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. The soldiers observe signs on the march and interpret the condition of the enemy.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. The soldiers observe signs on the march and interpret the condition of the enemy.
 
 X. TERRAIN.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. The commander studies the ground and understands the different kinds of terrain.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. The commander studies the ground and understands the different kinds of terrain.
 
 XI. THE NINE SITUATIONS.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. The army responds differently to dispersed, difficult, and desperate situations.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. The army responds differently to dispersed, difficult, and desperate situations.
 
 XII. THE ATTACK BY FIRE.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. Fire is used according to conditions, weather, and the position of the enemy.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. Fire is used according to conditions, weather, and the position of the enemy.
 
 XIII. THE USE OF SPIES.
-This is substantive chapter prose with enough sentences to establish a real chapter boundary. Intelligence is gathered through different kinds of spies and used to understand the enemy.
+This is substantive chapter prose with enough sentences to establish a real chapter boundary. The chapter continues with additional explanatory detail so the parser has enough substantive prose to distinguish the section from front matter and OCR references. Intelligence is gathered through different kinds of spies and used to understand the enemy.
 
 C
 This OCR artifact looks like a Roman numeral but is not a chapter heading.
