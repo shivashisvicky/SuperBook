@@ -94,6 +94,10 @@ class GutenbergService {
     return book;
   }
 
+  Book parseText(GutenbergBookSummary summary, String rawText) {
+    return _toBook(summary, rawText);
+  }
+
   Future<Map<String, dynamic>> _getJson(String url) async {
     Object? directError;
 
