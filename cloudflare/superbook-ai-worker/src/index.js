@@ -13,6 +13,7 @@ const sceneSchema = {
     visualStyle: { type: 'string' },
     characters: {
       type: 'array',
+      maxItems: 2,
       items: {
         type: 'object',
         properties: {
@@ -34,8 +35,8 @@ const sceneSchema = {
       },
       required: ['location', 'time', 'description'],
     },
-    props: { type: 'array', items: { type: 'string' } },
-    actions: { type: 'array', items: { type: 'string' } },
+    props: { type: 'array', maxItems: 3, items: { type: 'string' } },
+    actions: { type: 'array', maxItems: 3, items: { type: 'string' } },
     camera: {
       type: 'object',
       properties: {
@@ -75,7 +76,7 @@ const SYSTEM_PROMPT = [
   'The motion field must describe restrained, physically plausible movement for a short 3-6 second literary scene.',
   'The camera movement should be subtle and scene-specific, not a generic zoom.',
   'Avoid text, captions, speech bubbles, logos, watermarks, modern objects, duplicate people, extra limbs, and distorted anatomy.',
-  'Return ONLY one compact JSON object. Keep every string concise. Use at most 2 characters, 3 props, 3 actions, and short descriptions so the complete object stays below 500 output tokens. Do not use markdown fences.',
+  'Return ONLY one compact JSON object. Keep every string concise. Use at most 2 characters, 3 props, 3 actions, and short descriptions. Do not use markdown fences.',
 ].join(' ');
 
 function cors(origin) {
@@ -150,18 +151,36 @@ function parseScenePlan(reasoning) {
 
 function validatePlan(plan) {
   return plan &&
+    typeof plan.schemaVersion === 'string' &&
     typeof plan.sceneSummary === 'string' &&
-    typeof plan.imagePrompt === 'string' &&
+    typeof plan.visualStyle === 'string' &&
     Array.isArray(plan.characters) &&
-    plan.characters.length <= 8 &&
+    plan.characters.length <= 2 &&
+    plan.characters.every((character) =>
+      character &&
+      typeof character.id === 'string' &&
+      typeof character.description === 'string' &&
+      typeof character.action === 'string' &&
+      typeof character.emotion === 'string' &&
+      typeof character.position === 'string'
+    ) &&
     Array.isArray(plan.props) &&
-    plan.props.length <= 20 &&
+    plan.props.length <= 3 &&
+    plan.props.every((prop) => typeof prop === 'string') &&
     Array.isArray(plan.actions) &&
-    plan.actions.length <= 12 &&
+    plan.actions.length <= 3 &&
+    plan.actions.every((action) => typeof action === 'string') &&
     plan.environment &&
     typeof plan.environment.location === 'string' &&
+    typeof plan.environment.time === 'string' &&
+    typeof plan.environment.description === 'string' &&
     plan.camera &&
-    typeof plan.camera.shot === 'string';
+    typeof plan.camera.shot === 'string' &&
+    typeof plan.camera.angle === 'string' &&
+    typeof plan.camera.movement === 'string' &&
+    typeof plan.lighting === 'string' &&
+    typeof plan.motion === 'string' &&
+    typeof plan.imagePrompt === 'string';
 }
 
 async function generateMotionFrames(env, plan, imageBase64, origin) {
@@ -418,7 +437,7 @@ export default {
           json_schema: sceneSchema,
         },
         temperature: 0.1,
-        max_tokens: 448,
+        max_tokens: 640,
       });
 
       const plan = parseScenePlan(reasoning);
