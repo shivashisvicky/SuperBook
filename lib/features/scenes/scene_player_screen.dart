@@ -258,7 +258,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
               top: false,
               child: _StoryMomentOverlay(
                 expanded: _detailsExpanded,
-                title: widget.scene.title,
+                title: 'Story moment',
                 summary:
                     generated?.plan.sceneSummary ?? widget.scene.caption,
                 location: generated?.plan.environment.location ??
