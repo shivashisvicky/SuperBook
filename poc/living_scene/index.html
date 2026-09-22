@@ -18,16 +18,16 @@
 const q=s=>document.querySelector(s),A=q('#characterA'),B=q('#characterB'),ah=q('#aHead'),bh=q('#bHead'),ae=q('#aEyes'),be=q('#bEyes'),aa=q('#aArm'),ba=q('#bArm'),bs=q('#bSmile'),bom=q('#bOpenMouth'),cam=q('#camera'),mode=q('#mode'),status=q('#status');
 const s={mode:'idle',t:0,sceneT:0,blinkA:2.1,blinkB:3.4,headA:0,headB:0,armA:0,armB:0,armAV:0,armBV:0};
 function spring(k,target,dt){const v=k+'V';s[v]+=(target-s[k])*55*dt-s[v]*13*dt;s[k]+=s[v]*dt}
-function setMode(m){s.mode=m;s.sceneT=0;mode.textContent=m}document.querySelectorAll('button').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+function setMode(m){s.mode=m;s.sceneT=0;mode.textContent=m==='reaction'?'reaction · surprised':m}document.querySelectorAll('button').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 function frame(dt){s.t+=dt;if(s.mode==='scene')s.sceneT+=dt;const breath=Math.sin(s.t*1.65)*4;let ha=0,hb=0,ta=0,tb=0,c=0;
 if(s.mode==='glance'){ha=.07*Math.sin(s.t*2.1);hb=-.055*Math.sin(s.t*1.7+.8)}
 if(s.mode==='gesture'){ha=.06;ta=.42+.12*Math.sin(s.t*7)}
-if(s.mode==='reaction'){hb=-.18;tb=-.30}
+if(s.mode==='reaction'){hb=-.22;tb=-.62;ta=.28;ha=.09}
 if(s.mode==='scene'){const t=s.sceneT;if(t<1.6){ha=.065;hb=-.04}else if(t<3.4){ha=.04;ta=.42*Math.sin((t-1.6)*2.1);hb=.06}else if(t<4.8){hb=-.12;tb=-.35}else{ha=.02*Math.sin(t*2);hb=.015*Math.sin(t*1.7);c=.018*Math.sin((t-4.8)*1.2)}if(t>6.4)s.sceneT=0}
 s.headA+=(ha-s.headA)*Math.min(1,dt*7);s.headB+=(hb-s.headB)*Math.min(1,dt*7);spring('armA',ta,dt);spring('armB',tb,dt);
 const blink=(k,period)=>{s[k]-=dt;if(s[k]<=0)s[k]=period+Math.random()*2.5;return s[k]<.12?Math.max(.08,s[k]/.12):1};
 const ea=blink('blinkA',3.1),eb=blink('blinkB',3.8);
-ah.setAttribute('transform',`rotate(${s.headA*57.3} 540 500)`);bh.setAttribute('transform',`rotate(${s.headB*57.3} 1080 500)`);ae.setAttribute('transform',`translate(540 515) scale(1 ${ea}) translate(-540 -515)`);const reactionFace=s.mode==='reaction';be.setAttribute('transform',`translate(1080 515) scale(${reactionFace?1.18:1} ${reactionFace?1.12:eb}) translate(-1080 -515)`);bs.setAttribute('opacity',reactionFace?'0':'1');bom.setAttribute('opacity',reactionFace?'1':'0');
+ah.setAttribute('transform',`rotate(${s.headA*57.3} 540 500)`);bh.setAttribute('transform',`rotate(${s.headB*57.3} 1080 500)`);ae.setAttribute('transform',`translate(540 515) scale(1 ${ea}) translate(-540 -515)`);const reactionFace=s.mode==='reaction';be.setAttribute('transform',`translate(1080 515) scale(${reactionFace?1.42:1} ${reactionFace?1.32:eb}) translate(-1080 -515)`);bs.setAttribute('opacity',reactionFace?'0':'1');bom.setAttribute('opacity',reactionFace?'1':'0');
 aa.setAttribute('transform',`rotate(${s.armA*57.3} 455 650)`);ba.setAttribute('transform',`rotate(${s.armB*57.3} 1145 650)`);
 A.setAttribute('transform',`translate(0 ${breath})`);B.setAttribute('transform',`translate(0 ${breath*.8})`);cam.setAttribute('transform',`translate(${c*80} ${c*20}) scale(${1+Math.abs(c)*.035})`);
 status.textContent=`runtime: local-only · state: ${s.mode} · scene time: ${s.sceneT.toFixed(1)}s · springs: active · AI/frame: 0`;requestAnimationFrame(now=>{const last=frame.last??now;frame.last=now;frame(Math.min(.05,(now-last)/1000))})}frame(0);
