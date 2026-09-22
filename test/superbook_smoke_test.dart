@@ -65,7 +65,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text('Narrative beat · intensity 2', skipOffstage: false),
+      find.text('Story moment', skipOffstage: false),
       findsOneWidget,
     );
   });
