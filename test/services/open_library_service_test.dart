@@ -174,6 +174,25 @@ The investigation continued through several complete sentences.
     expect(book.chapters.first.passage.first, contains('Holmes examined the note'));
   });
 
+  test('curated classic catalog keeps canonical Gutenberg IDs first-class', () async {
+    final client = MockClient((request) async => http.Response('offline', 503));
+    final service = OpenLibraryService(client: client);
+
+    final books = await service.popularBooks();
+    final ids = {
+      for (final book in books)
+        if (book.gutenbergId != null) book.title: book.gutenbergId,
+    };
+
+    expect(ids['Pride and Prejudice'], 1342);
+    expect(ids['The Adventures of Sherlock Holmes'], 1661);
+    expect(ids['Moby Dick; Or, The Whale'], 2701);
+    expect(ids['Frankenstein; or, the Modern Prometheus'], 84);
+    expect(ids['Dracula'], 345);
+    expect(ids['Great Expectations'], 1400);
+    expect(ids['The Picture of Dorian Gray'], 174);
+  });
+
   test('popular books fall back to local classics when catalog is unavailable', () async {
     final client = MockClient((request) async => http.Response('offline', 503));
     final service = OpenLibraryService(client: client);
