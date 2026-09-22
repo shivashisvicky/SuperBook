@@ -37,45 +37,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
   bool _loading = false;
   VideoPlayerController? _video;
   late final AnimationController _storyController;
-  List<GeneratedMotionFrame> _motionFrames = const [];
-  bool _motionLoading = false;
-  bool _detailsExpanded = false;
-  String? _errorMessage;
-  String? _generationError;
-
-  Chapter get _chapter =>
-      widget.book.chapters.firstWhere((chapter) => chapter.id == widget.beat.chapterId);
-
-  String get _cacheKey => _sceneCache.key(
-        bookId: widget.book.id,
-        chapterId: widget.beat.chapterId,
-        passage: _chapter.passage.join('\n'),
-      );
-
-  @override
-  void initState() {
-    super.initState();
-    _storyController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 5400),
-    )..repeat();
-    final cached = _sceneCache.get(_cacheKey);
-    _generated = cached;
-    if (cached?.hasVideo == true) {
-      unawaited(_loadVideo(cached!.videoUrl!));
-    }
-    final cachedMotion = _sceneCache.getMotion(_cacheKey);
-    if (cachedMotion != null && cachedMotion.isNotEmpty) {
-      _motionFrames = cachedMotion;
-    }
-    if (cached != null) {
-      // Local playback is the default. Cloud motion generation remains an
-      // explicit future enhancement so opening a scene does not spend an AI
-      // inference on every frame sequence.
-    } else {
-      unawaited(_generate());
-    }
-  }
 
   @override
   void dispose() {
@@ -103,35 +64,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     }
   }
 
-  Future<void> _prepareMotion(GeneratedScene generated) async {
-    if (_motionLoading || _motionFrames.isNotEmpty || _sceneEndpoint.isEmpty) {
-      return;
-    }
-    final cachedMotion = _sceneCache.getMotion(_cacheKey);
-    if (cachedMotion != null && cachedMotion.isNotEmpty) {
-      setState(() => _motionFrames = cachedMotion);
-      return;
-    }
-    final provider = CloudflareSceneProvider(endpoint: _sceneEndpoint);
-    setState(() => _motionLoading = true);
-    try {
-      final reference = await _resizeReferenceImage(generated.imageBase64);
-      final frames = await provider.generateMotionFrames(
-        plan: generated.plan,
-        imageBase64: reference,
-      );
-      if (!mounted) return;
-      if (frames.isNotEmpty) {
-        _sceneCache.putMotion(_cacheKey, frames);
-        _motionFrames = frames;
-        setState(() {});
-      }
-    } catch (_) {
-      // Keep the generated still as the reliable fallback.
-    } finally {
-      if (mounted) setState(() => _motionLoading = false);
-    }
-  }
 
   Future<String> _resizeReferenceImage(String imageBase64) async {
     final bytes = base64Decode(imageBase64);
@@ -162,8 +94,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     if (force) {
       final oldVideo = _video;
       _video = null;
-      _sceneCache.clearMotion(_cacheKey);
-      _motionFrames = const [];
       await oldVideo?.dispose();
     }
 
@@ -195,7 +125,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       if (mounted) {
         setState(() {
           _generated = generated;
-          _motionFrames = const [];
           _loading = false;
           _generationError = null;
         });
@@ -573,46 +502,6 @@ class _MotionBuildingPill extends StatelessWidget {
         SizedBox(width: 7),
         Text('Bringing the scene to life', style: TextStyle(fontSize: 11)),
       ]),
-    ),
-  );
-}
-
-class _MotionFrameVisual extends StatelessWidget {
-  const _MotionFrameVisual({required this.frames, required this.controller});
-  final List<GeneratedMotionFrame> frames;
-  final Animation<double> controller;
-  @override
-  Widget build(BuildContext context) => SizedBox.expand(
-    child: AnimatedBuilder(
-      animation: controller,
-      builder: (context, _) {
-        final index = (frames.length * controller.value).floor().clamp(0, frames.length - 1);
-        final frame = frames[index];
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 700),
-          switchInCurve: Curves.easeInOutCubic,
-          switchOutCurve: Curves.easeInOutCubic,
-          layoutBuilder: (currentChild, previousChildren) => Stack(
-            fit: StackFit.expand,
-            children: [
-              ...previousChildren,
-              if (currentChild != null) currentChild,
-            ],
-          ),
-          transitionBuilder: (child, animation) => FadeTransition(
-            opacity: animation,
-            child: child,
-          ),
-          child: Image.memory(
-            base64Decode(frame.base64),
-            key: ValueKey<String>(frame.base64),
-            width: double.infinity,
-            height: double.infinity,
-            fit: BoxFit.cover,
-            gaplessPlayback: true,
-          ),
-        );
-      },
     ),
   );
 }
