@@ -1716,3 +1716,88 @@ SuperBook CI runs 278 and 279: success.
 TEST Pages run 171: success.
 
 No paid infrastructure, R2, AI Gateway credits, or T2V changes were introduced by this reader-structure refinement.
+
+
+# 40. 2026-09-22 RESILIENT BOOK CATALOG PROVIDER
+
+The TEST Library no longer depends on Gutendex for catalog discovery.
+
+## Problem observed
+
+The Library was showing only its loading state because the live catalog request through Gutendex was unavailable. This made the real-book Library appear empty even though the parser and reader were healthy.
+
+## Implemented
+
+The branch now uses:
+
+```
+Open Library
+   -> public/readable catalog discovery
+   -> Internet Archive public text when an IA edition is available
+   -> Project Gutenberg direct text for curated fallback classics
+```
+
+Open Library is the discovery/catalog layer. The book reader still consumes canonical plain text and the existing Gutenberg parser remains the structure parser.
+
+New service:
+
+`lib/services/open_library_service.dart`
+
+It provides:
+
+- public-domain catalog search;
+- author/title search;
+- Open Library covers;
+- Internet Archive plain-text resolution from public IA identifiers;
+- direct Gutenberg text fallback for curated classics;
+- local classic-book catalog fallback when the discovery service is unavailable.
+
+The curated fallback prevents the Library from becoming an empty loading screen during a catalog outage.
+
+The existing Gutenberg parser was deliberately reused through:
+
+`GutenbergService.parseText(...)`
+
+This avoids duplicating the already-tested chapter/section parsing logic.
+
+Library UI now uses the provider-neutral `LibraryBookSummary` and no longer labels the catalog itself as Gutenberg-only.
+
+## Validation
+
+Final branch head:
+
+`668b4abba41cb830356598a61271b38f92023554`
+
+SuperBook CI:
+
+- Run 297
+- Run ID `35682341311`
+- success
+- analyze: success
+- tests: success
+- release web build: success
+
+TEST Pages:
+
+- Run 180
+- Run ID `35682336630`
+- success
+
+The failed intermediate CI runs were fixed incrementally and are not the final state.
+
+No changes were made to:
+
+- AI Worker;
+- scene generation;
+- motion keyframes;
+- T2V billing path;
+- R2;
+- paid infrastructure.
+
+## Product direction
+
+The Library is now:
+
+`provider discovery -> trusted public text -> existing reader/parser -> optional AI Experience`
+
+The catalog provider is no longer a single point of failure for the entire Library.
