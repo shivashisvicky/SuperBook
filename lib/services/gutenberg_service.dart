@@ -312,10 +312,13 @@ class GutenbergService {
     final normalized = value.trim();
     if (normalized.length < 5 || normalized.length > 100) return false;
     if (RegExp(r'\d').hasMatch(normalized)) return false;
-    if (!RegExp(r"^[A-ZÀ-ÖØ-Þ\s&'’-]+$").hasMatch(normalized)) return false;
-    final letters =
-        normalized.replaceAll(RegExp(r'[^A-Za-zÀ-ÖØ-Þ]'), '');
-    return letters.length >= 5 &&
+    if (RegExp(r'[.!?]').hasMatch(normalized)) return false;
+    final letters = normalized.replaceAll(
+      RegExp(r'[^A-Za-zÀ-ÖØ-öø-ÿŒœ]'),
+      '',
+    );
+    if (letters.length < 5) return false;
+    return !RegExp(r'[a-z]').hasMatch(letters) &&
         normalized == normalized.toUpperCase();
   }
 
