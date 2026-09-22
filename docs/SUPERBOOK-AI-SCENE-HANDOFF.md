@@ -1802,3 +1802,47 @@ The Library is now:
 
 The catalog provider is no longer a single point of failure for the entire Library.
 \n---\n\n# 41. 2026-09-22 Worker + Gutenberg parser repair\n\n- The Cloudflare Workers Build for commit `b0f0be45` failed because `cloudflare/superbook-ai-worker/src/index.js` was truncated at the image response (`src/index.js:442:33`).\n- The Worker source was repaired without changing the model architecture. Cloudflare subsequently reported a successful production deployment for commit `647c63fb`.\n- The latest Flutter CI run for commit `cbfc6207` is green, including analyze, all tests, and web release build.\n- The Art of War catalog entry exposed OCR/page-reference debris as reader-visible sections, including `* X 2JBJI ff IH S 1` and `Cf. III. § 13 (i)`. These are not real chapters. The parser now treats explicit numbered chapter/adventure/roman sections as authoritative and rejects OCR/reference noise as structural headings.\n- Regression coverage was added for this exact OCR pattern. Do not restore generic all-caps structural headings as chapter boundaries when explicit numbered sections are present.\n
+
+# 42. 2026-09-22 Art of War chapter-boundary repair
+
+The TEST screenshot exposed a concrete regression: The Art of War was presenting only six reader sections (Chapter C, Chapter V, Chapter VI, Chapter VII, Chapter X, Chapter XIII) instead of the source's 13 titled chapters. The apparent Roman markers were OCR/page artifacts, not valid chapter boundaries.
+
+The parser was repaired surgically on test/superbook-ai-scene-foundation.
+
+## Implemented
+
+- Restored lib/services/gutenberg_service.dart to the last known-good parser implementation after the intermediate Roman-heading edit had duplicated/corrupted the file.
+- Added recognition for titled Roman sections such as I. LAYING PLANS, while retaining conventional CHAPTER I, ADVENTURE I, and standalone Roman support.
+- Supports optional Markdown-style heading prefixes without changing the source line position used for chapter slicing.
+- When a Gutenberg edition repeats numbered headings in its table of contents and in the actual text, duplicate numbered markers now resolve to the later, substantive occurrence rather than the contents entry.
+- Titled Roman sections take precedence over standalone Roman numerals, preventing OCR/reference markers from becoming chapters.
+- Titled Roman validation rejects numeric/reference debris and supports source titles containing characters such as OE.
+- Added regression coverage for the exact three-chapter OCR pattern and a full 13-chapter Art of War fixture.
+
+Key commits:
+
+127542953946055fc5d508e908ed5dbd31ac2e1e
+5c0afc722c104784a3fa4d67fd8ea416bae5a495
+43e25426f9d108b242f50ba7f3f54dab84f37bb7
+8acc97c249728f2cf79b84ec979a64d3c56d0476
+409e18813158f83a749bdf5cd79ae66670e2b122
+876e27265e6119ae8f6e42486dc8dece5cc8b626
+
+## Validation
+
+Final parser/test head:
+
+876e27265e6119ae8f6e42486dc8dece5cc8b626
+
+SuperBook CI run 366: SUCCESS
+- flutter analyze: success
+- flutter test: success
+- flutter build web --release: success
+
+TEST Pages run 215: SUCCESS
+- Build test web app: success
+- Deploy test Pages: success
+
+The deployed TEST app is therefore ready for validation. Do not treat the older six-section screenshot as the current parser state.
+
+No AI model, T2V, R2, billing, or paid infrastructure changes were introduced by this parser repair.
