@@ -232,8 +232,9 @@ story text before the end of the downloaded section.
     final service = GutenbergService();
     final book = service.parseText(summary, text);
 
-    expect(book.chapters, hasLength(1));
+    expect(book.chapters, hasLength(2));
     expect(book.chapters.first.title, 'Chapter V');
+    expect(book.chapters.last.title, 'Chapter VI');
     expect(book.chapters.first.passage.join(' '), contains('2JBJI'));
     expect(book.chapters.first.passage.join(' '), contains('Cf. III.'));
   });
