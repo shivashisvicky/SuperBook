@@ -288,7 +288,21 @@ class GutenbergService {
       }
     }
 
-    return _removeDuplicateChapterMarkers(selected);
+    final substantive = _removeDuplicateChapterMarkers(selected);
+    final firstExplicit = substantive.indexWhere(_isExplicitSectionMarker);
+    if (firstExplicit <= 0) return substantive;
+
+    // Gutenberg editions often place all-caps title-page or front-matter
+    // headings before the first real CHAPTER/ADVENTURE marker. Once a
+    // conventional numbered section is established, those preamble headings
+    // must not become reader-visible chapters.
+    return substantive.sublist(firstExplicit);
+  }
+
+  bool _isExplicitSectionMarker(_ChapterMarker marker) {
+    return marker.number != null &&
+        RegExp(r'^(?:Chapter|Adventure|Story|Part|Book)\\b', caseSensitive: false)
+            .hasMatch(marker.heading.trim());
   }
 
   bool _looksLikeChapterBody(String text) {
