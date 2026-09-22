@@ -10,6 +10,7 @@ import '../../domain/book.dart';
 import '../../services/scene_generation/cloudflare_scene_provider.dart';
 import '../../services/scene_generation/scene_generation_cache.dart';
 import '../../services/scene_generation/scene_generation_provider.dart';
+import 'superbook_cinematic_stage.dart';
 
 const _sceneEndpoint = String.fromEnvironment('SUPERBOOK_AI_SCENE_ENDPOINT');
 final _sceneCache = SceneGenerationCache();
@@ -67,8 +68,10 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
     if (cachedMotion != null && cachedMotion.isNotEmpty) {
       _motionFrames = cachedMotion;
     }
-    if (cached != null && cachedMotion == null) {
-      unawaited(_prepareMotion(cached));
+    if (cached != null) {
+      // Local playback is the default. Cloud motion generation remains an
+      // explicit future enhancement so opening a scene does not spend an AI
+      // inference on every frame sequence.
     } else {
       unawaited(_generate());
     }
@@ -196,7 +199,8 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
           _loading = false;
           _generationError = null;
         });
-        unawaited(_prepareMotion(generated));
+        // The local cinematic stage animates the generated keyframe without
+        // another model call. AI motion can be layered on later as opt-in.
       }
     } catch (error) {
       if (mounted) {
@@ -225,21 +229,10 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
         ),
       );
     }
-    if (_motionFrames.isEmpty) {
-      return SizedBox.expand(
-        child: Image.memory(
-          base64Decode(generated.imageBase64),
-          fit: BoxFit.cover,
-          gaplessPlayback: true,
-          errorBuilder: (_, __, ___) => const Center(
-            child: Text('Generated scene image could not be decoded.'),
-          ),
-        ),
-      );
-    }
-    return _MotionFrameVisual(
-      frames: _motionFrames,
-      controller: _storyController,
+
+    return SuperBookCinematicStage(
+      imageBase64: generated.imageBase64,
+      plan: generated.plan,
     );
   }
 
@@ -354,7 +347,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
                 title: widget.scene.title,
                 summary: generated?.plan.sceneSummary ?? widget.scene.caption,
                 location: generated?.plan.environment.location ?? widget.scene.atmosphere,
-                motionBeat: _motionFrames.isEmpty ? null : _motionFrames.first.beat,
+                motionBeat: null,
                 currentIndex: currentIndex,
                 total: widget.book.chapters.length,
                 hasPrevious: hasPrevious,
