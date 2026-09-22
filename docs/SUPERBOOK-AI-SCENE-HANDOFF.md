@@ -2107,3 +2107,71 @@ The live acceptance matrix verifies source identity, clean literary-body parsing
 Pride and Prejudice #1342 is the immediate canary and now resolves through canonical Gutenberg rather than an Internet Archive edition. The parser preserves its chapter structure without source-marker reordering.
 
 The TEST Pages URL remains the final user-facing validation surface. Do not call the deployment green merely because the CI build is green. Verify the published TEST surface before asking for focused user validation.
+
+# 44. 2026-09-23 LOCAL CINEMATIC STAGE + TOKEN DISCIPLINE
+
+The reader foundation is now being followed by a local cinematic rendering foundation rather than a return to the old deterministic stick renderer.
+
+## Current Experience architecture
+
+```
+canonical literary passage
+        ↓
+Cloudflare AI Scene Director
+        ↓
+structured AiScenePlan
+        ↓
+one generated cinematic keyframe
+        ↓
+SuperBookCinematicStage (Flutter/local)
+        ↓
+camera drift + scale/parallax + atmosphere + lighting
+```
+
+The local stage is the default playback path. Replaying a generated scene does not invoke another AI model.
+
+The existing Worker motion-frame and T2V endpoints remain provider capabilities for future explicit opt-in experiments. They are NOT automatic runtime dependencies.
+
+## AI token discipline
+
+The Scene Director now requests structured JSON directly from Workers AI using the scene schema instead of relying on free-form JSON parsing.
+
+The text completion budget is deliberately bounded at 448 output tokens. The prompt also constrains the plan to at most 2 characters, 3 props, 3 actions, and concise descriptions.
+
+Do not increase the completion budget casually. If a scene plan fails validation, fix the contract or model invocation rather than simply spending more tokens.
+
+The generated scene remains cached by:
+
+bookId + chapterId + source passage hash
+
+No per-frame AI inference is required for local playback.
+
+## No-money boundary
+
+No AI Gateway credits, Unified Billing, Workers Paid, R2, paid third-party provider, or hidden billing dependency was introduced.
+
+The Alibaba HappyHorse T2V path remains blocked and disabled by default.
+
+## Engineering direction
+
+Do NOT build a general-purpose game engine.
+
+The next visual milestone is a small reusable 2D/2.5D story stage with:
+- reusable character/pose abstractions;
+- layered backgrounds and props;
+- scene-local camera movement;
+- deterministic timeline/action playback;
+- optional AI-assisted acting later;
+- narration/audio synchronization later.
+
+The AI ScenePlan remains the contract between literary understanding and visual rendering.
+
+## Validation requirement
+
+The branch must remain CI-green before the user is asked to validate the Experience.
+
+Current implementation commit:
+`bf209c85bd60423592b3ebc7adafd649a8bdd64`
+
+The latest CI run before this section was still validating the renderer cleanup. Do not describe the branch as green until a complete CI run passes analyze, tests, and web build.
+
