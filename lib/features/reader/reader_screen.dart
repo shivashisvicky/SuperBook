@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/book.dart';
+import '../../services/current_book_store.dart';
 import '../explore/explore_screen.dart';
 import '../scenes/scene_player_screen.dart';
 
@@ -18,6 +19,23 @@ class _ReaderScreenState extends State<ReaderScreen> {
   bool bookmarked = false;
   bool narrationVisible = false;
   double fontSize = 20;
+
+  @override
+  void initState() {
+    super.initState();
+    final store = CurrentBookStore.instance;
+    final summary = store.currentSummary.value;
+    if (summary != null &&
+        summary.title == widget.book.title &&
+        store.currentChapterIndex.value < widget.book.chapters.length) {
+      chapterIndex = store.currentChapterIndex.value;
+    }
+  }
+
+  void _setChapter(int index) {
+    setState(() => chapterIndex = index);
+    CurrentBookStore.instance.setChapter(index);
+  }
 
   Chapter get chapter => widget.book.chapters[chapterIndex];
 
@@ -40,7 +58,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 title: Text(widget.book.chapters[i].title),
                 trailing: i == chapterIndex ? const Icon(Icons.check) : null,
                 onTap: () {
-                  setState(() => chapterIndex = i);
+                  _setChapter(i);
                   Navigator.pop(sheetContext);
                 },
               ),
@@ -177,7 +195,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     OutlinedButton.icon(
                       onPressed: chapterIndex == 0
                           ? null
-                          : () => setState(() => chapterIndex--),
+                          : () => _setChapter(chapterIndex - 1),
                       icon: const Icon(Icons.chevron_left),
                       label: const Text('Previous'),
                     ),
@@ -188,7 +206,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     OutlinedButton.icon(
                       onPressed: chapterIndex + 1 >= widget.book.chapters.length
                           ? null
-                          : () => setState(() => chapterIndex++),
+                          : () => _setChapter(chapterIndex + 1),
                       icon: const Icon(Icons.chevron_right),
                       label: const Text('Next'),
                     ),
