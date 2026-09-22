@@ -87,7 +87,7 @@ Chapter I
 It is a truth universally acknowledged that a single man in possession of a good fortune must be in want of a wife. The Bennet family discusses the arrival of a wealthy neighbour, and the chapter continues with several complete sentences of genuine story prose.
 
 Chapter II
-Mr. Bennet receives the visitors and continues the story with substantive prose. The family discusses the recent events and the neighbourhood for several complete sentences before the chapter ends.
+Mr. Bennet receives the visitors and continues the story with substantive prose. The family discusses the recent events and the neighbourhood for several complete sentences before the chapter ends. The conversation continues with another complete thought so this remains a substantive chapter boundary rather than a short contents marker.
 
 *** END OF THE PROJECT GUTENBERG EBOOK PRIDE AND PREJUDICE ***
 ''';
