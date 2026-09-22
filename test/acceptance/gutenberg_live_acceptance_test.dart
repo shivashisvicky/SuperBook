@@ -4,7 +4,7 @@ import 'package:superbook/services/gutenberg_service.dart';
 void main() {
   const books = <({int id, String title, String author, int sections, String first})>[
     (id: 1342, title: 'Pride and Prejudice', author: 'Jane Austen', sections: 61, first: 'It is a truth universally acknowledged'),
-    (id: 1661, title: 'The Adventures of Sherlock Holmes', author: 'Arthur Conan Doyle', sections: 12, first: 'To Sherlock Holmes she is always the woman'),
+    (id: 1661, title: 'The Adventures of Sherlock Holmes', author: 'Arthur Conan Doyle', sections: 12, first: 'I had called upon my friend, Mr. Sherlock Holmes'),
     (id: 2701, title: 'Moby Dick; Or, The Whale', author: 'Herman Melville', sections: 135, first: 'Call me Ishmael'),
     (id: 84, title: 'Frankenstein; or, the Modern Prometheus', author: 'Mary Wollstonecraft Shelley', sections: 24, first: 'You will rejoice to hear that no disaster'),
     (id: 345, title: 'Dracula', author: 'Bram Stoker', sections: 27, first: '3 May, Bistritz'),
