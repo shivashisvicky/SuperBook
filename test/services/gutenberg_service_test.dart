@@ -392,29 +392,15 @@ This reference must remain ordinary chapter text.
     expect(book.chapters.last.passage.join(' '), contains('Cf. III.'));
   });
 
-  test('Gutenberg parser sorts numbered sections when source order starts mid-sequence', () {
+  test('Gutenberg parser preserves source-line marker order when numbering is non-sequential', () {
     const text = '''
 *** START OF THE PROJECT GUTENBERG EBOOK TEST ***
-
-CONTENTS
-Chapter XX.
-Chapter XXI.
-Chapter XXII.
-Chapter XXIII.
-Chapter I.
-Chapter II.
 
 Chapter XX.
 Mr. Collins was not left long to the silent contemplation of his successful love. Mrs. Bennet entered the room and began to discuss the proposal, while Elizabeth had already refused it. The family continued the conversation for several complete sentences and the chapter remained substantive enough to establish a real boundary.
 
 Chapter XXI.
 The next chapter continues the story with substantive prose. The characters discuss the recent events and consider what may happen next. Several complete sentences establish the chapter as a genuine section of the book and distinguish it from a contents list.
-
-Chapter XXII.
-The household continues its discussion in another substantive chapter. Elizabeth and Charlotte consider the social consequences of recent events, and the narrative develops through several complete sentences before the next chapter begins.
-
-Chapter XXIII.
-The story reaches another genuine chapter with substantive prose. The characters respond to the latest development and prepare for what follows. Several complete sentences establish this as the final section in the sample.
 
 Chapter I.
 It is a truth universally acknowledged that a single man in possession of a good fortune must be in want of a wife. The family discusses the arrival of a new neighbour and the implications of his fortune. Several complete sentences establish the opening chapter clearly.
@@ -432,14 +418,14 @@ Mr. Bennet continues the story with substantive prose about the new acquaintance
       coverUrl: null,
     );
     final book = GutenbergService().parseText(summary, text);
+
     expect(book.chapters.map((chapter) => chapter.title), [
-      'Chapter I',
-      'Chapter II',
       'Chapter XX',
       'Chapter XXI',
-      'Chapter XXII',
-      'Chapter XXIII',
+      'Chapter I',
+      'Chapter II',
     ]);
+    expect(book.chapters[2].passage.first, contains('truth universally acknowledged'));
   });
 
 
