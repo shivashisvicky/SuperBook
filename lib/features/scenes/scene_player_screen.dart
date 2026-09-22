@@ -212,7 +212,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: Text(sectionKind + ' ' + (currentIndex + 1).toString()),
+        title: Text('$sectionKind ${currentIndex + 1}'),
         foregroundColor: Colors.white,
       ),
       body: Stack(
@@ -433,9 +433,7 @@ class _StoryMomentOverlay extends StatelessWidget {
                     Expanded(
                       child: Center(
                         child: Text(
-                          (currentIndex + 1).toString() +
-                              ' / ' +
-                              total.toString(),
+                          '${currentIndex + 1} / $total',
                           style: theme.textTheme.labelMedium,
                         ),
                       ),
