@@ -355,6 +355,17 @@ class GutenbergService {
     }
 
     final substantive = _removeDuplicateChapterMarkers(selected);
+    final hasTitledRomanSections =
+        substantive.any((marker) => marker.isTitledRomanHeading);
+    if (hasTitledRomanSections) {
+      // Some scanned editions use headings like "I. LAYING PLANS" rather
+      // than "CHAPTER I". Once that form is present, ignore standalone Roman
+      // numerals and OCR/reference debris that happen to look numbered.
+      return substantive
+          .where((marker) => marker.isTitledRomanHeading)
+          .toList();
+    }
+
     final firstExplicit = substantive.indexWhere(_isExplicitSectionMarker);
     if (firstExplicit < 0) return substantive;
 
