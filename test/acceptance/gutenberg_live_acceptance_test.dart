@@ -27,7 +27,7 @@ void main() {
           ),
         );
 
-        expect(book.id, 'gutenberg-' + expected.id.toString());
+        expect(book.id, 'gutenberg-${expected.id}');
         expect(book.title, expected.title);
         expect(book.author, expected.author);
         expect(book.chapters, hasLength(expected.sections));
