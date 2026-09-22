@@ -440,3 +440,20 @@ export default {
         scenePlan: plan,
         image: {
           mimeType: 'image/jpeg',
+          base64: image.image,
+        },
+      }, 200, origin);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      const code = error && typeof error === 'object' ? error.code : undefined;
+      const status = error && typeof error === 'object' ? error.status : undefined;
+      console.error('SuperBook scene generation failed', { detail, code, status });
+      return json({
+        error: 'SuperBook scene generation failed.',
+        detail,
+        code: code ?? null,
+        upstreamStatus: status ?? null,
+      }, 502, origin);
+    }
+  },
+};
