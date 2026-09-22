@@ -403,6 +403,16 @@ export default {
       }
     }
 
+    if (request.method === 'GET' && requestUrl.pathname === '/health') {
+      return json({
+        ok: true,
+        service: 'superbook-ai-scene',
+        textModel: TEXT_MODEL,
+        imageModel: IMAGE_MODEL,
+        sceneSchemaVersion: '2',
+      }, 200, origin);
+    }
+
     if (request.method !== 'POST') {
       return json({ error: 'POST required.' }, 405, origin);
     }
