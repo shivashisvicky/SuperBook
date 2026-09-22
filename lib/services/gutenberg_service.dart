@@ -363,7 +363,12 @@ class GutenbergService {
         _removeDuplicateChapterMarkers(
           markers.where((marker) => marker.isTitledRomanHeading).toList(),
         );
-    if (titledRomanMarkers.isNotEmpty) {
+    final hasOtherExplicitMarkers =
+        markers.any(
+          (marker) =>
+              marker.number != null && !marker.isTitledRomanHeading,
+        );
+    if (titledRomanMarkers.isNotEmpty && !hasOtherExplicitMarkers) {
       // Some scanned editions use headings like "I. LAYING PLANS" rather
       // than "CHAPTER I". The heading validator is intentionally strict, so
       // these markers can be trusted even when their contents entry has no
