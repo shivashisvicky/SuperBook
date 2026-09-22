@@ -221,7 +221,7 @@ class OpenLibraryService {
     }
 
     if (summary.archiveIds.isEmpty) {
-      throw Exception('No trusted public text source is available for ' + summary.title + '.');
+      throw Exception('No trusted public text source is available for ${summary.title}.');
     }
 
     Object? lastError;
@@ -237,7 +237,7 @@ class OpenLibraryService {
     }
 
     throw Exception(
-      'Could not download ' + summary.title + (lastError == null ? '' : ': ' + lastError.toString()),
+      'Could not download ${summary.title}: $lastError',
     );
   }
 
@@ -274,10 +274,10 @@ class OpenLibraryService {
 
   Future<String> _loadArchiveText(String archiveId) async {
     final metadataResponse = await _client
-        .get(Uri.parse('https://archive.org/metadata/' + archiveId))
+        .get(Uri.parse('https://archive.org/metadata/$archiveId'))
         .timeout(const Duration(seconds: 6));
     if (metadataResponse.statusCode != 200) {
-      throw Exception('Internet Archive metadata returned HTTP ' + metadataResponse.statusCode.toString() + '.');
+      throw Exception('Internet Archive metadata returned HTTP ${metadataResponse.statusCode}.');
     }
     final metadata = jsonDecode(metadataResponse.body) as Map<String, dynamic>;
     final files = metadata['files'] as List<dynamic>? ?? const [];
@@ -287,11 +287,11 @@ class OpenLibraryService {
     }
     final fileName = textFile['name'] as String;
     final uri = Uri.parse(
-      'https://archive.org/download/' + archiveId + '/' + Uri.encodeComponent(fileName),
+      'https://archive.org/download/$archiveId/${Uri.encodeComponent(fileName)}',
     );
     final response = await _client.get(uri).timeout(const Duration(seconds: 12));
     if (response.statusCode != 200) {
-      throw Exception('Internet Archive text returned HTTP ' + response.statusCode.toString() + '.');
+      throw Exception('Internet Archive text returned HTTP ${response.statusCode}.');
     }
     return _decodeText(response.bodyBytes);
   }
@@ -326,7 +326,7 @@ class OpenLibraryService {
   }
 
   int? _canonicalGutenbergId(String title, String author) {
-    final key = _normalizeIdentity(title) + '|' + _normalizeIdentity(author);
+    final key = '${_normalizeIdentity(title)}|${_normalizeIdentity(author)}';
     return _canonicalGutenbergIds[key];
   }
 
