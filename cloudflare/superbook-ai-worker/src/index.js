@@ -178,10 +178,10 @@ async function generateMotionFrames(env, plan, imageBase64, origin) {
   }
 
   const sourceBlob = new Blob([sourceBytes], { type: 'image/png' });
-  // Two distinct AI-generated acting states are enough for the current
-  // motion-comic presentation. Generate them concurrently so one scene
-  // does not wait for three serial inference calls.
-  const actions = plan.actions.filter((action) => typeof action === 'string' && action.trim()).slice(0, 2);
+  // Generate a short sequence of distinct AI-generated acting states. The
+  // states are still derived from one canonical scene so identities and
+  // composition stay anchored while the acting progresses.
+  const actions = plan.actions.filter((action) => typeof action === 'string' && action.trim()).slice(0, 3);
   const beats = actions.length > 0
     ? actions
     : plan.characters.slice(0, 2).map((character) => character.action).filter(Boolean);
@@ -234,7 +234,7 @@ async function generateMotionFrames(env, plan, imageBase64, origin) {
 
   return json({
     frames,
-    frameDurationSeconds: 2.4,
+    frameDurationSeconds: 1.8,
   }, 200, origin);
 }
 
