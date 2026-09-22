@@ -1846,3 +1846,232 @@ TEST Pages run 215: SUCCESS
 The deployed TEST app is therefore ready for validation. Do not treat the older six-section screenshot as the current parser state.
 
 No AI model, T2V, R2, billing, or paid infrastructure changes were introduced by this parser repair.
+
+# 43. 2026-09-23 FINAL BOOK PIPELINE HANDOFF
+
+This section is authoritative over older reader/catalog assumptions.
+
+## Current truth
+
+Repository: https://github.com/shivashisvicky/SuperBook
+Branch: test/superbook-ai-scene-foundation
+HEAD: 65905fd2e176e5ca4b2491a8fb24e3e40b7efad0
+TEST Pages: https://shivashisvicky.github.io/SuperBook/test/
+PR #2: https://github.com/shivashisvicky/SuperBook/pull/2
+Worker: https://superbook-ai-scene.shivashisvicky112.workers.dev
+
+Current CI is RED:
+https://github.com/shivashisvicky/SuperBook/actions/runs/35713430558
+Run 385, ID 35713430558, HEAD 65905fd. The failure is in Gutenberg parser tests.
+
+Current Pages deployment is GREEN only as a deployment:
+https://github.com/shivashisvicky/SuperBook/actions/runs/35713426634
+Run 224 deployed the same red HEAD. Pages does not depend on CI, so this must NOT be called a valid green build.
+
+## What the user just observed
+
+The published TEST app has four major reader regressions:
+
+1. Home still displays the original demo story/chapter.
+2. Books load slowly and feel laggy compared with JARVIS.
+3. Pride and Prejudice loads a Finnish edition with replacement-character corruption.
+4. Contents contains Gutenberg license/front-matter text as if it were chapters.
+
+The screenshot is not a minor parser cosmetic issue. It proves the book source/edition pipeline is wrong.
+
+## Root cause: wrong source authority
+
+Current OpenLibraryService effectively follows:
+
+Open Library discovery -> Internet Archive archiveId -> IA text/djvu -> parser -> Gutenberg late fallback.
+
+That is backwards for a Gutenberg-first reader.
+
+Open Library is discovery metadata, not authoritative edition identity. Different IA records can represent different editions or translations of the same work.
+
+The screenshot is consistent with Finnish Gutenberg eBook #45186, while canonical English Pride and Prejudice is Gutenberg #1342.
+
+Canonical English:
+https://www.gutenberg.org/ebooks/1342
+
+Canonical text:
+https://www.gutenberg.org/cache/epub/1342/pg1342.txt
+
+Finnish edition seen in TEST:
+https://www.gutenberg.org/ebooks/45186
+
+Required rule:
+
+If a Gutenberg ID is known, canonical Gutenberg text is authoritative. Do not silently substitute an Internet Archive edition.
+
+IA may be a fallback for works without a usable Gutenberg source, but edition identity must be explicit.
+
+## Root cause: Gutenberg ID is not first-class enough
+
+The current Open Library summary path does not reliably populate summary.gutenbergId from discovery.
+
+Therefore loadBook can enter the IA loop before Gutenberg is considered.
+
+Fix source identity first. Do not add more parser heuristics to compensate for the wrong edition.
+
+## Root cause: performance architecture
+
+Current IA loading performs metadata lookup and text download sequentially with long timeouts, and retries archive IDs sequentially. The service caches the final parsed Book but does not have the JARVIS-style raw-text cache/in-flight deduplication.
+
+JARVIS uses bounded/raced Gutenberg acquisition, raw source caching, in-flight request sharing, and progressive rendering.
+
+Actual JARVIS references:
+
+https://github.com/shivashisvicky/Jarvis-OS/blob/main/jarvis-ebook-network-fast-v1.js
+
+https://github.com/shivashisvicky/Jarvis-OS/blob/main/jarvis-ebook-network-race-fix-v1.js
+
+https://github.com/shivashisvicky/Jarvis-OS/blob/main/jarvis-ebook-performance-fix-v1.js
+
+https://github.com/shivashisvicky/Jarvis-OS/blob/main/jarvis-ebook-content-normalizer-v1.js
+
+https://github.com/shivashisvicky/Jarvis-OS/blob/main/jarvis-ebook-stream-reader-v1.js
+
+Reproduce those engineering properties inside SuperBook. Do not copy JARVIS wholesale.
+
+## Root cause: parser is solving the wrong problem
+
+The current parser is being fed Gutenberg front matter, licenses, TOC material, OCR/page-reference debris, and sometimes the wrong edition.
+
+That is why it can expose entries such as:
+
+JANE AUSTEN (1775-1817)
+*** END OF THIS PROJECT GUTENBERG EBOOK...
+PLEASE READ THIS BEFORE YOU DISTRIBUTE OR USE THIS WORK
+1.F.2. LIMITED WARRANTY...
+1.F.3. LIMITED RIGHT OF REPLACEMENT...
+
+Correct order must be:
+
+source/edition identity -> source normalization -> literary-body isolation -> structure extraction.
+
+Do not keep broadening generic uppercase-heading heuristics.
+
+## Root cause: current numeric sorting broke the parser invariant
+
+Recent commits:
+
+2814e54c3c800e8553c077ebddf1d1543a37719a
+Normalize numbered Gutenberg chapter order
+
+b0daa39dfbdb09e17b75b8f8e90934b6327590a
+Add regression for wrapped numbered chapter order
+
+sorted chapter markers by logical chapter number.
+
+That is unsafe because the same markers are used to slice source text. Slicing markers must remain ordered by source line.
+
+The current CI failure is the direct consequence.
+
+Do not globally numeric-sort source markers. If display order needs normalization, derive it separately without mutating the source positions used for slicing.
+
+## Root cause: encoding
+
+The current IA path decodes arbitrary text bytes as UTF-8 with malformed bytes allowed. This can produce the replacement characters visible in the screenshot.
+
+Prefer canonical Gutenberg plain text whenever available. If IA remains as a fallback, its encoding must be handled explicitly and safely.
+
+## Root cause: Home
+
+Home still has the original demoBook wired into the production navigation path.
+
+The next implementation must replace that with real current/last-opened book state:
+
+real catalog selection -> real Book -> persisted current/last-opened state -> Home.
+
+Do not delete the demo fixture if useful for development, but do not use it as the production Home source.
+
+## Acceptance matrix
+
+Before returning to AI scene work, validate against actual canonical Gutenberg sources:
+
+- Pride and Prejudice #1342
+- The Adventures of Sherlock Holmes #1661
+- Moby-Dick #2701
+- Frankenstein #84
+- Dracula #345
+- Great Expectations #1400
+- The Picture of Dorian Gray #174
+
+For each, verify source identity, title/author, encoding, literary body start, section count, section order, first paragraph, and absence of Gutenberg license/front-matter, duplicate TOC entries, and OCR/page-reference pseudo-sections.
+
+Pride and Prejudice #1342 is the immediate canary.
+
+## AI/animation freeze
+
+The AI Scene Director and generated still Experience remain valuable and must not be rolled back to the old stick renderer.
+
+Free motion-keyframe work may remain, but reader stability takes priority.
+
+T2V model: alibaba/hh1.1-t2v
+Known error: 2021: Insufficient AI Gateway credits
+User requirement: NO MONEY.
+
+Do not add AI Gateway credits, Unified Billing, Workers Paid, R2, paid third-party providers, or hidden paid fallbacks. Do not repeatedly retry the blocked T2V path.
+
+Automatic video generation remains disabled. Animation is explicit opt-in.
+
+## Required order for the next engineer
+
+1. Restore CI green without a broad rollback.
+2. Make Gutenberg/source identity authoritative.
+3. Implement fast canonical Gutenberg acquisition, bounded/raced sources, raw text cache, and in-flight dedupe.
+4. Normalize Gutenberg wrappers before parsing.
+5. Make parser source-line-safe and exclude front matter/TOC/OCR contamination.
+6. Add real-book acceptance tests for the matrix above.
+7. Replace Home demoBook with real current/last-opened state.
+8. Measure reader opening performance against JARVIS.
+9. Only then resume AI Experience refinement.
+
+Do not ask the user to retest the current broken reader. Fix and validate in CI first.
+
+## Copy/paste message for next agent
+
+SuperBook continuation. Read docs/SUPERBOOK-AI-SCENE-HANDOFF.md completely, especially Section 43, before changing anything.
+
+Repo: https://github.com/shivashisvicky/SuperBook
+Branch: test/superbook-ai-scene-foundation
+TEST: https://shivashisvicky.github.io/SuperBook/test/
+PR #2: https://github.com/shivashisvicky/SuperBook/pull/2
+Worker: https://superbook-ai-scene.shivashisvicky112.workers.dev
+
+Current HEAD is 65905fd2e176e5ca4b2491a8fb24e3e40b7efad0.
+
+Do not touch main. Do not ask me to retest yet.
+
+Current CI is RED: https://github.com/shivashisvicky/SuperBook/actions/runs/35713430558
+Current Pages deployment is GREEN only because Pages independently deployed the same red HEAD: https://github.com/shivashisvicky/SuperBook/actions/runs/35713426634
+
+The reader is currently wrong at the source/edition layer. Open Library discovery currently leads to Internet Archive edition text before Gutenberg. This caused Pride and Prejudice to load Finnish Gutenberg edition #45186 instead of canonical English #1342, plus Gutenberg license/front matter appears as chapters and text contains replacement-character corruption.
+
+Canonical English Pride and Prejudice:
+https://www.gutenberg.org/ebooks/1342
+https://www.gutenberg.org/cache/epub/1342/pg1342.txt
+
+Make Gutenberg authoritative whenever a Gutenberg ID is known. Do not silently substitute an IA edition. IA can remain an explicit fallback only where Gutenberg is unavailable.
+
+Compare the real JARVIS source acquisition implementation:
+https://github.com/shivashisvicky/Jarvis-OS/blob/main/jarvis-ebook-network-fast-v1.js
+https://github.com/shivashisvicky/Jarvis-OS/blob/main/jarvis-ebook-network-race-fix-v1.js
+https://github.com/shivashisvicky/Jarvis-OS/blob/main/jarvis-ebook-performance-fix-v1.js
+https://github.com/shivashisvicky/Jarvis-OS/blob/main/jarvis-ebook-content-normalizer-v1.js
+https://github.com/shivashisvicky/Jarvis-OS/blob/main/jarvis-ebook-stream-reader-v1.js
+
+Adopt the useful properties: canonical source, bounded/raced acquisition, raw text cache, in-flight dedupe, normalization before parsing, progressive rendering where practical.
+
+Do not globally numeric-sort chapter markers. The latest parser change broke source-line ordering and CI. Fix that invariant first.
+
+Home is still wired to demoBook. Replace the production Home path with real current/last-opened book state.
+
+Acceptance books: Gutenberg 1342, 1661, 2701, 84, 345, 1400, 174. Validate source identity, encoding, body start, section count/order, first paragraph, and absence of license/TOC/OCR pseudo-sections.
+
+Freeze AI scene work until the reader is stable. Generated still Experience works and must not be replaced by the old stick renderer.
+
+T2V alibaba/hh1.1-t2v is blocked by 2021: Insufficient AI Gateway credits. User requires NO MONEY. Do not add credits, Unified Billing, Workers Paid, R2, or paid providers.
+
+Use small surgical commits. Inspect Actions after every push. Never call a deployment green without actual CI success. Do not broad-rollback working AI scene functionality.
