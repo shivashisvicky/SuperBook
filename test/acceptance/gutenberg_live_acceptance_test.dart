@@ -6,7 +6,7 @@ void main() {
     (id: 1342, title: 'Pride and Prejudice', author: 'Jane Austen', sections: 61, first: 'It is a truth universally acknowledged'),
     (id: 1661, title: 'The Adventures of Sherlock Holmes', author: 'Arthur Conan Doyle', sections: 12, first: 'I had called upon my friend, Mr. Sherlock Holmes'),
     (id: 2701, title: 'Moby Dick; Or, The Whale', author: 'Herman Melville', sections: 135, first: 'Call me Ishmael'),
-    (id: 84, title: 'Frankenstein; or, the Modern Prometheus', author: 'Mary Wollstonecraft Shelley', sections: 24, first: 'You will rejoice to hear that no disaster'),
+    (id: 84, title: 'Frankenstein; or, the Modern Prometheus', author: 'Mary Wollstonecraft Shelley', sections: 24, first: 'I am by birth a Genevese'),
     (id: 345, title: 'Dracula', author: 'Bram Stoker', sections: 27, first: '3 May, Bistritz'),
     (id: 1400, title: 'Great Expectations', author: 'Charles Dickens', sections: 59, first: 'My father'),
     (id: 174, title: 'The Picture of Dorian Gray', author: 'Oscar Wilde', sections: 20, first: 'The studio was filled with the rich odour of roses'),
