@@ -191,4 +191,47 @@ length before the next part of the story begins.
     expect(book.chapters.first.title, 'Chapter I');
     expect(book.chapters.last.title, 'Chapter II');
   });
+  test('Gutenberg parser rejects OCR references as chapter headings', () async {
+    const text = '''
+*** START OF THE PROJECT GUTENBERG EBOOK TEST ***
+
+CHAPTER V.
+Sun Tzu explains the chapter with enough substantive prose to establish a real
+section. The discussion continues with several complete sentences and remains
+part of the same chapter.
+
+* X 2JBJI ff IH S 1
+31. This is OCR noise from the scanned page and must remain inside the chapter.
+It contains enough prose to make sure the parser cannot mistake the line itself
+for a section boundary.
+
+Cf. III. § 13 (i)
+32. This is another reference embedded in the page and is not a chapter heading.
+The surrounding text continues with more complete sentences and commentary.
+
+CHAPTER VI.
+The next chapter begins here with enough substantive prose to establish a real
+section. The discussion continues with several complete sentences and remains
+part of the next chapter.
+
+*** END OF THE PROJECT GUTENBERG EBOOK TEST ***
+''';
+    const summary = GutenbergBookSummary(
+      id: 17405,
+      title: 'The Art of War',
+      author: 'Sunzi',
+      downloadCount: 0,
+      coverUrl: null,
+    );
+
+    final service = GutenbergService();
+    final book = service.parseText(summary, text);
+
+    expect(book.chapters, hasLength(2));
+    expect(book.chapters.first.title, 'Chapter V');
+    expect(book.chapters.last.title, 'Chapter VI');
+    expect(book.chapters.first.passage.join(' '), contains('2JBJI'));
+    expect(book.chapters.first.passage.join(' '), contains('Cf. III.'));
+  });
+
 }
