@@ -39,6 +39,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
   List<GeneratedMotionFrame> _motionFrames = const [];
   bool _motionLoading = false;
   bool _detailsExpanded = false;
+  String? _generationError;
 
   Chapter get _chapter =>
       widget.book.chapters.firstWhere((chapter) => chapter.id == widget.beat.chapterId);
@@ -147,7 +148,12 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
 
   Future<void> _generate({bool force = false}) async {
     if (_loading) return;
-    if (_sceneEndpoint.isEmpty) return;
+    if (_sceneEndpoint.isEmpty) {
+      if (mounted) {
+        setState(() => _generationError = 'AI scene endpoint is not configured for this build.');
+      }
+      return;
+    }
 
     if (force) {
       final oldVideo = _video;
@@ -159,6 +165,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
 
     setState(() {
       _loading = true;
+      _generationError = null;
     });
 
     try {
@@ -186,11 +193,17 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
           _generated = generated;
           _motionFrames = const [];
           _loading = false;
+          _generationError = null;
         });
         unawaited(_prepareMotion(generated));
       }
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _generationError = error.toString().replaceFirst('Bad state: ', '');
+        });
+      }
     } finally {
       if (mounted && _loading) {
         setState(() => _loading = false);
@@ -284,6 +297,16 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
               SizedBox(height: 14),
               Text('Creating your story moment…', style: TextStyle(fontSize: 16)),
             ])),
+          if (generated == null && !_loading && _generationError != null)
+            Positioned(
+              left: 24,
+              right: 24,
+              top: 110,
+              child: _SceneGenerationError(
+                message: _generationError!,
+                onRetry: _generate,
+              ),
+            ),
           if (generated != null && _motionLoading)
             const Positioned(top: 20, right: 18, child: _MotionBuildingPill()),
           Positioned(
@@ -315,6 +338,40 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen>
       ),
     );
   }
+}
+
+class _SceneGenerationError extends StatelessWidget {
+  const _SceneGenerationError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: const Color(0xE60A0D13),
+    borderRadius: BorderRadius.circular(16),
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_off, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          IconButton(
+            tooltip: 'Retry scene generation',
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _StoryMomentOverlay extends StatelessWidget {
