@@ -375,6 +375,47 @@ export default {
       }
     }
 
+    if (request.method === 'POST' && requestUrl.pathname === '/puppet-sheet') {
+      let input;
+      try { input = await request.json(); } catch (_) {
+        return json({ error: 'Request body must be valid JSON.' }, 400, origin);
+      }
+      const character = String(input && input.character || '').trim().slice(0, 900);
+      if (!character) return json({ error: 'character is required.' }, 400, origin);
+      try {
+        const generated = await env.AI.run(IMAGE_MODEL, {
+          prompt: [
+            'Production-quality 2D hand-drawn literary storybook animation asset sheet.',
+            'One single human character only: ' + character + '.',
+            'Animation source sheet, not a finished scene.',
+            'Clean solid blue background. Clearly separated non-overlapping parts with generous spacing:',
+            'head, torso, upper and lower arms, hands, upper and lower legs, feet, plus one neutral full-body reference.',
+            'Keep identical face, hair, clothing, proportions and illustration style across all parts.',
+            'Natural anatomy, detailed ink outlines, painterly cel shading, expressive restrained literary-cartoon design.',
+            'Large clean parts suitable for cropping and 2D puppet articulation.',
+            'No text, labels, watermark, UI, duplicate characters, extra limbs, collage panels, or photorealism.',
+          ].join(' ').slice(0, 2048),
+          steps: 4,
+        });
+        if (!generated || typeof generated.image !== 'string' || generated.image.length === 0) {
+          return json({ error: 'Puppet sheet model returned no image.' }, 502, origin);
+        }
+        return json({
+          schemaVersion: '1',
+          mimeType: 'image/jpeg',
+          base64: generated.image,
+          assetType: 'animation-ready-character-sheet',
+          sourceModel: IMAGE_MODEL,
+        }, 200, origin);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        const code = error && typeof error === 'object' ? error.code : undefined;
+        const status = error && typeof error === 'object' ? error.status : undefined;
+        console.error('SuperBook puppet sheet generation failed', { detail, code, status });
+        return json({ error: 'Puppet sheet generation failed.', detail, code: code ?? null, upstreamStatus: status ?? null }, 502, origin);
+      }
+    }
+
     if (request.method === 'POST' && requestUrl.pathname === '/video') {
       let input;
       try {
