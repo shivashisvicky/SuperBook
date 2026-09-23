@@ -19,51 +19,46 @@ button{border:1px solid #3a4655;background:#171e27;color:#edf2f8;border-radius:9
 <h1>AI-directed puppet · runtime gate</h1>
 <div class="sub">AI chooses intent + timing. The local engine executes reusable actions. Zero per-frame AI.</div>
 <section class="stage">
-<svg id="scene" viewBox="0 0 760 720" aria-label="Animated literary scene">
+<svg id="scene" viewBox="0 0 760 720" aria-label="Animated room scene">
 <defs>
- <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#26333a"/><stop offset="1" stop-color="#172127"/></linearGradient>
- <linearGradient id="table" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6c4d3c"/><stop offset="1" stop-color="#392a28"/></linearGradient>
+ <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#303d42"/><stop offset="1" stop-color="#172127"/></linearGradient>
+ <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6b5142"/><stop offset="1" stop-color="#302528"/></linearGradient>
  <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
 </defs>
 <rect width="760" height="720" fill="url(#wall)"/>
-<circle cx="380" cy="230" r="170" fill="#c49a62" opacity=".10" filter="url(#soft)"/>
-<rect x="70" y="80" width="620" height="300" rx="12" fill="#202a30" stroke="#3a454c" stroke-width="4"/>
-<rect x="92" y="102" width="576" height="256" rx="5" fill="#2b3539"/>
-<path d="M92 300 Q250 235 380 310 T668 270 V358 H92Z" fill="#35433e"/>
-<rect x="0" y="500" width="760" height="220" fill="url(#table)"/>
-<ellipse cx="380" cy="500" rx="370" ry="48" fill="#8a6049"/>
-<ellipse cx="380" cy="490" rx="120" ry="22" fill="#1a1d1d" opacity=".7"/>
-<rect x="332" y="454" width="96" height="17" rx="4" fill="#d8d0bd"/>
-<rect x="338" y="438" width="84" height="18" rx="3" fill="#f0e8d3"/>
-<line x1="342" y1="443" x2="418" y2="451" stroke="#9b8f79" stroke-width="2"/>
-<g id="left" transform="translate(195 255)">
- <ellipse cx="0" cy="250" rx="104" ry="25" fill="#11161a" opacity=".5"/>
- <path id="lbody" d="M-74 235 Q-70 125 0 115 Q70 125 74 235Z" fill="#283f55"/>
- <circle id="lhead" cx="0" cy="88" r="58" fill="#d8a98a"/>
- <path d="M-57 83 Q-53 20 0 23 Q57 20 58 83 Q34 45 0 45 Q-31 45 -57 83Z" fill="#352a29"/>
- <circle id="leye1" cx="-19" cy="91" r="4" fill="#161719"/><circle id="leye2" cx="20" cy="91" r="4" fill="#161719"/>
- <path d="M-11 119 Q0 125 12 119" fill="none" stroke="#70463b" stroke-width="3" stroke-linecap="round"/>
- <g id="larm" transform="translate(55 145)">
-   <path d="M0 0 Q54 25 78 83" fill="none" stroke="#283f55" stroke-width="28" stroke-linecap="round"/>
-   <circle id="lhand" cx="78" cy="83" r="17" fill="#d8a98a"/>
- </g>
+<circle cx="560" cy="180" r="150" fill="#d5a867" opacity=".12" filter="url(#soft)"/>
+<rect x="70" y="65" width="250" height="185" rx="10" fill="#202b31" stroke="#445057" stroke-width="4"/>
+<rect x="88" y="83" width="214" height="149" fill="#435149"/>
+<path d="M88 185 Q150 145 205 190 T302 170 V232 H88Z" fill="#627061"/>
+<rect x="455" y="82" width="190" height="10" rx="5" fill="#705744"/><path d="M510 82 L545 30 L580 82Z" fill="#c99b5c" opacity=".7"/>
+<rect y="455" width="760" height="265" fill="url(#floor)"/>
+<ellipse cx="380" cy="610" rx="350" ry="90" fill="#191c1e" opacity=".22"/>
+<!-- table -->
+<g id="table"><rect x="285" y="430" width="250" height="28" rx="8" fill="#74523e"/><path d="M310 458 L335 680 M510 458 L485 680" stroke="#49352e" stroke-width="22" stroke-linecap="round"/><ellipse cx="410" cy="430" rx="125" ry="18" fill="#8b6249"/></g>
+<!-- bowl -->
+<g id="meal"><path d="M370 405 Q410 438 450 405 Q442 450 410 452 Q378 450 370 405Z" fill="#b8b0a0"/><ellipse cx="410" cy="405" rx="40" ry="9" fill="#ddd5bf"/><circle cx="396" cy="402" r="5" fill="#8a704b"/><circle cx="417" cy="400" r="5" fill="#7c6645"/><circle cx="431" cy="405" r="5" fill="#9b7a50"/></g>
+<!-- chair -->
+<g id="chair"><rect x="120" y="395" width="95" height="18" rx="5" fill="#76523f"/><rect x="130" y="410" width="14" height="150" fill="#4c3831"/><rect x="190" y="410" width="14" height="150" fill="#4c3831"/><rect x="130" y="315" width="14" height="100" fill="#4c3831"/><rect x="190" y="315" width="14" height="100" fill="#4c3831"/><rect x="130" y="315" width="74" height="18" rx="5" fill="#76523f"/></g>
+<!-- walker -->
+<g id="walker" transform="translate(110 350)">
+ <ellipse cx="0" cy="220" rx="45" ry="10" fill="#11161a" opacity=".35"/>
+ <g id="wlegs"><path d="M-18 168 L-30 215" stroke="#34465a" stroke-width="18" stroke-linecap="round"/><path d="M18 168 L31 215" stroke="#34465a" stroke-width="18" stroke-linecap="round"/><path d="M-37 216 L-20 216 M17 216 L37 216" stroke="#202b35" stroke-width="10" stroke-linecap="round"/></g>
+ <path d="M-48 72 Q-42 25 0 18 Q42 25 48 72 L55 176 Q0 202 -55 176Z" fill="#344d67"/>
+ <g id="wleftArm" transform="translate(-42 84)"><path d="M0 0 L-30 72" stroke="#344d67" stroke-width="18" stroke-linecap="round"/><circle cx="-30" cy="72" r="11" fill="#d5a17f"/></g>
+ <g id="wrightArm" transform="translate(42 84)"><path d="M0 0 L30 72" stroke="#344d67" stroke-width="18" stroke-linecap="round"/><circle cx="30" cy="72" r="11" fill="#d5a17f"/></g>
+ <circle id="whead" cx="0" cy="0" r="48" fill="#d5a17f"/><path d="M-47 0 Q-42 -58 4 -55 Q48 -48 48 2 Q25 -25 0 -28 Q-25 -25 -47 0Z" fill="#342d2c"/>
+ <circle cx="-15" cy="3" r="3.5"/><circle cx="16" cy="3" r="3.5"/>
 </g>
-<g id="right" transform="translate(565 255)">
- <ellipse cx="0" cy="250" rx="104" ry="25" fill="#11161a" opacity=".5"/>
- <path id="rbody" d="M-74 235 Q-70 125 0 115 Q70 125 74 235Z" fill="#526846"/>
- <circle id="rhead" cx="0" cy="88" r="58" fill="#d2a27f"/>
- <path d="M-58 82 Q-42 15 10 25 Q58 35 58 86 Q25 51 0 51 Q-31 51 -58 82Z" fill="#8b694f"/>
- <circle id="reye1" cx="-19" cy="91" r="4" fill="#161719"/><circle id="reye2" cx="20" cy="91" r="4" fill="#161719"/>
- <path d="M-12 119 Q0 125 12 119" fill="none" stroke="#70463b" stroke-width="3" stroke-linecap="round"/>
- <g id="rarm" transform="translate(-55 145)">
-   <path d="M0 0 Q-48 30 -76 82" fill="none" stroke="#526846" stroke-width="28" stroke-linecap="round"/>
-   <circle id="rhand" cx="-76" cy="82" r="17" fill="#d2a27f"/>
- </g>
+<!-- seated listener -->
+<g id="listener" transform="translate(605 315)">
+ <ellipse cx="0" cy="255" rx="62" ry="13" fill="#11161a" opacity=".35"/>
+ <path d="M-58 78 Q-48 30 0 24 Q48 30 58 78 L65 225 Q0 250 -65 225Z" fill="#586b4b"/>
+ <circle id="lthead" cx="0" cy="0" r="48" fill="#d1a07e"/><path d="M-47 0 Q-40 -58 7 -55 Q50 -48 48 5 Q25 -25 0 -28 Q-25 -25 -47 0Z" fill="#7d6049"/>
+ <circle cx="-15" cy="3" r="3.5"/><circle cx="16" cy="3" r="3.5"/>
+ <g id="ltarm"><path d="M-44 88 L-70 165" stroke="#586b4b" stroke-width="18" stroke-linecap="round"/><circle cx="-70" cy="165" r="11" fill="#d1a07e"/></g>
 </g>
-<g id="book" transform="translate(380 468)">
- <rect x="-44" y="-8" width="88" height="15" rx="2" fill="#66574b" transform="rotate(-3)"/>
- <path d="M-39 -12 L0 -6 L39 -12 L39 7 L0 1 L-39 7Z" fill="#e5ddc9"/>
-</g>
+<!-- spoon held by walker during eating -->
+<g id="spoon"><path d="M0 0 L0 72" stroke="#d7d0c0" stroke-width="5"/><ellipse cx="0" cy="0" rx="9" ry="13" fill="#e4ddce"/></g>
 </svg>
 <div class="controls">
 <button data-m="idle">Idle</button><button data-m="look">Look</button><button data-m="gesture">Gesture</button><button data-m="nod">Nod</button><button data-m="reaction">Reaction</button><button data-m="scene">AI Scene</button>
@@ -73,66 +68,28 @@ button{border:1px solid #3a4655;background:#171e27;color:#edf2f8;border-radius:9
 </main>
 <script>
 const E=id=>document.getElementById(id);
-const parts={left:E('left'),right:E('right'),lh:E('lhead'),rh:E('rhead'),la:E('larm'),ra:E('rarm'),book:E('book')};
-const aiPlan={
- schemaVersion:1,
- intent:"conversation_about_the_book",
- timeline:[
-  ["idle",0,1.0],["look",1.0,1.4],["gesture",2.4,1.7],["nod",4.1,1.0],["reaction",5.1,.9],["idle",6.0,1.0]
- ],
- aiPerFrame:0
-};
-let mode="idle",t=0,last=performance.now();
+const P={w:E('walker'),l:E('listener'),wa:E('wleftArm'),wr:E('wrightArm'),wl:E('wlegs'),wh:E('whead'),la:E('ltarm'),lh:E('lthead'),sp:E('spoon')};
+const aiPlan={schemaVersion:2,intent:"enter_room_meet_friend_share_meal",timeline:[
+ {action:"walk",from:0,to:2.8,target:"table",tempo:.9},
+ {action:"talk",from:2.8,to:5.0,target:"listener",gesture:"right_hand"},
+ {action:"eat",from:5.0,to:7.0,object:"bowl",repetitions:2},
+ {action:"talk",from:7.0,to:9.0,target:"listener",gesture:"right_hand"},
+ {action:"idle",from:9.0,to:10.0}
+],aiPerFrame:0};
+let mode="scene",t=0,last=performance.now();
 function setMode(m){mode=m;t=0;document.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.m===m))}
 document.querySelectorAll('button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 function ease(x){return x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2}
-function tr(el,base,rx,ry,sc=1){el.setAttribute('transform',base+' rotate('+rx+' 0 0) translate(0 '+ry+') scale('+sc+')')}
-function reset(){
- tr(parts.left,'translate(195 255)',0,0);tr(parts.right,'translate(565 255)',0,0);
- parts.lh.setAttribute('transform','');parts.rh.setAttribute('transform','');
- parts.la.setAttribute('transform','translate(55 145)');parts.ra.setAttribute('transform','translate(-55 145)');
+function set(el,v){el.setAttribute('transform',v)}
+function reset(){set(P.w,'translate(110 350)');set(P.l,'translate(605 315)');set(P.wa,'translate(-42 84)');set(P.wr,'translate(42 84)');set(P.wl,'');set(P.la,'');set(P.sp,'translate(0 0)');}
+function apply(a,p){
+ reset(); const s=Math.sin(p*Math.PI), bounce=Math.sin(p*Math.PI*2);
+ if(a==='walk'){const x=110+(605-110)*ease(p);set(P.w,'translate('+x+' 350)');set(P.wl,'rotate('+(bounce*18)+' 0 170)');set(P.wa,'translate(-42 84) rotate('+(bounce*-22)+' 0 0)');set(P.wr,'translate(42 84) rotate('+(bounce*22)+' 0 0)');set(P.wh,'rotate('+(bounce*3)+' 0 0)')}
+ if(a==='talk'){set(P.w,'translate(500 350)');set(P.wr,'translate(42 84) rotate('+(-28*s)+' 0 0)');set(P.wa,'translate(-42 84) rotate('+(12*s)+' 0 0)');set(P.wh,'rotate('+(bounce*5)+' 0 0)');set(P.lh,'rotate('+(bounce*4)+' 0 0)');set(P.la,'rotate('+(bounce*10)+' 0 0)')}
+ if(a==='eat'){set(P.w,'translate(500 350)');const lift=75*s;set(P.wr,'translate(42 84) rotate('+(-48*s)+' 0 0)');set(P.sp,'translate('+(545-35*s)+' '+(420-lift)+') rotate('+(bounce*3)+' 0 0)');set(P.wh,'translate(0 '+(-8*s)+')');set(P.lh,'rotate('+(bounce*2)+' 0 0)')}
 }
-function apply(action,p){
- reset();
- const s=Math.sin(p*Math.PI), q=ease(p);
- if(action==='look'){
-   parts.lh.setAttribute('transform','rotate('+(-8*s)+' 0 88)');
-   parts.rh.setAttribute('transform','rotate('+(7*s)+' 0 88)');
-   parts.la.setAttribute('transform','translate(55 145) rotate('+(5*s)+' 0 0)');
- }
- if(action==='gesture'){
-   parts.la.setAttribute('transform','translate(55 145) rotate('+(-34*s)+' 0 0)');
-   parts.lh.setAttribute('transform','rotate('+(-4*s)+' 0 88)');
- }
- if(action==='nod'){
-   parts.rh.setAttribute('transform','rotate('+(7*s)+' 0 88)');
-   parts.ra.setAttribute('transform','translate(-55 145) rotate('+(8*s)+' 0 0)');
- }
- if(action==='reaction'){
-   parts.right.setAttribute('transform','translate(565 255) rotate('+(6*s)+' 0 250)');
-   parts.rh.setAttribute('transform','rotate('+(10*s)+' 0 88)');
-   parts.ra.setAttribute('transform','translate(-55 145) rotate('+(-18*s)+' 0 0)');
- }
-}
-function sceneAction(t){
- const cycle=8;
- let z=t%cycle;
- if(z<1)return['idle',z];
- if(z<2.4)return['look',z-1];
- if(z<4.1)return['gesture',z-2.4];
- if(z<5.1)return['nod',z-4.1];
- if(z<6)return['reaction',z-5.1];
- return['idle',z-6];
-}
-function frame(now){
- const dt=Math.min(.05,(now-last)/1000);last=now;t+=dt;
- let a=mode,p=0;
- if(mode==='scene'){[a,p]=sceneAction(t);p/=({idle:1,look:1.4,gesture:1.7,nod:1,reaction:.9}[a]||1)}
- else p=(t%1.6)/1.6;
- apply(a,p);
- E('status').innerHTML='<span class="good">PASS · runtime alive</span>\nmode: '+mode+'\ncurrent action: '+a+'\nAI decision: intent + timeline\nengine: deterministic transforms + easing\nAI/frame: 0\n\nAI plan fixture:\n'+JSON.stringify(aiPlan,null,2);
- requestAnimationFrame(frame);
-}
+function sceneAt(z){if(z<2.8)return['walk',z/2.8];if(z<5)return['talk',(z-2.8)/2.2];if(z<7)return['eat',(z-5)/2];if(z<9)return['talk',(z-7)/2];return['idle',(z-9)/1]}
+function frame(now){t+=Math.min(.05,(now-last)/1000);last=now;let a=mode,p=0;if(mode==='scene'){[a,p]=sceneAt(t%10)}else p=(t%2)/2;apply(a,p);E('status').innerHTML='<span class="good">PASS · scene runtime alive</span>\nmode: '+mode+'\ncurrent action: '+a+'\nAI supplied: intent + action timeline + targets\nengine executes: walk / talk / eat / idle\nAI/frame: 0\n\nAI scene plan:\n'+JSON.stringify(aiPlan,null,2);requestAnimationFrame(frame)}
 setMode('scene');requestAnimationFrame(frame);
 </script>
 </body></html>
