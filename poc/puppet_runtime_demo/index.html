@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SuperBook · Living Puppet Runtime</title>
+<style>
+:root{color-scheme:dark}body{margin:0;background:#07090d;color:#f4f4f5;font-family:system-ui,-apple-system,sans-serif}
+main{width:min(980px,100%);margin:auto;padding:18px;box-sizing:border-box}.card{background:#11151c;border:1px solid #2c333d;border-radius:22px;padding:16px;box-shadow:0 18px 60px #0008}
+h1{font-size:19px;margin:0 0 4px}.sub{font-size:12px;color:#9ca3af;margin-bottom:14px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{border:1px solid #ffffff28;background:#ffffff0d;color:#fff;border-radius:999px;padding:9px 13px;font-size:12px}button:disabled{opacity:.45}
+#status{font:12px ui-monospace,SFMono-Regular,monospace;color:#aeb7c4;margin:12px 0}.stage{position:relative;background:linear-gradient(#18212b,#10161d);border:1px solid #29313a;border-radius:18px;overflow:hidden}
+canvas{display:block;width:100%;height:auto}.note{font-size:12px;color:#9ca3af;line-height:1.5;margin-top:12px}.badge{font:11px ui-monospace;color:#cbd5e1;margin-left:auto}
+</style>
+</head>
+<body><main><section class="card">
+<h1>SuperBook · Living Puppet Runtime</h1>
+<div class="sub">Generated artwork → deterministic part extraction → continuous local articulation. No per-frame AI. No slideshow.</div>
+<div class="toolbar">
+<button id="generate">Generate + rig character</button>
+<button data-action="idle">Idle</button><button data-action="talk">Talk</button><button data-action="gesture">Gesture</button>
+<button data-action="eat">Eat</button><button data-action="listen">Listen</button><button data-action="walk">Walk</button>
+<span class="badge" id="action">idle</span>
+</div>
+<div id="status">waiting</div><div class="stage"><canvas id="stage" width="960" height="640"></canvas></div>
+<div class="note">Gate B/C prototype: the sheet is processed locally in the browser. The central reference is deterministically cropped into head, torso, arms and legs, then the runtime continuously changes joint rotations and breathing.</div>
+</section></main>
+<script type="module">
+import {PuppetRuntime} from './puppet_runtime.js';
+const WORKER='https://superbook-ai-scene.shivashisvicky112.workers.dev/puppet-sheet';
+const canvas=document.getElementById('stage'),ctx=canvas.getContext('2d');
+const status=document.getElementById('status'),actionLabel=document.getElementById('action');
+let puppet=null,last=performance.now();
+
+function keyBlue(image){
+  const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;
+  const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(image,0,0);
+  const d=x.getImageData(0,0,c.width,c.height),p=d.data;
+  for(let i=0;i<p.length;i+=4){const r=p[i],g=p[i+1],b=p[i+2];
+    if(b>145&&b>r*1.12&&b>g*1.02){p[i+3]=0;continue}
+    if(b>125&&b>r*1.06&&b>g*1.01)p[i+3]=Math.max(0,p[i+3]-Math.min(220,(b-r)*5));
+  }x.putImageData(d,0,0);return c;
+}
+function crop(source,box){
+  const sx=Math.round(source.width*box[0]),sy=Math.round(source.height*box[1]),sw=Math.round(source.width*box[2]),sh=Math.round(source.height*box[3]);
+  const out=document.createElement('canvas');out.width=sw;out.height=sh;out.getContext('2d').drawImage(source,sx,sy,sw,sh,0,0,sw,sh);return out;
+}
+function alphaBounds(c){
+  const x=c.getContext('2d',{willReadFrequently:true}),d=x.getImageData(0,0,c.width,c.height).data;
+  let l=c.width,t=c.height,r=-1,b=-1;
+  for(let y=0;y<c.height;y++)for(let xx=0;xx<c.width;xx++)if(d[(y*c.width+xx)*4+3]>20){l=Math.min(l,xx);t=Math.min(t,y);r=Math.max(r,xx);b=Math.max(b,y);}
+  if(r<0)return c;const pad=8,sx=Math.max(0,l-pad),sy=Math.max(0,t-pad),ex=Math.min(c.width,r+pad),ey=Math.min(c.height,b+pad);
+  const out=document.createElement('canvas');out.width=ex-sx;out.height=ey-sy;out.getContext('2d').drawImage(c,sx,sy,out.width,out.height,0,0,out.width,out.height);return out;
+}
+function buildSprites(image){
+  const keyed=keyBlue(image);
+  const boxes={head:[.405,.055,.205,.225],torso:[.405,.245,.235,.455],armL:[.335,.285,.115,.425],armR:[.585,.285,.115,.425],legL:[.405,.665,.105,.29],legR:[.515,.665,.11,.29]};
+  const result={};for(const[id,box]of Object.entries(boxes))result[id]={image:alphaBounds(crop(keyed,box)),runtime:{}};return result;
+}
+function drawPart(part,s){
+  const im=part.image,r=part.runtime||{},w=s.w*(r.scaleX||1),h=s.h*(r.scaleY||1);
+  ctx.save();ctx.translate(s.x+(r.x||0),s.y+(r.y||0));ctx.rotate(r.rotation||0);ctx.drawImage(im,-s.px*w,-s.py*h,w,h);ctx.restore();
+}
+function render(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='rgba(255,255,255,.04)';ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(!puppet){requestAnimationFrame(render);return}
+  puppet.tick(Math.min(.05,(performance.now()-last)/1000));last=performance.now();
+  const x=480,y=575,s={legL:{x:x-47,y:y-215,w:72,h:205,px:.52,py:.08},legR:{x:x+5,y:y-215,w:72,h:205,px:.48,py:.08},torso:{x,y:y-430,w:185,h:260,px:.5,py:.04},armL:{x:x-86,y:y-405,w:72,h:235,px:.72,py:.07},armR:{x:x+86,y:y-405,w:72,h:235,px:.28,py:.07},head:{x,y:y-430,w:135,h:145,px:.5,py:.92}};
+  for(const id of ['legL','legR','torso','armL','armR','head'])drawPart(puppet.parts[id],s[id]);requestAnimationFrame(render);
+}
+async function generate(){
+  const button=document.getElementById('generate');button.disabled=true;status.textContent='generating sheet…';
+  try{const r=await fetch(WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({character:'an elderly Indian woman, gentle expressive face, silver hair in a neat bun, simple elegant traditional household clothing, warm literary-storybook character design'})});
+    const j=await r.json();if(!r.ok)throw new Error(j.detail||j.error||('HTTP '+r.status));const image=new Image();image.src='data:'+j.mimeType+';base64,'+j.base64;await image.decode();
+    puppet=new PuppetRuntime(buildSprites(image));status.textContent='RIG READY · 6 local articulated parts · '+j.sourceModel;
+  }catch(e){status.textContent='RIG ERROR · '+e.message}finally{button.disabled=false}
+}
+document.getElementById('generate').onclick=generate;
+for(const b of document.querySelectorAll('[data-action]'))b.onclick=()=>{if(puppet){puppet.setAction(b.dataset.action);actionLabel.textContent=b.dataset.action}};
+render();generate();
+</script></body></html>
