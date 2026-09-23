@@ -18,7 +18,7 @@ canvas{display:block;width:100%;height:auto}.note{font-size:12px;color:#9ca3af;l
 <button data-action="idle">Idle</button><button data-action="talk">Talk</button><button data-action="gesture">Gesture</button>
 <button data-action="eat">Eat</button><button data-action="listen">Listen</button><button data-action="walk">Walk</button></div>
 <div id="status">waiting</div><div class="stage"><canvas id="stage" width="960" height="640"></canvas></div>
-<div class="note">This revision does not assume fixed AI coordinates. It detects the large full-body reference and detached painted components, groups components by semantic position, and builds a local articulated puppet from those groups.</div>
+<div class="note">The parser selects the main full-body anchor plus the largest clean head, two arm and two leg references. Tiny duplicate sheet thumbnails are ignored.</div>
 </section></main>
 <script type="module">
 import {PuppetRuntime} from './puppet_runtime.js';
@@ -69,30 +69,38 @@ function union(boxes,pad=.015){
 function makeParts(image){
  const keyed=keyBlue(image), cs=components(keyed);
  if(!cs.length)throw new Error('No painted components detected.');
- const body=cs.find(c=>c.h>.45&&c.w>.12&&c.cy>.35&&c.cy<.78)||cs[0];
- const detached=cs.filter(c=>c!==body&&c.area>45);
- const left=detached.filter(c=>c.cx<body.cx-.025);
- const right=detached.filter(c=>c.cx>body.cx+.025);
- const top=detached.filter(c=>c.cy<body.cy-.18);
- const lower=detached.filter(c=>c.cy>body.cy+.05);
- const headCandidates=top.filter(c=>c.w>.035&&c.h>.035&&c.h/c.w<3);
+ // Use the largest coherent full-body component as the clothing/torso anchor.
+ const body=cs.find(c=>c.h>.42&&c.w>.12&&c.cy>.35&&c.cy<.82)||cs[0];
+ const detached=cs.filter(c=>c!==body&&c.area>90);
+ const headCandidates=detached.filter(c=>c.cy<body.cy-.22&&c.w>.035&&c.h>.035);
  const head=headCandidates.sort((a,b)=>b.area-a.area)[0];
- const armPool=detached.filter(c=>c.cy>body.cy-.20&&c.cy<body.cy+.18);
- const armL=left.filter(c=>armPool.includes(c)).sort((a,b)=>b.area-a.area).slice(0,4);
- const armR=right.filter(c=>armPool.includes(c)).sort((a,b)=>b.area-a.area).slice(0,4);
- const legPool=detached.filter(c=>c.cy>body.cy+.02);
- const legL=left.filter(c=>legPool.includes(c)).sort((a,b)=>b.area-a.area).slice(0,3);
- const legR=right.filter(c=>legPool.includes(c)).sort((a,b)=>b.area-a.area).slice(0,3);
- if(!head||!armL.length||!armR.length||!legL.length||!legR.length)throw new Error('Sheet parser could not find complete semantic groups.');
- const torsoBox={x:body.x+body.w*.22,y:body.y+body.h*.18,w:body.w*.56,h:body.h*.58};
- return {
-  head:{image:crop(keyed,head),runtime:{}},
-  torso:{image:crop(keyed,torsoBox),runtime:{}},
-  armL:{image:crop(keyed,union(armL,.02)),runtime:{}},
-  armR:{image:crop(keyed,union(armR,.02)),runtime:{}},
-  legL:{image:crop(keyed,union(legL,.02)),runtime:{}},
-  legR:{image:crop(keyed,union(legR,.02)),runtime:{}}
+ // The sheet commonly places both clean limb references on one side.
+ // Therefore choose the two largest limb-sized components by vertical band,
+ // rather than assuming left/right sheet columns.
+ const arms=detached
+   .filter(c=>c.cy>body.cy-.18&&c.cy<body.cy+.22&&c.h>c.w*1.15)
+   .sort((a,b)=>b.area-a.area).slice(0,2)
+   .sort((a,b)=>a.cx-b.cx);
+ const legs=detached
+   .filter(c=>c.cy>body.cy+.02&&c.h>c.w*1.25)
+   .sort((a,b)=>b.area-a.area).slice(0,2)
+   .sort((a,b)=>a.cx-b.cx);
+ if(!head||arms.length<2||legs.length<2)throw new Error('Sheet parser could not find two clean arms, two clean legs and a head.');
+ const torsoBox={
+   x:body.x+body.w*.08,
+   y:body.y+body.h*.08,
+   w:body.w*.84,
+   h:body.h*.82
  };
+ const result={
+   head:{image:crop(keyed,head),runtime:{}},
+   torso:{image:crop(keyed,torsoBox),runtime:{}},
+   armL:{image:crop(keyed,arms[0]),runtime:{}},
+   armR:{image:crop(keyed,arms[1]),runtime:{}},
+   legL:{image:crop(keyed,legs[0]),runtime:{}},
+   legR:{image:crop(keyed,legs[1]),runtime:{}}
+ };
+ return result;
 }
 function draw(p,s){const r=p.runtime||{},im=p.image,w=s.w*(r.scaleX||1),h=s.h*(r.scaleY||1);ctx.save();ctx.translate(s.x+(r.x||0),s.y+(r.y||0));ctx.rotate(r.rotation||0);ctx.drawImage(im,-s.px*w,-s.py*h,w,h);ctx.restore();}
 function render(){
