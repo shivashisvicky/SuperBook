@@ -375,6 +375,71 @@ export default {
       }
     }
 
+    if (request.method === 'POST' && requestUrl.pathname === '/puppet-sheet') {
+      let input;
+      try {
+        input = await request.json();
+      } catch (_) {
+        return json({ error: 'Request body must be valid JSON.' }, 400, origin);
+      }
+
+      const character = String(input && input.character || '').trim().slice(0, 900);
+      if (!character) {
+        return json({ error: 'character is required.' }, 400, origin);
+      }
+
+      const prompt = [
+        'Create a production-quality 2D hand-drawn literary storybook animation asset sheet.',
+        'One single human character only: ' + character + '.',
+        'This is an animation source sheet, not a finished scene.',
+        'Use a clean solid chroma-blue background with no texture.',
+        'Arrange clearly separated, non-overlapping character parts with generous spacing:',
+        'full head, torso, upper and lower arms, hands, upper and lower legs, feet, and one neutral full-body reference.',
+        'Keep the exact same character identity, face, hair, clothing, proportions and illustration style across every part.',
+        'Use natural anatomy, detailed ink outlines, painterly cel shading, expressive but restrained literary-cartoon design.',
+        'Make every part large enough to crop cleanly and suitable for 2D puppet articulation.',
+        'No text, labels, watermark, UI, duplicate characters, extra limbs, collage panels, or photorealism.',
+      ].join(' ');
+
+      try {
+        const generated = await env.AI.run('@cf/bytedance/stable-diffusion-xl-lightning', {
+          prompt: prompt.slice(0, 2048),
+          width: 1024,
+          height: 1024,
+          num_steps: 4,
+        });
+
+        const image = Array.isArray(generated) ? generated[0] : generated;
+        if (!image) {
+          return json({ error: 'Puppet sheet model returned no image.' }, 502, origin);
+        }
+
+        let base64 = image.image || image;
+        if (typeof base64 !== 'string') {
+          return json({ error: 'Puppet sheet model returned an unsupported image payload.' }, 502, origin);
+        }
+
+        return json({
+          schemaVersion: '1',
+          mimeType: 'image/png',
+          base64,
+          assetType: 'animation-ready-character-sheet',
+          sourceModel: '@cf/bytedance/stable-diffusion-xl-lightning',
+        }, 200, origin);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        const code = error && typeof error === 'object' ? error.code : undefined;
+        const status = error && typeof error === 'object' ? error.status : undefined;
+        console.error('SuperBook puppet sheet generation failed', { detail, code, status });
+        return json({
+          error: 'Puppet sheet generation failed.',
+          detail,
+          code: code ?? null,
+          upstreamStatus: status ?? null,
+        }, 502, origin);
+      }
+    }
+
     if (request.method === 'POST' && requestUrl.pathname === '/video') {
       let input;
       try {
