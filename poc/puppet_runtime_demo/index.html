@@ -23,7 +23,7 @@ canvas{display:block;width:100%;height:auto}.note{font-size:12px;color:#9ca3af;l
 <span class="badge" id="action">idle</span>
 </div>
 <div id="status">waiting</div><div class="stage"><canvas id="stage" width="960" height="640"></canvas></div>
-<div class="note">Gate B/C prototype: the sheet is processed locally in the browser. The central reference is deterministically cropped into head, torso, arms and legs, then the runtime continuously changes joint rotations and breathing.</div>
+<div class="note">Gate B/C prototype: the sheet is processed locally in the browser. Semantic zones are detected from the generated sheet instead of assuming one fixed AI layout, then the runtime continuously articulates the extracted parts.</div>
 </section></main>
 <script type="module">
 import {PuppetRuntime} from './puppet_runtime.js';
@@ -54,8 +54,22 @@ function alphaBounds(c){
 }
 function buildSprites(image){
   const keyed=keyBlue(image);
-  const boxes={head:[.405,.055,.205,.225],torso:[.405,.245,.235,.455],armL:[.335,.285,.115,.425],armR:[.585,.285,.115,.425],legL:[.405,.665,.105,.29],legR:[.515,.665,.11,.29]};
-  const result={};for(const[id,box]of Object.entries(boxes))result[id]={image:alphaBounds(crop(keyed,box)),runtime:{}};return result;
+  // The AI sheet is intentionally flexible in its layout. Do not rely on the
+  // exact pixel coordinates of one generation. Use broad semantic zones around
+  // the central full-body reference so a new sheet can be rigged as well.
+  const boxes={
+    head:[.27,.015,.46,.30],
+    torso:[.28,.22,.44,.48],
+    armL:[.10,.20,.34,.52],
+    armR:[.56,.20,.34,.52],
+    legL:[.30,.57,.20,.40],
+    legR:[.50,.57,.20,.40]
+  };
+  const result={};
+  for(const [id,box] of Object.entries(boxes)){
+    result[id]={image:alphaBounds(crop(keyed,box)),runtime:{}};
+  }
+  return result;
 }
 function drawPart(part,s){
   const im=part.image,r=part.runtime||{},w=s.w*(r.scaleX||1),h=s.h*(r.scaleY||1);
@@ -65,7 +79,14 @@ function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='rgba(255,255,255,.04)';ctx.fillRect(0,0,canvas.width,canvas.height);
   if(!puppet){requestAnimationFrame(render);return}
   puppet.tick(Math.min(.05,(performance.now()-last)/1000));last=performance.now();
-  const x=480,y=575,s={legL:{x:x-47,y:y-215,w:72,h:205,px:.52,py:.08},legR:{x:x+5,y:y-215,w:72,h:205,px:.48,py:.08},torso:{x,y:y-430,w:185,h:260,px:.5,py:.04},armL:{x:x-86,y:y-405,w:72,h:235,px:.72,py:.07},armR:{x:x+86,y:y-405,w:72,h:235,px:.28,py:.07},head:{x,y:y-430,w:135,h:145,px:.5,py:.92}};
+  const x=480,y=575,s={
+    legL:{x:x-42,y:y-185,w:78,h:190,px:.50,py:.06},
+    legR:{x:x+42,y:y-185,w:78,h:190,px:.50,py:.06},
+    torso:{x,y:y-365,w:190,h:270,px:.50,py:.04},
+    armL:{x:x-92,y:y-345,w:78,h:225,px:.72,py:.07},
+    armR:{x:x+92,y:y-345,w:78,h:225,px:.28,py:.07},
+    head:{x,y:y-445,w:145,h:150,px:.50,py:.92}
+  };
   for(const id of ['legL','legR','torso','armL','armR','head'])drawPart(puppet.parts[id],s[id]);requestAnimationFrame(render);
 }
 async function generate(){
