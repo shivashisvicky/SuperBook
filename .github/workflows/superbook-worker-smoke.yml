@@ -108,3 +108,33 @@ jobs:
               base64Present: ((.image.base64 | length) > 0)
             }
           }' response.json
+
+      - name: Call puppet-sheet asset API
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat > puppet.json <<'JSON'
+          {
+            "character": "an elderly Indian woman in a warm hand-drawn literary storybook style, simple traditional household clothing, expressive gentle face"
+          }
+          JSON
+
+          status="$(curl             --silent --show-error --max-time 120             --output puppet-response.json             --write-out '%{http_code}'             --header 'Content-Type: application/json'             --header 'Origin: https://shivashisvicky.github.io'             --data @puppet.json             'https://superbook-ai-scene.shivashisvicky112.workers.dev/puppet-sheet')"
+
+          echo "Puppet-sheet HTTP status: $status"
+
+          if [ "$status" != "200" ]; then
+            jq '.' puppet-response.json 2>/dev/null || cat puppet-response.json
+            exit 1
+          fi
+
+          jq -e '
+            (.schemaVersion == "1") and
+            (.assetType == "animation-ready-character-sheet") and
+            (.mimeType | type == "string") and
+            (.base64 | type == "string") and
+            ((.base64 | length) > 0)
+          ' puppet-response.json >/dev/null
+
+          echo "Live puppet-sheet asset contract passed."
