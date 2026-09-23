@@ -9,7 +9,7 @@ const style='2D hand-drawn animated storybook illustration, Indian television-ca
 const art=document.getElementById('art'),info=document.getElementById('info'),badge=document.getElementById('badge'),generate=document.getElementById('generate'),play=document.getElementById('play');
 let plan=null,playing=false,start=0,raf=0;
 function setInfo(t,cls=''){info.className='info '+cls;info.textContent=t}
-function renderMotion(){if(!playing)return;const t=(performance.now()-start)/1000;const z=1.02+0.012*Math.sin(t*.55),x=0.7*Math.sin(t*.32),y=0.35*Math.sin(t*.47);art.style.transform='translate('+x+'%,'+y+'%) scale('+z+')';requestAnimationFrame(renderMotion)}
+function renderMotion(){if(!playing)return;const t=(performance.now()-start)/1000;const z=1.042+0.028*Math.sin(t*.42),x=0.9*Math.sin(t*.24),y=0.45*Math.sin(t*.31);art.style.transform='translate('+x+'%,'+y+'%) scale('+z+')';requestAnimationFrame(renderMotion)}
 async function makeScene(){
  generate.disabled=true;play.disabled=true;badge.textContent='GENERATING';art.classList.add('loading');setInfo('AI is directing one faithful story moment, then generating one illustrated keyframe…');
  try{
