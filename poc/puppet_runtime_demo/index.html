@@ -1,102 +1,119 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SuperBook · Living Puppet Runtime</title>
 <style>
 :root{color-scheme:dark}body{margin:0;background:#07090d;color:#f4f4f5;font-family:system-ui,-apple-system,sans-serif}
-main{width:min(980px,100%);margin:auto;padding:18px;box-sizing:border-box}.card{background:#11151c;border:1px solid #2c333d;border-radius:22px;padding:16px;box-shadow:0 18px 60px #0008}
-h1{font-size:19px;margin:0 0 4px}.sub{font-size:12px;color:#9ca3af;margin-bottom:14px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+main{width:min(980px,100%);margin:auto;padding:18px;box-sizing:border-box}.card{background:#11151c;border:1px solid #2c333d;border-radius:22px;padding:16px}
+h1{font-size:19px;margin:0 0 4px}.sub{font-size:12px;color:#9ca3af;margin-bottom:14px}.toolbar{display:flex;gap:8px;flex-wrap:wrap}
 button{border:1px solid #ffffff28;background:#ffffff0d;color:#fff;border-radius:999px;padding:9px 13px;font-size:12px}button:disabled{opacity:.45}
-#status{font:12px ui-monospace,SFMono-Regular,monospace;color:#aeb7c4;margin:12px 0}.stage{position:relative;background:linear-gradient(#18212b,#10161d);border:1px solid #29313a;border-radius:18px;overflow:hidden}
-canvas{display:block;width:100%;height:auto}.note{font-size:12px;color:#9ca3af;line-height:1.5;margin-top:12px}.badge{font:11px ui-monospace;color:#cbd5e1;margin-left:auto}
-</style>
-</head>
+#status{font:12px ui-monospace,SFMono-Regular,monospace;color:#aeb7c4;margin:12px 0}.stage{background:#151c24;border:1px solid #29313a;border-radius:18px;overflow:hidden}
+canvas{display:block;width:100%;height:auto}.note{font-size:12px;color:#9ca3af;line-height:1.5;margin-top:12px}
+</style></head>
 <body><main><section class="card">
 <h1>SuperBook · Living Puppet Runtime</h1>
-<div class="sub">Generated artwork → deterministic part extraction → continuous local articulation. No per-frame AI. No slideshow.</div>
-<div class="toolbar">
-<button id="generate">Generate + rig character</button>
+<div class="sub">Generated artwork → semantic sheet parsing → continuous local articulation. No per-frame AI. No slideshow.</div>
+<div class="toolbar"><button id="generate">Generate + auto-rig</button>
 <button data-action="idle">Idle</button><button data-action="talk">Talk</button><button data-action="gesture">Gesture</button>
-<button data-action="eat">Eat</button><button data-action="listen">Listen</button><button data-action="walk">Walk</button>
-<span class="badge" id="action">idle</span>
-</div>
+<button data-action="eat">Eat</button><button data-action="listen">Listen</button><button data-action="walk">Walk</button></div>
 <div id="status">waiting</div><div class="stage"><canvas id="stage" width="960" height="640"></canvas></div>
-<div class="note">Gate B/C prototype: the sheet is processed locally in the browser. Semantic zones are detected from the generated sheet instead of assuming one fixed AI layout, then the runtime continuously articulates the extracted parts.</div>
+<div class="note">This revision does not assume fixed AI coordinates. It detects the large full-body reference and detached painted components, groups components by semantic position, and builds a local articulated puppet from those groups.</div>
 </section></main>
 <script type="module">
 import {PuppetRuntime} from './puppet_runtime.js';
 const WORKER='https://superbook-ai-scene.shivashisvicky112.workers.dev/puppet-sheet';
 const canvas=document.getElementById('stage'),ctx=canvas.getContext('2d');
-const status=document.getElementById('status'),actionLabel=document.getElementById('action');
-let puppet=null,last=performance.now();
+const status=document.getElementById('status');let puppet=null,last=performance.now();
 
 function keyBlue(image){
-  const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;
-  const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(image,0,0);
-  const d=x.getImageData(0,0,c.width,c.height),p=d.data;
-  for(let i=0;i<p.length;i+=4){const r=p[i],g=p[i+1],b=p[i+2];
-    if(b>145&&b>r*1.12&&b>g*1.02){p[i+3]=0;continue}
-    if(b>125&&b>r*1.06&&b>g*1.01)p[i+3]=Math.max(0,p[i+3]-Math.min(220,(b-r)*5));
-  }x.putImageData(d,0,0);return c;
+ const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;
+ const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(image,0,0);
+ const d=x.getImageData(0,0,c.width,c.height),p=d.data;
+ for(let i=0;i<p.length;i+=4){const r=p[i],g=p[i+1],b=p[i+2];
+  if(b>145&&b>r*1.10&&b>g*1.01)p[i+3]=0;
+  else if(b>125&&b>r*1.05&&b>g*1.01)p[i+3]=Math.max(0,p[i+3]-Math.min(220,(b-r)*5));
+ }
+ x.putImageData(d,0,0);return c;
 }
-function crop(source,box){
-  const sx=Math.round(source.width*box[0]),sy=Math.round(source.height*box[1]),sw=Math.round(source.width*box[2]),sh=Math.round(source.height*box[3]);
-  const out=document.createElement('canvas');out.width=sw;out.height=sh;out.getContext('2d').drawImage(source,sx,sy,sw,sh,0,0,sw,sh);return out;
-}
-function alphaBounds(c){
-  const x=c.getContext('2d',{willReadFrequently:true}),d=x.getImageData(0,0,c.width,c.height).data;
-  let l=c.width,t=c.height,r=-1,b=-1;
-  for(let y=0;y<c.height;y++)for(let xx=0;xx<c.width;xx++)if(d[(y*c.width+xx)*4+3]>20){l=Math.min(l,xx);t=Math.min(t,y);r=Math.max(r,xx);b=Math.max(b,y);}
-  if(r<0)return c;const pad=8,sx=Math.max(0,l-pad),sy=Math.max(0,t-pad),ex=Math.min(c.width,r+pad),ey=Math.min(c.height,b+pad);
-  const out=document.createElement('canvas');out.width=ex-sx;out.height=ey-sy;out.getContext('2d').drawImage(c,sx,sy,out.width,out.height,0,0,out.width,out.height);return out;
-}
-function buildSprites(image){
-  const keyed=keyBlue(image);
-  // The AI sheet is intentionally flexible in its layout. Do not rely on the
-  // exact pixel coordinates of one generation. Use broad semantic zones around
-  // the central full-body reference so a new sheet can be rigged as well.
-  const boxes={
-    head:[.27,.015,.46,.30],
-    torso:[.28,.22,.44,.48],
-    armL:[.10,.20,.34,.52],
-    armR:[.56,.20,.34,.52],
-    legL:[.30,.57,.20,.40],
-    legR:[.50,.57,.20,.40]
-  };
-  const result={};
-  for(const [id,box] of Object.entries(boxes)){
-    result[id]={image:alphaBounds(crop(keyed,box)),runtime:{}};
+function components(source){
+ const W=256,H=256,small=document.createElement('canvas');small.width=W;small.height=H;
+ const x=small.getContext('2d',{willReadFrequently:true});x.drawImage(source,0,0,W,H);
+ const d=x.getImageData(0,0,W,H).data,seen=new Uint8Array(W*H),out=[];
+ const qx=new Int16Array(W*H),qy=new Int16Array(W*H);
+ for(let y=0;y<H;y++)for(let xx=0;xx<W;xx++){
+  const i=y*W+xx;if(seen[i]||d[i*4+3]<28)continue;
+  let qh=0,qt=0,minX=xx,maxX=xx,minY=y,maxY=y,area=0;
+  qx[qt]=xx;qy[qt++]=y;seen[i]=1;
+  while(qh<qt){
+   const cx=qx[qh],cy=qy[qh++];area++;minX=Math.min(minX,cx);maxX=Math.max(maxX,cx);minY=Math.min(minY,cy);maxY=Math.max(maxY,cy);
+   for(const [nx,ny] of [[cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]]){
+    if(nx<0||ny<0||nx>=W||ny>=H)continue;const ni=ny*W+nx;
+    if(!seen[ni]&&d[ni*4+3]>=28){seen[ni]=1;qx[qt]=nx;qy[qt++]=ny;}
+   }
   }
-  return result;
+  if(area>=35)out.push({x:minX/W,y:minY/H,w:(maxX-minX+1)/W,h:(maxY-minY+1)/H,area,cx:(minX+maxX)/2/W,cy:(minY+maxY)/2/H});
+ }
+ return out.sort((a,b)=>b.area-a.area);
 }
-function drawPart(part,s){
-  const im=part.image,r=part.runtime||{},w=s.w*(r.scaleX||1),h=s.h*(r.scaleY||1);
-  ctx.save();ctx.translate(s.x+(r.x||0),s.y+(r.y||0));ctx.rotate(r.rotation||0);ctx.drawImage(im,-s.px*w,-s.py*h,w,h);ctx.restore();
+function crop(source,b){
+ const sx=Math.max(0,Math.floor(b.x*source.width)),sy=Math.max(0,Math.floor(b.y*source.height));
+ const sw=Math.min(source.width-sx,Math.ceil(b.w*source.width)),sh=Math.min(source.height-sy,Math.ceil(b.h*source.height));
+ const o=document.createElement('canvas');o.width=Math.max(1,sw);o.height=Math.max(1,sh);o.getContext('2d').drawImage(source,sx,sy,sw,sh,0,0,sw,sh);return o;
 }
+function union(boxes,pad=.015){
+ const x=Math.max(0,Math.min(...boxes.map(b=>b.x))-pad),y=Math.max(0,Math.min(...boxes.map(b=>b.y))-pad);
+ const r=Math.min(1,Math.max(...boxes.map(b=>b.x+b.w))+pad),b=Math.min(1,Math.max(...boxes.map(b=>b.y+b.h))+pad);
+ return {x,y,w:r-x,h:b-y};
+}
+function makeParts(image){
+ const keyed=keyBlue(image), cs=components(keyed);
+ if(!cs.length)throw new Error('No painted components detected.');
+ const body=cs.find(c=>c.h>.45&&c.w>.12&&c.cy>.35&&c.cy<.78)||cs[0];
+ const detached=cs.filter(c=>c!==body&&c.area>45);
+ const left=detached.filter(c=>c.cx<body.cx-.025);
+ const right=detached.filter(c=>c.cx>body.cx+.025);
+ const top=detached.filter(c=>c.cy<body.cy-.18);
+ const lower=detached.filter(c=>c.cy>body.cy+.05);
+ const headCandidates=top.filter(c=>c.w>.035&&c.h>.035&&c.h/c.w<3);
+ const head=headCandidates.sort((a,b)=>b.area-a.area)[0];
+ const armPool=detached.filter(c=>c.cy>body.cy-.20&&c.cy<body.cy+.18);
+ const armL=left.filter(c=>armPool.includes(c)).sort((a,b)=>b.area-a.area).slice(0,4);
+ const armR=right.filter(c=>armPool.includes(c)).sort((a,b)=>b.area-a.area).slice(0,4);
+ const legPool=detached.filter(c=>c.cy>body.cy+.02);
+ const legL=left.filter(c=>legPool.includes(c)).sort((a,b)=>b.area-a.area).slice(0,3);
+ const legR=right.filter(c=>legPool.includes(c)).sort((a,b)=>b.area-a.area).slice(0,3);
+ if(!head||!armL.length||!armR.length||!legL.length||!legR.length)throw new Error('Sheet parser could not find complete semantic groups.');
+ const torsoBox={x:body.x+body.w*.22,y:body.y+body.h*.18,w:body.w*.56,h:body.h*.58};
+ return {
+  head:{image:crop(keyed,head),runtime:{}},
+  torso:{image:crop(keyed,torsoBox),runtime:{}},
+  armL:{image:crop(keyed,union(armL,.02)),runtime:{}},
+  armR:{image:crop(keyed,union(armR,.02)),runtime:{}},
+  legL:{image:crop(keyed,union(legL,.02)),runtime:{}},
+  legR:{image:crop(keyed,union(legR,.02)),runtime:{}}
+ };
+}
+function draw(p,s){const r=p.runtime||{},im=p.image,w=s.w*(r.scaleX||1),h=s.h*(r.scaleY||1);ctx.save();ctx.translate(s.x+(r.x||0),s.y+(r.y||0));ctx.rotate(r.rotation||0);ctx.drawImage(im,-s.px*w,-s.py*h,w,h);ctx.restore();}
 function render(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='rgba(255,255,255,.04)';ctx.fillRect(0,0,canvas.width,canvas.height);
-  if(!puppet){requestAnimationFrame(render);return}
-  puppet.tick(Math.min(.05,(performance.now()-last)/1000));last=performance.now();
-  const x=480,y=575,s={
-    legL:{x:x-42,y:y-185,w:78,h:190,px:.50,py:.06},
-    legR:{x:x+42,y:y-185,w:78,h:190,px:.50,py:.06},
-    torso:{x,y:y-365,w:190,h:270,px:.50,py:.04},
-    armL:{x:x-92,y:y-345,w:78,h:225,px:.72,py:.07},
-    armR:{x:x+92,y:y-345,w:78,h:225,px:.28,py:.07},
-    head:{x,y:y-445,w:145,h:150,px:.50,py:.92}
-  };
-  for(const id of ['legL','legR','torso','armL','armR','head'])drawPart(puppet.parts[id],s[id]);requestAnimationFrame(render);
+ ctx.clearRect(0,0,960,640);
+ if(!puppet){requestAnimationFrame(render);return}
+ const now=performance.now(),dt=Math.min(.05,(now-last)/1000);last=now;puppet.tick(dt);
+ const x=480,y=575,s={
+  legL:{x:x-43,y:y-175,w:74,h:185,px:.5,py:.04},legR:{x:x+43,y:y-175,w:74,h:185,px:.5,py:.04},
+  torso:{x,y:y-355,w:190,h:260,px:.5,py:.06},armL:{x:x-92,y:y-330,w:86,h:225,px:.72,py:.08},
+  armR:{x:x+92,y:y-330,w:86,h:225,px:.28,py:.08},head:{x,y:y-435,w:145,h:145,px:.5,py:.88}};
+ for(const id of ['legL','legR','torso','armL','armR','head'])draw(puppet.parts[id],s[id]);
+ requestAnimationFrame(render);
 }
 async function generate(){
-  const button=document.getElementById('generate');button.disabled=true;status.textContent='generating sheet…';
-  try{const r=await fetch(WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({character:'an elderly Indian woman, gentle expressive face, silver hair in a neat bun, simple elegant traditional household clothing, warm literary-storybook character design'})});
-    const j=await r.json();if(!r.ok)throw new Error(j.detail||j.error||('HTTP '+r.status));const image=new Image();image.src='data:'+j.mimeType+';base64,'+j.base64;await image.decode();
-    puppet=new PuppetRuntime(buildSprites(image));status.textContent='RIG READY · 6 local articulated parts · '+j.sourceModel;
-  }catch(e){status.textContent='RIG ERROR · '+e.message}finally{button.disabled=false}
+ const b=document.getElementById('generate');b.disabled=true;status.textContent='generating + parsing sheet…';
+ try{const r=await fetch(WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({character:'an elderly Indian woman, gentle expressive face, silver hair in a neat bun, simple elegant traditional household clothing, warm literary-storybook character design'})});
+ const j=await r.json();if(!r.ok)throw new Error(j.detail||j.error||('HTTP '+r.status));const im=new Image();im.src='data:'+j.mimeType+';base64,'+j.base64;await im.decode();
+ const parts=makeParts(im);puppet=new PuppetRuntime(parts);status.textContent='RIG READY · semantic components parsed locally';}
+ catch(e){puppet=null;status.textContent='RIG ERROR · '+e.message}finally{b.disabled=false}
 }
 document.getElementById('generate').onclick=generate;
-for(const b of document.querySelectorAll('[data-action]'))b.onclick=()=>{if(puppet){puppet.setAction(b.dataset.action);actionLabel.textContent=b.dataset.action}};
+for(const b of document.querySelectorAll('[data-action]'))b.onclick=()=>puppet&&puppet.setAction(b.dataset.action);
 render();generate();
 </script></body></html>
