@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SuperBook · AI Directed Puppet POC</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;background:#07090d;color:#eef2f7;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{padding:16px;display:flex;justify-content:center}.wrap{width:min(760px,100%)}
+h1{font-size:18px;margin:4px 0 4px}.sub{color:#8994a5;font-size:13px;margin-bottom:12px}
+.stage{position:relative;background:#10151b;border:1px solid #303947;border-radius:20px;overflow:hidden;box-shadow:0 18px 60px #0008}
+svg{display:block;width:100%;height:auto;background:#182027}
+.controls{display:flex;gap:7px;flex-wrap:wrap;padding:10px;background:#0d1117;border-top:1px solid #303947}
+button{border:1px solid #3a4655;background:#171e27;color:#edf2f8;border-radius:999px;padding:8px 12px;font-size:13px}button.active{background:#293544}
+.panel{margin-top:10px;border:1px solid #2e3744;border-radius:14px;background:#0d1117;padding:11px;font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#9ba7b7;white-space:pre-wrap}
+.good{color:#b8e6c3}
+</style>
+</head>
+<body><main class="wrap">
+<h1>AI-directed puppet · runtime gate</h1>
+<div class="sub">AI chooses intent + timing. The local engine executes reusable actions. Zero per-frame AI.</div>
+<section class="stage">
+<svg id="scene" viewBox="0 0 760 720" aria-label="Animated literary scene">
+<defs>
+ <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#26333a"/><stop offset="1" stop-color="#172127"/></linearGradient>
+ <linearGradient id="table" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6c4d3c"/><stop offset="1" stop-color="#392a28"/></linearGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+</defs>
+<rect width="760" height="720" fill="url(#wall)"/>
+<circle cx="380" cy="230" r="170" fill="#c49a62" opacity=".10" filter="url(#soft)"/>
+<rect x="70" y="80" width="620" height="300" rx="12" fill="#202a30" stroke="#3a454c" stroke-width="4"/>
+<rect x="92" y="102" width="576" height="256" rx="5" fill="#2b3539"/>
+<path d="M92 300 Q250 235 380 310 T668 270 V358 H92Z" fill="#35433e"/>
+<rect x="0" y="500" width="760" height="220" fill="url(#table)"/>
+<ellipse cx="380" cy="500" rx="370" ry="48" fill="#8a6049"/>
+<ellipse cx="380" cy="490" rx="120" ry="22" fill="#1a1d1d" opacity=".7"/>
+<rect x="332" y="454" width="96" height="17" rx="4" fill="#d8d0bd"/>
+<rect x="338" y="438" width="84" height="18" rx="3" fill="#f0e8d3"/>
+<line x1="342" y1="443" x2="418" y2="451" stroke="#9b8f79" stroke-width="2"/>
+<g id="left" transform="translate(195 255)">
+ <ellipse cx="0" cy="250" rx="104" ry="25" fill="#11161a" opacity=".5"/>
+ <path id="lbody" d="M-74 235 Q-70 125 0 115 Q70 125 74 235Z" fill="#283f55"/>
+ <circle id="lhead" cx="0" cy="88" r="58" fill="#d8a98a"/>
+ <path d="M-57 83 Q-53 20 0 23 Q57 20 58 83 Q34 45 0 45 Q-31 45 -57 83Z" fill="#352a29"/>
+ <circle id="leye1" cx="-19" cy="91" r="4" fill="#161719"/><circle id="leye2" cx="20" cy="91" r="4" fill="#161719"/>
+ <path d="M-11 119 Q0 125 12 119" fill="none" stroke="#70463b" stroke-width="3" stroke-linecap="round"/>
+ <g id="larm" transform="translate(55 145)">
+   <path d="M0 0 Q54 25 78 83" fill="none" stroke="#283f55" stroke-width="28" stroke-linecap="round"/>
+   <circle id="lhand" cx="78" cy="83" r="17" fill="#d8a98a"/>
+ </g>
+</g>
+<g id="right" transform="translate(565 255)">
+ <ellipse cx="0" cy="250" rx="104" ry="25" fill="#11161a" opacity=".5"/>
+ <path id="rbody" d="M-74 235 Q-70 125 0 115 Q70 125 74 235Z" fill="#526846"/>
+ <circle id="rhead" cx="0" cy="88" r="58" fill="#d2a27f"/>
+ <path d="M-58 82 Q-42 15 10 25 Q58 35 58 86 Q25 51 0 51 Q-31 51 -58 82Z" fill="#8b694f"/>
+ <circle id="reye1" cx="-19" cy="91" r="4" fill="#161719"/><circle id="reye2" cx="20" cy="91" r="4" fill="#161719"/>
+ <path d="M-12 119 Q0 125 12 119" fill="none" stroke="#70463b" stroke-width="3" stroke-linecap="round"/>
+ <g id="rarm" transform="translate(-55 145)">
+   <path d="M0 0 Q-48 30 -76 82" fill="none" stroke="#526846" stroke-width="28" stroke-linecap="round"/>
+   <circle id="rhand" cx="-76" cy="82" r="17" fill="#d2a27f"/>
+ </g>
+</g>
+<g id="book" transform="translate(380 468)">
+ <rect x="-44" y="-8" width="88" height="15" rx="2" fill="#66574b" transform="rotate(-3)"/>
+ <path d="M-39 -12 L0 -6 L39 -12 L39 7 L0 1 L-39 7Z" fill="#e5ddc9"/>
+</g>
+</svg>
+<div class="controls">
+<button data-m="idle">Idle</button><button data-m="look">Look</button><button data-m="gesture">Gesture</button><button data-m="nod">Nod</button><button data-m="reaction">Reaction</button><button data-m="scene">AI Scene</button>
+</div>
+</section>
+<div id="status" class="panel"></div>
+</main>
+<script>
+const E=id=>document.getElementById(id);
+const parts={left:E('left'),right:E('right'),lh:E('lhead'),rh:E('rhead'),la:E('larm'),ra:E('rarm'),book:E('book')};
+const aiPlan={
+ schemaVersion:1,
+ intent:"conversation_about_the_book",
+ timeline:[
+  ["idle",0,1.0],["look",1.0,1.4],["gesture",2.4,1.7],["nod",4.1,1.0],["reaction",5.1,.9],["idle",6.0,1.0]
+ ],
+ aiPerFrame:0
+};
+let mode="idle",t=0,last=performance.now();
+function setMode(m){mode=m;t=0;document.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.m===m))}
+document.querySelectorAll('button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+function ease(x){return x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2}
+function tr(el,base,rx,ry,sc=1){el.setAttribute('transform',base+' rotate('+rx+' 0 0) translate(0 '+ry+') scale('+sc+')')}
+function reset(){
+ tr(parts.left,'translate(195 255)',0,0);tr(parts.right,'translate(565 255)',0,0);
+ parts.lh.setAttribute('transform','');parts.rh.setAttribute('transform','');
+ parts.la.setAttribute('transform','translate(55 145)');parts.ra.setAttribute('transform','translate(-55 145)');
+}
+function apply(action,p){
+ reset();
+ const s=Math.sin(p*Math.PI), q=ease(p);
+ if(action==='look'){
+   parts.lh.setAttribute('transform','rotate('+(-8*s)+' 0 88)');
+   parts.rh.setAttribute('transform','rotate('+(7*s)+' 0 88)');
+   parts.la.setAttribute('transform','translate(55 145) rotate('+(5*s)+' 0 0)');
+ }
+ if(action==='gesture'){
+   parts.la.setAttribute('transform','translate(55 145) rotate('+(-34*s)+' 0 0)');
+   parts.lh.setAttribute('transform','rotate('+(-4*s)+' 0 88)');
+ }
+ if(action==='nod'){
+   parts.rh.setAttribute('transform','rotate('+(7*s)+' 0 88)');
+   parts.ra.setAttribute('transform','translate(-55 145) rotate('+(8*s)+' 0 0)');
+ }
+ if(action==='reaction'){
+   parts.right.setAttribute('transform','translate(565 255) rotate('+(6*s)+' 0 250)');
+   parts.rh.setAttribute('transform','rotate('+(10*s)+' 0 88)');
+   parts.ra.setAttribute('transform','translate(-55 145) rotate('+(-18*s)+' 0 0)');
+ }
+}
+function sceneAction(t){
+ const cycle=8;
+ let z=t%cycle;
+ if(z<1)return['idle',z];
+ if(z<2.4)return['look',z-1];
+ if(z<4.1)return['gesture',z-2.4];
+ if(z<5.1)return['nod',z-4.1];
+ if(z<6)return['reaction',z-5.1];
+ return['idle',z-6];
+}
+function frame(now){
+ const dt=Math.min(.05,(now-last)/1000);last=now;t+=dt;
+ let a=mode,p=0;
+ if(mode==='scene'){[a,p]=sceneAction(t);p/=({idle:1,look:1.4,gesture:1.7,nod:1,reaction:.9}[a]||1)}
+ else p=(t%1.6)/1.6;
+ apply(a,p);
+ E('status').innerHTML='<span class="good">PASS · runtime alive</span>\nmode: '+mode+'\ncurrent action: '+a+'\nAI decision: intent + timeline\nengine: deterministic transforms + easing\nAI/frame: 0\n\nAI plan fixture:\n'+JSON.stringify(aiPlan,null,2);
+ requestAnimationFrame(frame);
+}
+setMode('scene');requestAnimationFrame(frame);
+</script>
+</body></html>
