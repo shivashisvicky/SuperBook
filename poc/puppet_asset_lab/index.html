@@ -1,0 +1,37 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SuperBook · Puppet Asset Lab</title>
+<style>
+body{margin:0;background:#090b10;color:#eee;font-family:system-ui;display:grid;place-items:center;min-height:100vh;padding:16px;box-sizing:border-box}
+main{width:min(900px,100%)}.stage{background:#12151c;border:1px solid #30343c;border-radius:20px;padding:16px}
+h1{font-size:18px;margin:0 0 6px}.sub{color:#9ca3af;font-size:12px;margin-bottom:14px}
+button{border:1px solid #ffffff30;background:#ffffff0d;color:white;border-radius:999px;padding:10px 14px;font-size:13px}
+#status{margin:12px 0;font:12px ui-monospace;color:#aeb7c4}
+img{display:block;width:100%;border-radius:14px;background:#06f;image-rendering:auto}
+.note{font-size:12px;line-height:1.5;color:#9ca3af;margin-top:12px}
+</style></head><body><main><section class="stage">
+<h1>SuperBook · Puppet Asset Lab</h1>
+<div class="sub">AI artwork → animation-ready character sheet. This is the asset gate, not the final reader UI.</div>
+<button id="go">Generate character sheet</button>
+<div id="status">waiting</div>
+<img id="art" alt="" hidden>
+<div class="note">The next runtime will crop semantic parts from this sheet and animate them locally. No per-frame AI and no slideshow.</div>
+</section></main>
+<script>
+const WORKER='https://superbook-ai-scene.shivashisvicky112.workers.dev/puppet-sheet';
+const go=document.getElementById('go'),status=document.getElementById('status'),art=document.getElementById('art');
+go.onclick=async()=>{
+ go.disabled=true;art.hidden=true;status.textContent='generating animation-ready character sheet…';
+ try{
+  const r=await fetch(WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+   character:'an elderly Indian woman, gentle expressive face, silver hair in a neat bun, simple elegant traditional household clothing, warm literary-storybook character design'
+  })});
+  const j=await r.json();
+  if(!r.ok) throw new Error(j.detail||j.error||('HTTP '+r.status));
+  art.src='data:'+j.mimeType+';base64,'+j.base64;
+  art.hidden=false;
+  status.textContent='ASSET READY · '+j.assetType+' · '+j.sourceModel;
+ }catch(e){status.textContent='ASSET ERROR · '+e.message}
+ finally{go.disabled=false}
+};
+</script></body></html>
