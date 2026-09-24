@@ -3,7 +3,7 @@
 const TEXT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
 const MOTION_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
-const VIDEO_MODEL = 'alibaba/hh1.1-t2v';
+const VIDEO_MODEL = 'alibaba/hh1.1-i2v';
 const MAX_PASSAGE = 3600;
 
 const sceneSchema = {
@@ -264,16 +264,31 @@ async function generateMotionFrames(env, plan, imageBase64, origin) {
   }, 200, origin);
 }
 
-async function generateVideo(env, plan, origin, requestUrl) {
+async function generateVideo(env, plan, imageBase64, origin, requestUrl) {
+  if (typeof imageBase64 !== 'string' || imageBase64.length === 0) {
+    return json({ error: 'A reference scene image is required for I2V.' }, 400, origin);
+  }
+
+  const imageUri = imageBase64.startsWith('data:')
+    ? imageBase64
+    : 'data:image/jpeg;base64,' + imageBase64;
+  console.log('[SuperBook][video] starting I2V', {
+    model: VIDEO_MODEL,
+    duration: 4,
+    resolution: '720P',
+  });
+
   const video = await env.AI.run(VIDEO_MODEL, {
+    image: imageUri,
     prompt: [
       videoPrompt(plan),
       'This is a short living illustration, not a new plot event.',
       'Keep movement subtle and localized to the described actions.',
+      'Preserve the exact reference composition, character identity, faces, clothing, furniture, architecture and lighting.',
+      'Do not replace the scene with a newly invented scene.',
     ].join(' ').slice(0, 2500),
     duration: 4,
     resolution: '720P',
-    ratio: '16:9',
     watermark: false,
   });
 
@@ -455,12 +470,13 @@ export default {
       }
 
       const plan = input && input.scenePlan;
+      const imageBase64 = input && input.imageBase64;
       if (!validatePlan(plan)) {
         return json({ error: 'A valid scenePlan is required.' }, 400, origin);
       }
 
       try {
-        return await generateVideo(env, plan, origin, requestUrl);
+        return await generateVideo(env, plan, imageBase64, origin, requestUrl);
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
         const code = error && typeof error === 'object' ? error.code : undefined;
