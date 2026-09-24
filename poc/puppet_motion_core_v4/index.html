@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SuperBook · Motion Core v4</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;background:#080a0f;color:#eef1f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:820px;margin:auto;padding:20px 14px 42px}.card{background:#11151d;border:1px solid #2a303c;border-radius:24px;padding:18px}
+h1{font-size:23px;margin:0 0 5px}.sub{color:#9ca5b5;line-height:1.45;margin:0 0 14px}
+canvas{display:block;width:100%;height:auto;aspect-ratio:3/4;border:1px solid #2b3340;border-radius:18px;background:#0d131b}
+h2{font-size:15px;margin:16px 0 8px;color:#b8c1d0}.controls{display:flex;flex-wrap:wrap;gap:7px}
+button{appearance:none;border:1px solid #38414f;background:#171c25;color:#eef1f7;border-radius:999px;padding:9px 12px;font-size:14px}
+button.active{background:#eef1f7;color:#10131a}.status{margin-top:12px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#aab4c5}
+.small{font-size:13px;color:#8f99aa;line-height:1.45;margin-top:12px}
+</style>
+</head>
+<body><main><section class="card">
+<h1>SuperBook · Motion Core v4</h1>
+<p class="sub">This version stops improvising poses with loose trigonometry. Motions are explicit keyframed poses, blended through a stable skeleton. Walking has a real forward gait with planted contact phases.</p>
+<canvas id="stage" width="720" height="960"></canvas>
+<h2>Motion library</h2><div class="controls" id="actions"></div>
+<h2>Movement</h2><div class="controls" id="movement"></div>
+<div class="status" id="status"></div>
+<p class="small">This is still a stick test. The goal is to establish a reusable motion core before any AI artwork is attached.</p>
+</section></main>
+<script>
+(()=>{"use strict";
+const C=document.getElementById("stage"),g=C.getContext("2d"),status=document.getElementById("status"),TAU=Math.PI*2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t, ease=t=>t*t*(3-2*t);
+const rad=d=>d*Math.PI/180, V=(x,y)=>({x,y}), add=(a,b)=>V(a.x+b.x,a.y+b.y);
+function rot(v,a){return V(v.x*Math.cos(a)-v.y*Math.sin(a),v.x*Math.sin(a)+v.y*Math.cos(a))}
+function joint(root,len,angle){return add(root,rot(V(0,len),angle))}
+function line(a,b,w){g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.lineWidth=w;g.lineCap="round";g.stroke()}
+function dot(p,r=8){g.beginPath();g.arc(p.x,p.y,r,0,TAU);g.fill()}
+function head(p,a){g.save();g.translate(p.x,p.y);g.rotate(a);g.fillStyle="#eef1f7";g.beginPath();g.arc(0,0,43,0,TAU);g.fill();g.fillStyle="#11151d";g.beginPath();g.arc(-14,-4,5,0,TAU);g.arc(14,-4,5,0,TAU);g.fill();g.strokeStyle="#11151d";g.lineWidth=4;g.beginPath();g.arc(0,7,15,.15,Math.PI-.15);g.stroke();g.restore()}
+function empty(){return {rootX:0,rootY:0,torso:0,head:0,lUpper:rad(-155),lLower:rad(-120),rUpper:rad(-25),rLower:rad(-60),lThigh:rad(20),lShin:rad(8),rThigh:rad(160),rShin:rad(172)}}
+function pose(over){const p=empty();Object.assign(p,over);return p}
+const clips={
+ idle:{dur:2,keys:[
+  [0,pose({head:rad(-1),rootY:0})],[.25,pose({head:rad(1),rootY:-2,torso:rad(1)})],[.5,pose({head:rad(-1),rootY:0,torso:rad(-1)})],[.75,pose({head:rad(1),rootY:-2,torso:rad(1)})],[1,pose({head:rad(-1),rootY:0})]]},
+ talk:{dur:1.8,keys:[
+  [0,pose({head:rad(-2),rUpper:rad(-55),rLower:rad(-25),lUpper:rad(-150),lLower:rad(-115)})],
+  [.25,pose({head:rad(2),rUpper:rad(-75),rLower:rad(-10),lUpper:rad(-165),lLower:rad(-125),torso:rad(2)})],
+  [.5,pose({head:rad(-3),rUpper:rad(-45),rLower:rad(-70),lUpper:rad(-145),lLower:rad(-150),torso:rad(-1)})],
+  [.75,pose({head:rad(2),rUpper:rad(-68),rLower:rad(-35),lUpper:rad(-158),lLower:rad(-105)})],
+  [1,pose({head:rad(-2),rUpper:rad(-55),rLower:rad(-25),lUpper:rad(-150),lLower:rad(-115)})]]},
+ wave:{dur:1.4,keys:[
+  [0,pose({head:rad(4),rUpper:rad(-72),rLower:rad(-120)})],
+  [.2,pose({head:rad(3),rUpper:rad(-78),rLower:rad(-155)})],
+  [.4,pose({head:rad(3),rUpper:rad(-70),rLower:rad(-112)})],
+  [.6,pose({head:rad(2),rUpper:rad(-82),rLower:rad(-160)})],
+  [.8,pose({head:rad(3),rUpper:rad(-72),rLower:rad(-118)})],
+  [1,pose({head:rad(4),rUpper:rad(-72),rLower:rad(-120)})]]},
+ point:{dur:1.2,keys:[
+  [0,pose({rUpper:rad(-52),rLower:rad(-18),head:rad(-2)})],
+  [.35,pose({rUpper:rad(-32),rLower:rad(-2),head:rad(-7),torso:rad(2)})],
+  [.7,pose({rUpper:rad(-32),rLower:rad(-2),head:rad(-7),torso:rad(2)})],
+  [1,pose({rUpper:rad(-52),rLower:rad(-18),head:rad(-2)})]]},
+ reach:{dur:1.5,keys:[
+  [0,pose({rUpper:rad(15),rLower:rad(55),torso:rad(-2)})],
+  [.35,pose({rUpper:rad(5),rLower:rad(12),torso:rad(-5),rootX:8})],
+  [.7,pose({rUpper:rad(-2),rLower:rad(4),torso:rad(-5),rootX:8})],
+  [1,pose({rUpper:rad(15),rLower:rad(55),torso:rad(-2)})]]},
+ eat:{dur:1.8,keys:[
+  [0,pose({rUpper:rad(-55),rLower:rad(-20),head:rad(-2)})],
+  [.3,pose({rUpper:rad(-78),rLower:rad(-45),head:rad(-8),torso:rad(-2)})],
+  [.55,pose({rUpper:rad(-92),rLower:rad(-65),head:rad(-10),torso:rad(-3)})],
+  [.72,pose({rUpper:rad(-78),rLower:rad(-45),head:rad(-8)})],
+  [1,pose({rUpper:rad(-55),rLower:rad(-20),head:rad(-2)})]]},
+ listen:{dur:2,keys:[
+  [0,pose({head:rad(10),lUpper:rad(-145),lLower:rad(-105)})],
+  [.5,pose({head:rad(14),lUpper:rad(-152),lLower:rad(-112),torso:rad(-1)})],
+  [1,pose({head:rad(10),lUpper:rad(-145),lLower:rad(-105)})]]},
+ sit:{dur:1.5,keys:[
+  [0,pose({rootY:0,lThigh:rad(20),lShin:rad(8),rThigh:rad(160),rShin:rad(172),torso:0})],
+  [.45,pose({rootY:62,lThigh:rad(70),lShin:rad(92),rThigh:rad(110),rShin:rad(88),torso:rad(-5),head:rad(-2)})],
+  [1,pose({rootY:62,lThigh:rad(70),lShin:rad(92),rThigh:rad(110),rShin:rad(88),torso:rad(-5),head:rad(-2)})]]},
+ crouch:{dur:1.2,keys:[
+  [0,pose({rootY:0})],[.5,pose({rootY:42,lThigh:rad(38),lShin:rad(30),rThigh:rad(142),rShin:rad(150),torso:rad(4)})],[1,pose({rootY:0})]]},
+ react:{dur:1.1,keys:[
+  [0,pose({head:0})],[.2,pose({head:rad(-12),rootY:-18,torso:rad(-5),lUpper:rad(-165),lLower:rad(-125),rUpper:rad(-15),rLower:rad(-55)})],
+  [.45,pose({head:rad(8),rootY:-8,torso:rad(4),lUpper:rad(-135),lLower:rad(-85),rUpper:rad(-45),rLower:rad(-5)})],
+  [1,pose({head:0,rootY:0,torso:0})]]},
+ carry:{dur:1.6,keys:[
+  [0,pose({lUpper:rad(20),lLower:rad(55),rUpper:rad(160),rLower:rad(125),torso:rad(1)})],
+  [.5,pose({lUpper:rad(17),lLower:rad(50),rUpper:rad(163),rLower:rad(130),torso:rad(-1)})],
+  [1,pose({lUpper:rad(20),lLower:rad(55),rUpper:rad(160),rLower:rad(125),torso:rad(1)})]]}
+};
+function sample(name,t){const c=clips[name],u=(t%c.dur)/c.dur,k=c.keys;for(let i=0;i<k.length-1;i++){if(u<=k[i+1][0]){const a=k[i],b=k[i+1],w=ease((u-a[0])/(b[0]-a[0]));const out={};for(const key of Object.keys(a[1]))out[key]=lerp(a[1][key],b[1][key],w);return out}}return k[k.length-1][1]}
+function walkPose(t,run=false){const cycle=(t%(run?.62:.95))/(run?.62:.95),a=TAU*cycle,s=Math.sin(a),c=Math.cos(a);const p=empty();p.rootX=(t%(run?3.4:4.8))* (run?120:75)- (run?0:0);p.rootY=-Math.abs(s)*(run?11:7);p.torso=rad(c*(run?5:3));p.head=rad(-c*2);
+p.lThigh=rad(20+s*(run?34:28));p.rThigh=rad(160-s*(run?34:28));
+p.lShin=rad(8-Math.max(0,-s)*(run?48:35));p.rShin=rad(172+Math.max(0,s)*(run?48:35));
+p.lUpper=rad(-155-s*(run?28:22));p.rUpper=rad(-25+s*(run?28:22));p.lLower=rad(-120-s*(run?18:14));p.rLower=rad(-60+s*(run?18:14));
+return p}
+const names=Object.keys(clips), buttons={};let action="idle",moving="stand",previous="idle",changed=performance.now();
+function addButton(parent,text,fn){const b=document.createElement("button");b.textContent=text;b.onclick=fn;parent.appendChild(b);return b}
+function sync(){Object.entries(buttons).forEach(([n,b])=>b.classList.toggle("active",n===action||n===moving))}
+names.forEach(n=>buttons[n]=addButton(document.getElementById("actions"),n,()=>{previous=action;action=n;changed=performance.now();sync()}));
+["stand","walk","run"].forEach(n=>buttons[n]=addButton(document.getElementById("movement"),n,()=>{moving=n;sync()}));
+sync();
+function render(now){
+ const t=now/1000, elapsed=(now-changed)/1000, w=ease(clamp(elapsed/.38,0,1));
+ let P;
+ if(moving==="walk"||moving==="run")P=walkPose(t,moving==="run");
+ else {const A=sample(previous,elapsed),B=sample(action,elapsed);P={};for(const k of Object.keys(empty()))P[k]=lerp(A[k]??0,B[k]??0,w)}
+ const cx=170+(P.rootX||0)%380, base=730+(P.rootY||0), hip=V(cx,base-170), chest=add(hip,rot(V(0,-150),P.torso||0)), neck=add(chest,rot(V(0,-72),P.torso||0)),hp=add(neck,rot(V(0,-62),P.head||0));
+ const shL=add(chest,rot(V(-72,18),P.torso||0)),shR=add(chest,rot(V(72,18),P.torso||0));
+ const hl=add(hip,rot(V(-43,0),P.torso||0)),hr=add(hip,rot(V(43,0),P.torso||0));
+ const le=joint(shL,105,P.lUpper),lw=joint(le,92,P.lLower),re=joint(shR,105,P.rUpper),rw=joint(re,92,P.rLower);
+ const lk=joint(hl,145,P.lThigh),lf=joint(lk,145,P.lShin),rk=joint(hr,145,P.rThigh),rf=joint(rk,145,P.rShin);
+ g.clearRect(0,0,C.width,C.height);g.strokeStyle="#eef1f7";g.fillStyle="#eef1f7";
+ line(hl,lk,25);line(lk,lf,22);line(hr,rk,25);line(rk,rf,22);line(hip,chest,44);line(shL,le,22);line(le,lw,19);line(shR,re,22);line(re,rw,19);
+ [hip,chest,shL,shR,le,re,lk,rk].forEach(q=>dot(q,8));head(hp,P.head||0);
+ g.strokeStyle="#303846";g.lineWidth=3;g.beginPath();g.moveTo(80,875);g.lineTo(640,875);g.stroke();
+ status.textContent=(action+" + "+moving).toUpperCase()+" · KEYFRAMES · "+Math.round(w*100)+"% blend";
+ requestAnimationFrame(render)
+}
+requestAnimationFrame(render)
+})();</script></body></html>
