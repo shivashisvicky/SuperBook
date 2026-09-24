@@ -228,7 +228,7 @@ async function generateMotionFrames(env, plan, imageBase64, origin) {
         'Do not add characters, remove characters, change location, or invent a new event.',
         'Keep identities and architecture consistent with the reference.',
         'Narrative beat: ' + beat,
-        'Character actions: ' + plan.characters.map((character) => character.id + ': ' + character.action + ', ' + character.emotion).join('; '),
+        'Character animation instructions: ' + plan.characters.map((character) => character.id + ': ' + character.runtimeAnimation + ' (' + character.action + ', ' + character.emotion + ')').join('; '),
         'Visual style: ' + plan.visualStyle,
         'No text, captions, logos, watermarks, or collage panels.',
       ].join(' ').slice(0, 2048),
