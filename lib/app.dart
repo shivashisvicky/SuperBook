@@ -8,12 +8,14 @@ import 'features/reader/reader_screen.dart';
 import 'features/scenes/scenes_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'services/current_book_store.dart';
+import 'poc/rive_runtime_proof_screen.dart';
 
 class SuperBookApp extends StatelessWidget {
   const SuperBookApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final riveProof = Uri.base.queryParameters['rive'] == '1';
     return MaterialApp(
       title: 'SuperBook',
       debugShowCheckedModeBanner: false,
@@ -22,7 +24,7 @@ class SuperBookApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: const Color(0xFF7C83FD),
       ),
-      home: const _SuperBookShell(),
+      home: riveProof ? const RiveRuntimeProofScreen() : const _SuperBookShell(),
     );
   }
 }
