@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SuperBook · Puppet Runtime v3</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;background:#080a0f;color:#eef1f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:820px;margin:auto;padding:20px 14px 42px}.card{background:#11151d;border:1px solid #2a303c;border-radius:24px;padding:18px}
+h1{font-size:23px;margin:0 0 5px}.sub{color:#9ca5b5;line-height:1.45;margin:0 0 14px}
+canvas{display:block;width:100%;height:auto;aspect-ratio:3/4;border:1px solid #2b3340;border-radius:18px;background:#0d131b}
+h2{font-size:15px;margin:16px 0 8px;color:#b8c1d0}.controls{display:flex;flex-wrap:wrap;gap:7px}
+button{appearance:none;border:1px solid #38414f;background:#171c25;color:#eef1f7;border-radius:999px;padding:9px 12px;font-size:14px}
+button.active{background:#eef1f7;color:#10131a}
+.status{margin-top:12px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#aab4c5}
+.small{font-size:13px;color:#8f99aa;line-height:1.45;margin-top:12px}
+</style></head>
+<body><main><section class="card">
+<h1>SuperBook · Living Puppet v3</h1>
+<p class="sub">Recognizable motion primitives first. The character has local joint targets, planted feet, phase-based actions and a small demo timeline. No AI or generated artwork is involved.</p>
+<canvas id="stage" width="720" height="960"></canvas>
+<h2>Actions</h2><div class="controls" id="actions"></div>
+<h2>Locomotion</h2><div class="controls" id="loc"></div>
+<div class="status" id="status"></div>
+<p class="small">Tap <b>Play demo</b> to watch a sequence rather than judging each clip from a still frame. The next stage is to expand these primitives, not to add dozens of brittle one-off animations.</p>
+</section></main>
+<script>
+const C=document.getElementById("stage"),g=C.getContext("2d"),status=document.getElementById("status"),TAU=Math.PI*2;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)), lerp=(a,b,t)=>a+(b-a)*t, smooth=t=>t*t*(3-2*t);
+const V=(x,y)=>({x,y}), add=(a,b)=>V(a.x+b.x,a.y+b.y), sub=(a,b)=>V(a.x-b.x,a.y-b.y);
+const mul=(a,s)=>V(a.x*s,a.y*s), dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y), ang=(a,b)=>Math.atan2(b.y-a.y,b.x-a.x);
+function ik(root,target,l1,l2,side){const d=clamp(dist(root,target),Math.abs(l1-l2)+.01,l1+l2-.01),a=ang(root,target),c=clamp((l1*l1+d*d-l2*l2)/(2*l1*d),-1,1),b=Math.acos(c)*side;const e=add(root,mul(V(Math.cos(a+b),Math.sin(a+b)),l1));return[e,target]}
+function line(a,b,w){g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.lineWidth=w;g.lineCap="round";g.stroke()}
+function joint(p,r=8){g.beginPath();g.arc(p.x,p.y,r,0,TAU);g.fill()}
+function head(p,r){g.save();g.translate(p.x,p.y);g.rotate(r);g.fillStyle="#eef1f7";g.beginPath();g.arc(0,0,44,0,TAU);g.fill();g.fillStyle="#11151d";g.beginPath();g.arc(-15,-4,5,0,TAU);g.arc(15,-4,5,0,TAU);g.fill();g.strokeStyle="#11151d";g.lineWidth=4;g.beginPath();g.arc(0,7,15,.15,Math.PI-.15);g.stroke();g.restore()}
+
+const actions=["idle","talk","wave","point","reach","eat","listen","sit","crouch","react","carry"];
+const locomotion=["stand","walk","run"];
+let action="idle",loc="stand",previous="idle",started=performance.now(),demo=false,demoIndex=0;
+const demoSeq=[["talk","stand"],["wave","stand"],["point","stand"],["reach","stand"],["eat","stand"],["listen","stand"],["idle","walk"],["idle","run"],["sit","stand"],["idle","stand"]];
+function button(parent,label,fn){const b=document.createElement("button");b.textContent=label;b.onclick=fn;parent.appendChild(b);return b}
+const actionButtons={},locButtons={};
+for(const n of actions)actionButtons[n]=button(document.getElementById("actions"),n,()=>setAction(n));
+button(document.getElementById("actions"),"▶ play demo",()=>{demo=true;demoIndex=0;setState(...demoSeq[0])});
+for(const n of locomotion)locButtons[n]=button(document.getElementById("loc"),n,()=>setLoc(n));
+function setAction(n){demo=false;previous=action;action=n;started=performance.now();sync()}
+function setLoc(n){loc=n;sync()}
+function sync(){Object.entries(actionButtons).forEach(([n,b])=>b.classList.toggle("active",n===action));Object.entries(locButtons).forEach(([n,b])=>b.classList.toggle("active",n===loc))}
+sync();
+
+function pose(name,u,phase){
+ const p={head:0,lean:0,lHand:null,rHand:null,lFoot:null,rFoot:null};
+ const s=Math.sin(TAU*u), c=Math.cos(TAU*u), pulse=(s+1)/2;
+ if(name==="idle"){p.head=.025*s;p.lean=.012*s}
+ if(name==="talk"){p.head=.025*s;p.rHand=V(145,-10+24*s);p.lHand=V(-135,35-10*s)}
+ if(name==="wave"){p.head=.03*s;p.rHand=V(158,-105+18*s)}
+ if(name==="point"){p.head=-.08;p.rHand=V(185,-20+8*s)}
+ if(name==="reach"){p.lean=.035;p.rHand=V(125,105-80*pulse)}
+ if(name==="eat"){p.head=-.08;p.rHand=V(45,-88+28*Math.abs(Math.sin(Math.PI*u)));p.lean=.02}
+ if(name==="listen"){p.head=.17+.02*s;p.lHand=V(-130,35)}
+ if(name==="sit"){p.lean=-.035;p.lFoot=V(-65,155);p.rFoot=V(65,155);p.lHand=V(-110,80);p.rHand=V(110,80)}
+ if(name==="crouch"){p.lean=.035;p.lFoot=V(-70,185);p.rFoot=V(70,185);p.lHand=V(-105,105);p.rHand=V(105,105)}
+ if(name==="react"){const j=Math.max(0,s);p.head=.05*s;p.rHand=V(145,-25-55*j);p.lHand=V(-145,-25-30*Math.max(0,-s))}
+ if(name==="carry"){p.lHand=V(-75,95);p.rHand=V(75,95);p.lean=.015*s}
+ return p;
+}
+function locomotion(name,u){
+ const a=TAU*u;
+ if(name==="stand")return {rootX:0,bob:0,lf:V(-65,175),rf:V(65,175)};
+ if(name==="walk"){const s=Math.sin(a),c=Math.cos(a);return{rootX:s*120,bob=-Math.abs(s)*7,lf:V(-65+50*s,175+12*Math.max(0,-s)),rf:V(65-50*s,175+12*Math.max(0,s))}}
+ const s=Math.sin(a),c=Math.cos(a);return{rootX:s*145,bob=-Math.abs(s)*11,lf:V(-65+75*s,175+20*Math.max(0,-s)),rf:V(65-75*s,175+20*Math.max(0,s))}
+}
+function blendTarget(a,b,w){if(!a&&!b)return null;if(!a)return b;if(!b)return a;return V(lerp(a.x,b.x,w),lerp(a.y,b.y,w))}
+function render(now){
+ if(demo && now-started>1500){demoIndex=(demoIndex+1)%demoSeq.length;setState(...demoSeq[demoIndex])}
+ const elapsed=(now-started)/1000, u=(elapsed%1+1)%1, trans=smooth(clamp(elapsed/.42,0,1));
+ const A=pose(previous,u,0),B=pose(action,u,0),P={head:lerp(A.head,B.head,trans),lean:lerp(A.lean,B.lean,trans),
+ lHand:blendTarget(A.lHand,B.lHand,trans),rHand:blendTarget(A.rHand,B.rHand,trans),
+ lFoot:blendTarget(A.lFoot,B.lFoot,trans),rFoot:blendTarget(A.rFoot,B.rFoot,trans)};
+ const M=locomotion(loc,u),cx=360+M.rootX,ground=785+M.bob;
+ g.clearRect(0,0,C.width,C.height);
+ const hip=V(cx,ground-165),chest=V(cx+P.lean*80,ground-315),neck=V(chest.x, chest.y-70);
+ const shL=V(chest.x-72,chest.y+18),shR=V(chest.x+72,chest.y+18),hp=V(neck.x,neck.y-62);
+ const lf=add(V(cx,0),P.lFoot||M.lf),rf=add(V(cx,0),P.rFoot||M.rf);
+ const lh=add(V(cx,0),P.lHand||V(-160,105)),rh=add(V(cx,0),P.rHand||V(160,105));
+ const [lk,lf2]=ik(V(cx-43,hip.y),lf,145,145,-1),[rk,rf2]=ik(V(cx+43,hip.y),rf,145,145,1);
+ const [le,lh2]=ik(shL,lh,105,92,-1),[re,rh2]=ik(shR,rh,105,92,1);
+ g.strokeStyle="#eef1f7";g.fillStyle="#eef1f7";
+ line(V(cx-43,hip.y),lk,25);line(lk,lf2,22);line(V(cx+43,hip.y),rk,25);line(rk,rf2,22);
+ line(hip,chest,44);
+ line(shL,le,22);line(le,lh2,19);line(shR,re,22);line(re,rh2,19);
+ [hip,chest,shL,shR,le,re,lk,rk].forEach(q=>joint(q,8));head(hp,P.head);
+ g.strokeStyle="#303846";g.lineWidth=3;g.beginPath();g.moveTo(150,ground);g.lineTo(570,ground);g.stroke();
+ status.textContent=(demo?"DEMO · ":"")+(action+" + "+loc).toUpperCase()+" · local IK · "+Math.round(trans*100)+"% blend";
+ requestAnimationFrame(render)
+}
+function setState(a,l){previous=action;action=a;loc=l;started=performance.now();sync()}
+requestAnimationFrame(render);
+</script></body></html>
