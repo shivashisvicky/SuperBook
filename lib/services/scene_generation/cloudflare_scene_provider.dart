@@ -63,15 +63,16 @@ class CloudflareSceneProvider implements SceneGenerationProvider, SceneVideoProv
 
     final planJson = body['scenePlan'];
     final image = body['image'];
-    if (planJson is! Map || image is! Map) {
-      throw StateError('SuperBook AI gateway returned an incomplete scene.');
+    if (planJson is! Map) {
+      throw StateError('SuperBook AI gateway returned an incomplete scene plan.');
     }
 
-    final base64 = image['base64'];
-    final mimeType = image['mimeType'];
-    if (base64 is! String || base64.isEmpty || mimeType is! String) {
-      throw StateError('SuperBook AI gateway returned an invalid scene image.');
-    }
+    final base64 = image is Map && image['base64'] is String
+        ? image['base64'] as String
+        : '';
+    final mimeType = image is Map && image['mimeType'] is String
+        ? image['mimeType'] as String
+        : '';
 
     return GeneratedScene(
       plan: AiScenePlan.fromJson(Map<String, dynamic>.from(planJson)),
@@ -105,7 +106,7 @@ class CloudflareSceneProvider implements SceneGenerationProvider, SceneVideoProv
       },
       body: jsonEncode({
         'scenePlan': plan.toJson(),
-        'imageBase64': imageBase64,
+        if (imageBase64.trim().isNotEmpty) 'imageBase64': imageBase64,
       }),
     ).timeout(const Duration(seconds: 150));
 
@@ -153,10 +154,6 @@ class CloudflareSceneProvider implements SceneGenerationProvider, SceneVideoProv
     if (endpoint.trim().isEmpty) {
       throw StateError('SuperBook AI scene endpoint is not configured.');
     }
-    if (imageBase64.trim().isEmpty) {
-      throw ArgumentError.value(imageBase64, 'imageBase64', 'must not be empty');
-    }
-
     final videoEndpoint = _baseUri.replace(
       path: _baseUri.path.endsWith('/')
           ? '${_baseUri.path}video'
