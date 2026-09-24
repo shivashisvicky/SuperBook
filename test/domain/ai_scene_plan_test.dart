@@ -15,6 +15,7 @@ void main() {
           action: 'entering',
           emotion: 'cautious',
           position: 'foreground left',
+          runtimeAnimation: 'talk',
         ),
       ],
       environment: AiSceneEnvironment(
@@ -37,6 +38,7 @@ void main() {
     final restored = AiScenePlan.fromJson(plan.toJson());
     expect(restored.sceneSummary, plan.sceneSummary);
     expect(restored.characters.single.id, 'traveler');
+    expect(restored.characters.single.runtimeAnimation, 'talk');
     expect(restored.environment.location, 'waterfront inn');
     expect(restored.camera.movement, 'slow push-in');
   });
