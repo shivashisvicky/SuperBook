@@ -1,10 +1,10 @@
 """Local SuperBook image-to-video engine.
 
 Backend: Wan2.1 VACE 1.3B via Diffusers.
-The engine accepts a scene image plus semantic motion text and writes an MP4.
 
-The model is loaded lazily so the HTTP server can start without a GPU.
-For a GPU machine, CPU offload is used to reduce peak VRAM.
+The engine uses the SuperBook scene image as a reference image and the
+scene's semantic motion description as the prompt. This is the actual
+VACE reference-to-video path, not a still-frame slideshow.
 """
 
 from __future__ import annotations
@@ -14,19 +14,22 @@ import os
 
 import torch
 from PIL import Image
-from diffusers import DiffusionPipeline
-from diffusers.utils import export_to_video, load_image
+from diffusers import AutoencoderKLWan, WanVACEPipeline
+from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
+from diffusers.utils import export_to_video
 
-MODEL_ID = os.getenv("SUPERBOOK_VIDEO_MODEL", "Wan-AI/Wan2.1-VACE-1.3B")
+MODEL_ID = os.getenv("SUPERBOOK_VIDEO_MODEL", "Wan-AI/Wan2.1-VACE-1.3B-diffusers")
 DEFAULT_FPS = 16
-DEFAULT_FRAMES = 49
+DEFAULT_FRAMES = 81
 DEFAULT_STEPS = 20
+DEFAULT_HEIGHT = 480
+DEFAULT_WIDTH = 832
 
 
 class LocalVideoEngine:
     def __init__(self, model_id: str = MODEL_ID) -> None:
         self.model_id = model_id
-        self.pipe = None
+        self.pipe: WanVACEPipeline | None = None
 
     @property
     def device(self) -> str:
@@ -39,23 +42,29 @@ class LocalVideoEngine:
     def _load(self) -> None:
         if self.pipe is not None:
             return
-        if self.device == "cpu":
+
+        if self.device != "cuda":
             raise RuntimeError(
-                "No GPU backend is available. Wan video generation is not practical "
-                "on a normal CPU-only machine. Use a GPU host such as Kaggle for the test."
+                "No CUDA GPU is available. Wan2.1 VACE video generation "
+                "requires a practical GPU backend."
             )
 
-        dtype = torch.bfloat16 if self.device == "cuda" else torch.float32
-        self.pipe = DiffusionPipeline.from_pretrained(
+        vae = AutoencoderKLWan.from_pretrained(
             self.model_id,
-            torch_dtype=dtype,
+            subfolder="vae",
+            torch_dtype=torch.float32,
         )
-
-        if self.device == "cuda":
-            # Keep large model components on CPU until needed.
-            self.pipe.enable_model_cpu_offload()
-        else:
-            self.pipe.to(self.device)
+        self.pipe = WanVACEPipeline.from_pretrained(
+            self.model_id,
+            vae=vae,
+            torch_dtype=torch.bfloat16,
+        )
+        self.pipe.scheduler = UniPCMultistepScheduler.from_config(
+            self.pipe.scheduler.config,
+            flow_shift=3.0,
+        )
+        self.pipe.enable_model_cpu_offload()
+        self.pipe.vae.enable_tiling()
 
     def generate(
         self,
@@ -67,17 +76,30 @@ class LocalVideoEngine:
         num_inference_steps: int = DEFAULT_STEPS,
         seed: int = 42,
         fps: int = DEFAULT_FPS,
+        height: int = DEFAULT_HEIGHT,
+        width: int = DEFAULT_WIDTH,
     ) -> Path:
         self._load()
 
-        image = load_image(str(image_path)).convert("RGB")
-        generator = torch.Generator(device=self.device).manual_seed(seed)
+        image = Image.open(image_path).convert("RGB")
+        generator = torch.Generator(device="cuda").manual_seed(seed)
+
+        negative_prompt = (
+            "static image, frozen pose, scene change, camera cut, "
+            "new characters, duplicated characters, extra limbs, "
+            "deformed hands, deformed face, morphing, text, subtitles, "
+            "watermark, low quality, blurry, flicker"
+        )
 
         result = self.pipe(
-            image=image,
             prompt=prompt,
+            negative_prompt=negative_prompt,
+            reference_images=[image],
+            height=height,
+            width=width,
             num_frames=num_frames,
             num_inference_steps=num_inference_steps,
+            guidance_scale=5.0,
             generator=generator,
         )
 
