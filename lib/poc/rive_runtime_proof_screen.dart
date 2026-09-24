@@ -13,7 +13,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
       'https://raw.githubusercontent.com/videosdk-live/character-sdk-flutter-rive-example/main/assets/character.riv';
 
   late final rive.FileLoader _loader;
-  rive.RiveWidgetController? _controller;
+  _ProofCharacterController? _controller;
   String _status = 'Loading Rive asset…';
 
   @override
@@ -40,16 +40,11 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
     });
   }
 
-  void _fire(String name) {
+  void _play(String name) {
     final controller = _controller;
     if (controller == null) return;
-    final trigger = controller.stateMachine.trigger(name);
-    if (trigger == null) {
-      setState(() => _status = 'No "$name" trigger in this asset');
-      return;
-    }
-    trigger.fire();
-    setState(() => _status = 'LIVE · fired "$name"');
+    controller.play(name);
+    setState(() => _status = 'LIVE · playing "$name"');
   }
 
   @override
@@ -78,7 +73,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                       fileLoader: _loader,
                       controller: (file) => _ProofCharacterController(file),
                       onLoaded: (state) {
-                        _controller = state.controller;
+                        _controller = state.controller as _ProofCharacterController;
                         _controller!.active = true;
                         if (mounted) {
                           setState(
@@ -156,14 +151,14 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                       OutlinedButton(
                         onPressed: _controller == null
                             ? null
-                            : () => _fire('Hit'),
-                        child: const Text('Hit'),
+                            : () => _play('Talking'),
+                        child: const Text('Talk'),
                       ),
                       OutlinedButton(
                         onPressed: _controller == null
                             ? null
-                            : () => _fire('In'),
-                        child: const Text('In'),
+                            : () => _play('Blinking'),
+                        child: const Text('Blink'),
                       ),
                     ],
                   ),
@@ -223,8 +218,8 @@ class _ProofCharacterController extends rive.RiveWidgetController {
     final changed = super.advance(elapsedSeconds);
     final animation = _animation;
     if (animation == null) return changed;
-    animation.advance(elapsedSeconds);
+    final animationChanged = animation.advance(elapsedSeconds);
     animation.apply();
-    return true || changed;
+    return changed || animationChanged;
   }
 }
