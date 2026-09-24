@@ -615,9 +615,10 @@ export default {
       return json({
         ok: true,
         service: 'superbook-ai-scene',
-        textModel: TEXT_MODEL,
-        imageModel: IMAGE_MODEL,
-        sceneSchemaVersion: '2',
+        textModel: 'none (free narrative fallback)',
+        imageModel: 'none (video-only proof path)',
+        videoProvider: 'Hugging Face ZeroGPU Wan2.2 T2V',
+        sceneSchemaVersion: 'free-t2v-1',
       }, 200, origin);
     }
 
