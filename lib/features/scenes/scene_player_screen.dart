@@ -33,7 +33,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   bool _loading = false;
   VideoPlayerController? _video;
   bool _detailsExpanded = false;
-  List<GeneratedMotionFrame> _motionFrames = const [];
   String? _generationError;
 
   Chapter get _chapter => widget.book.chapters.firstWhere(
@@ -128,23 +127,51 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       );
       _sceneCache.put(_cacheKey, generated);
 
-      List<GeneratedMotionFrame> motionFrames = const [];
-      try {
-        motionFrames = await provider.generateMotionFrames(
-          plan: generated.plan,
-          imageBase64: generated.imageBase64,
-        );
-      } catch (_) {
-        motionFrames = const [];
-      }
-
       if (!mounted) return;
       setState(() {
         _generated = generated;
-        _motionFrames = motionFrames;
         _loading = false;
         _generationError = null;
       });
+
+      // Do not fake motion by shuffling still frames. Attempt the real
+      // image-to-video path using the exact generated scene as the reference.
+      try {
+        debugPrint('[SuperBook][video] requesting real I2V video');
+        final video = await provider.generateVideo(
+          plan: generated.plan,
+          imageBase64: generated.imageBase64,
+        );
+        debugPrint(
+          '[SuperBook][video] received ' +
+              video.durationSeconds.toString() +
+              's video: ' +
+              video.url,
+        );
+        if (!mounted) return;
+        _sceneCache.put(
+          _cacheKey,
+          GeneratedScene(
+            plan: generated.plan,
+            imageBase64: generated.imageBase64,
+            mimeType: generated.mimeType,
+            videoUrl: video.url,
+            videoDurationSeconds: video.durationSeconds,
+          ),
+        );
+        setState(() => _generated = _sceneCache.get(_cacheKey));
+        await _loadVideo(video.url);
+      } catch (error, stack) {
+        debugPrint('[SuperBook][video] real I2V failed: ' + error.toString());
+        debugPrintStack(stackTrace: stack);
+        if (mounted) {
+          setState(() {
+            _generationError =
+                'Real video generation unavailable: ' +
+                error.toString().replaceFirst('Bad state: ', '');
+          });
+        }
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -175,7 +202,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
     return SuperBookCinematicStage(
       imageBase64: generated.imageBase64,
       plan: generated.plan,
-      motionFrames: _motionFrames,
     );
   }
 
