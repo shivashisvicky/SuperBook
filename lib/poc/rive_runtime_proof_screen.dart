@@ -36,7 +36,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
     if (controller == null) return;
     controller.active = active;
     setState(() {
-      _status = active ? 'LIVE · State Machine running' : 'PAUSED';
+      _status = active ? 'LIVE · Animation runtime running' : 'PAUSED';
     });
   }
 
@@ -69,7 +69,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(21),
-                    child: RiveWidgetBuilder(
+                    child: rive.RiveWidgetBuilder(
                       fileLoader: _loader,
                       controller: (file) => _ProofCharacterController(file),
                       onLoaded: (state) {
@@ -77,7 +77,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                         _controller!.active = true;
                         if (mounted) {
                           setState(
-                            () => _status = 'LIVE · State Machine 1 running',
+                            () => _status = 'LIVE · Animation runtime running',
                           );
                         }
                       },
@@ -88,11 +88,14 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                           );
                         }
                       },
-                      builder: (context, state) => switch (state) {
-                        rive.RiveLoading() => const Center(
+                      builder: (context, state) {
+                        if (state is rive.RiveLoading) {
+                          return const Center(
                             child: CircularProgressIndicator(),
-                          ),
-                        rive.RiveFailed() => Center(
+                          );
+                        }
+                        if (state is rive.RiveFailed) {
+                          return Center(
                             child: Padding(
                               padding: const EdgeInsets.all(24),
                               child: Text(
@@ -100,11 +103,15 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                                 textAlign: TextAlign.center,
                               ),
                             ),
-                          ),
-                        rive.RiveLoaded() => rive.RiveWidget(
+                          );
+                        }
+                        if (state is rive.RiveLoaded) {
+                          return rive.RiveWidget(
                             controller: state.controller,
                             fit: rive.Fit.contain,
-                          ),
+                          );
+                        }
+                        return const SizedBox.shrink();
                       },
                     ),
                   ),
@@ -136,7 +143,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                                   _controller!.active = true;
                                   setState(
                                     () => _status =
-                                        'LIVE · State Machine restarted',
+                                        'LIVE · Animation runtime restarted',
                                   );
                                 },
                           child: const Text('Restart'),
@@ -188,7 +195,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
 }
 
 
-class _ProofCharacterController extends rive.RiveWidgetController {
+final class _ProofCharacterController extends rive.RiveWidgetController {
   _ProofCharacterController(rive.File file) : super(file);
 
   rive.Animation? _animation;
