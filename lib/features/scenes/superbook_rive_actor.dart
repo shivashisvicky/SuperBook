@@ -51,20 +51,27 @@ class _SuperBookRiveActorState extends State<SuperBookRiveActor> {
     super.dispose();
   }
 
-  String get _runtimeAnimation {
+  String? get _runtimeAnimation {
     switch (widget.action.trim().toLowerCase()) {
       case 'talk':
         return 'Talking';
-      case 'idle':
       case 'listen':
-      case 'react':
         return 'Blinking';
+      case 'idle':
+        // The current proof asset has no authored idle clip. Do not silently
+        // turn idle into blinking, because that makes different directives
+        // look identical.
+        return null;
+      case 'react':
       case 'gesture':
       case 'reach':
       case 'walk':
+        // The current proof asset has no dedicated clips for these directives.
+        // Talking is a temporary movement fallback, never a fallback for idle
+        // or listen.
         return 'Talking';
       default:
-        return 'Blinking';
+        return null;
     }
   }
 
@@ -104,7 +111,7 @@ final class _InstructionalRiveController extends rive.RiveWidgetController {
     required this.animationName,
   });
 
-  final String animationName;
+  final String? animationName;
   rive.Animation? _animation;
 
   @override
@@ -114,9 +121,13 @@ final class _InstructionalRiveController extends rive.RiveWidgetController {
   }
 
   void _selectAnimation() {
-    final previous = _animation;
-    previous?.dispose();
-    _animation = artboard.animationNamed(animationName);
+    _animation?.dispose();
+    _animation = null;
+
+    final name = animationName;
+    if (name == null) return;
+
+    _animation = artboard.animationNamed(name);
     _animation?.time = 0;
   }
 
