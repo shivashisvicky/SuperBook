@@ -31,8 +31,8 @@ class LocalVideoProvider implements SceneVideoProvider {
       'POST',
       _baseUri.replace(
         path: _baseUri.path.endsWith('/')
-            ? _baseUri.path + 'video'
-            : _baseUri.path + '/video',
+            ? '${_baseUri.path}video'
+            : '${_baseUri.path}/video',
       ),
     )
       ..fields['prompt'] = _promptFor(plan)
