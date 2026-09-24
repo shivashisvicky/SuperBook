@@ -33,6 +33,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   bool _loading = false;
   VideoPlayerController? _video;
   bool _detailsExpanded = false;
+  List<GeneratedMotionFrame> _motionFrames = const [];
   String? _generationError;
 
   Chapter get _chapter => widget.book.chapters.firstWhere(
@@ -127,9 +128,20 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       );
       _sceneCache.put(_cacheKey, generated);
 
+      List<GeneratedMotionFrame> motionFrames = const [];
+      try {
+        motionFrames = await provider.generateMotionFrames(
+          plan: generated.plan,
+          imageBase64: generated.imageBase64,
+        );
+      } catch (_) {
+        motionFrames = const [];
+      }
+
       if (!mounted) return;
       setState(() {
         _generated = generated;
+        _motionFrames = motionFrames;
         _loading = false;
         _generationError = null;
       });
@@ -163,6 +175,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
     return SuperBookCinematicStage(
       imageBase64: generated.imageBase64,
       plan: generated.plan,
+      motionFrames: _motionFrames,
     );
   }
 
