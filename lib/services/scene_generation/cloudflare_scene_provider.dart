@@ -4,8 +4,9 @@ import 'package:http/http.dart' as http;
 
 import '../../domain/experience/ai_scene_plan.dart';
 import 'scene_generation_provider.dart';
+import 'video_generation_provider.dart';
 
-class CloudflareSceneProvider implements SceneGenerationProvider {
+class CloudflareSceneProvider implements SceneGenerationProvider, SceneVideoProvider {
   CloudflareSceneProvider({required this.endpoint, http.Client? client})
       : _client = client ?? http.Client();
 
