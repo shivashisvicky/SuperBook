@@ -388,43 +388,67 @@ export default {
         return json({ error: 'character is required.' }, 400, origin);
       }
 
-      const prompt = [
-        'Create a production-quality 2D hand-drawn literary storybook animation asset sheet.',
-        'One single human character only: ' + character + '.',
-        'This is an animation source sheet, not a finished scene.',
-        'Use a clean solid chroma-blue background with no texture.',
-        'Arrange clearly separated, non-overlapping character parts with generous spacing:',
-        'full head, torso, upper and lower arms, hands, upper and lower legs, feet, and one neutral full-body reference.',
-        'Keep the exact same character identity, face, hair, clothing, proportions and illustration style across every part.',
-        'Use natural anatomy, detailed ink outlines, painterly cel shading, expressive but restrained literary-cartoon design.',
-        'Make every part large enough to crop cleanly and suitable for 2D puppet articulation.',
-        'No text, labels, watermark, UI, duplicate characters, extra limbs, collage panels, or photorealism.',
-      ].join(' ');
-
       try {
-        const generated = await env.AI.run('@cf/bytedance/stable-diffusion-xl-lightning', {
-          prompt: prompt.slice(0, 2048),
-          width: 1024,
-          height: 1024,
+        // Stage 1: create one clean character reference. The second model uses
+        // this reference to preserve identity instead of inventing each part.
+        const reference = await env.AI.run('@cf/bytedance/stable-diffusion-xl-lightning', {
+          prompt: [
+            'A single full-body human character for a literary storybook.',
+            character,
+            'front-facing neutral standing pose, full body visible head to feet, centered,',
+            'clean simple solid light background, no props, no other people, no text.',
+            'Detailed hand-drawn ink outlines and painterly cel shading.'
+          ].join(' ').slice(0, 2048),
+          width: 480,
+          height: 480,
           num_steps: 4,
         });
 
-        const image = Array.isArray(generated) ? generated[0] : generated;
-        if (!image) {
-          return json({ error: 'Puppet sheet model returned no image.' }, 502, origin);
+        if (!reference || typeof reference.image !== 'string') {
+          return json({ error: 'Character reference model returned no image.' }, 502, origin);
         }
 
-        let base64 = image.image || image;
-        if (typeof base64 !== 'string') {
-          return json({ error: 'Puppet sheet model returned an unsupported image payload.' }, 502, origin);
+        const binary = Uint8Array.from(atob(reference.image), c => c.charCodeAt(0));
+        const form = new FormData();
+        form.append('prompt', [
+          'Create a production-quality 2D animation rig source sheet using the EXACT SAME character from image 0.',
+          'Preserve the character identity, face, hair, clothing, colors, proportions and illustration style.',
+          'This is an asset sheet, NOT a scene and NOT a collage of different characters.',
+          'Use a clean solid chroma-blue background.',
+          'Divide the 1024x1024 canvas into an exact 3 by 3 grid with invisible equal cells.',
+          'Place exactly one isolated component in each required cell, centered and fully visible, with generous empty blue space around it.',
+          'TOP ROW: cell 1 = head, cell 2 = left hand, cell 3 = right hand.',
+          'MIDDLE ROW: cell 1 = complete left arm from shoulder to hand, cell 2 = complete torso, cell 3 = complete right arm from shoulder to hand.',
+          'BOTTOM ROW: cell 1 = complete left leg from hip to foot, cell 2 = neutral full-body reference, cell 3 = complete right leg from hip to foot.',
+          'All nine cells must contain the SAME ONE CHARACTER. Do not add any other people.',
+          'Every component must be cleanly separated from every other component and must not touch another cell.',
+          'No labels, no text, no borders, no grid lines, no watermark, no props, no duplicate thumbnails, no extra limbs.',
+          'Keep anatomy natural and make the isolated parts large enough for clean cropping and 2D articulation.'
+        ].join(' '), { type: 'text/plain' });
+        form.append('width', '1024');
+        form.append('height', '1024');
+        form.append('input_image_0', new Blob([binary], { type: 'image/jpeg' }), 'character-reference.jpg');
+
+        const formResponse = new Response(form);
+        const generated = await env.AI.run('@cf/black-forest-labs/flux-2-klein-4b', {
+          multipart: {
+            body: formResponse.body,
+            contentType: formResponse.headers.get('content-type'),
+          },
+        });
+
+        if (!generated || typeof generated.image !== 'string' || generated.image.length === 0) {
+          return json({ error: 'Puppet sheet editor returned no image.' }, 502, origin);
         }
 
         return json({
           schemaVersion: '1',
-          mimeType: 'image/png',
-          base64,
+          mimeType: 'image/jpeg',
+          base64: generated.image,
           assetType: 'animation-ready-character-sheet',
-          sourceModel: '@cf/bytedance/stable-diffusion-xl-lightning',
+          layout: '3x3-rig-v1',
+          sourceModel: '@cf/black-forest-labs/flux-2-klein-4b',
+          referenceModel: '@cf/bytedance/stable-diffusion-xl-lightning',
         }, 200, origin);
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
