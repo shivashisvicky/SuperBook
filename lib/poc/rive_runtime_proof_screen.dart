@@ -9,8 +9,10 @@ class RiveRuntimeProofScreen extends StatefulWidget {
 }
 
 class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
+  // This is a runtime validation asset with authored full-body Walk/Hit
+  // animations. It is deliberately separate from the eventual SuperBook art.
   static const _assetUrl =
-      'https://raw.githubusercontent.com/videosdk-live/character-sdk-flutter-rive-example/main/assets/character.riv';
+      'https://raw.githubusercontent.com/followthemoney1/nemesis/27934810c1101996fe935bac3ed82e42a73896a2/assets/animations/zombie_character.riv';
 
   late final rive.FileLoader _loader;
   _ProofCharacterController? _controller;
@@ -73,7 +75,8 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                       fileLoader: _loader,
                       controller: (file) => _ProofCharacterController(file),
                       onLoaded: (state) {
-                        _controller = state.controller as _ProofCharacterController;
+                        _controller =
+                            state.controller as _ProofCharacterController;
                         _controller!.active = true;
                         if (mounted) {
                           setState(
@@ -99,7 +102,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                             child: Padding(
                               padding: const EdgeInsets.all(24),
                               child: Text(
-                                'Rive failed to load.\n\n${state.error}',
+                                'Rive failed to load.\\n\\n${state.error}',
                                 textAlign: TextAlign.center,
                               ),
                             ),
@@ -140,10 +143,10 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                           onPressed: _controller == null
                               ? null
                               : () {
-                                  _controller!.active = true;
+                                  _controller!.restart();
                                   setState(
                                     () => _status =
-                                        'LIVE · Animation runtime restarted',
+                                        'LIVE · animation restarted',
                                   );
                                 },
                           child: const Text('Restart'),
@@ -158,14 +161,14 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                       OutlinedButton(
                         onPressed: _controller == null
                             ? null
-                            : () => _play('Talking'),
-                        child: const Text('Talk'),
+                            : () => _play('Walk'),
+                        child: const Text('Walk'),
                       ),
                       OutlinedButton(
                         onPressed: _controller == null
                             ? null
-                            : () => _play('Blinking'),
-                        child: const Text('Blink'),
+                            : () => _play('Hit'),
+                        child: const Text('Hit'),
                       ),
                     ],
                   ),
@@ -177,7 +180,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Rive skeletal runtime · no frame-by-frame image swapping',
+                    'Rive skeletal runtime · authored full-body animation · no image swapping',
                     textAlign: TextAlign.center,
                     style: Theme.of(context)
                         .textTheme
@@ -194,30 +197,34 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
   }
 }
 
-
 final class _ProofCharacterController extends rive.RiveWidgetController {
   _ProofCharacterController(super.file);
 
   rive.Animation? _animation;
-  String _animationName = 'Blinking';
+  String _animationName = 'Walk';
 
   void play(String name) {
     _animationName = name;
     final candidate = artboard.animationNamed(name);
-    if (candidate != null) {
-      _animation?.dispose();
-      _animation = candidate;
-      _animation!.time = 0;
-      active = true;
-    }
+    if (candidate == null) return;
+
+    _animation?.dispose();
+    _animation = candidate;
+    _animation!.time = 0;
+    active = true;
+  }
+
+  void restart() {
+    _animation?.time = 0;
+    active = true;
   }
 
   @override
   void artboardChanged(rive.Artboard artboard) {
     super.artboardChanged(artboard);
-    _animation = artboard.animationNamed(_animationName) ??
-        artboard.animationNamed('Blinking') ??
-        artboard.animationAt(0);
+    _animation?.dispose();
+    _animation = artboard.animationNamed(_animationName);
+    _animation?.time = 0;
   }
 
   @override
@@ -225,8 +232,16 @@ final class _ProofCharacterController extends rive.RiveWidgetController {
     final changed = super.advance(elapsedSeconds);
     final animation = _animation;
     if (animation == null) return changed;
+
     final animationChanged = animation.advance(elapsedSeconds);
     animation.apply();
     return changed || animationChanged;
+  }
+
+  @override
+  void dispose() {
+    _animation?.dispose();
+    _animation = null;
+    super.dispose();
   }
 }
