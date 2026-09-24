@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../domain/book.dart';
 import '../../services/scene_generation/cloudflare_scene_provider.dart';
+import '../../services/scene_generation/local_video_provider.dart';
 import '../../services/scene_generation/scene_generation_cache.dart';
 import '../../services/scene_generation/scene_generation_provider.dart';
 import 'superbook_cinematic_stage.dart';
@@ -134,13 +135,13 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         _generationError = null;
       });
 
-      // Do not fake motion by shuffling still frames. Attempt the real
-      // image-to-video path using the exact generated scene as the reference.
+      // Do not fake motion by shuffling still frames. Use a real I2V
+      // provider. In auto mode, the local Wan engine is the zero-cost
+      // fallback when a Cloudflare video call is unavailable.
       try {
-        debugPrint('[SuperBook][video] requesting real I2V video');
-        final video = await provider.generateVideo(
-          plan: generated.plan,
-          imageBase64: generated.imageBase64,
+        final video = await _generateVideo(
+          cloudflareProvider: provider,
+          generated: generated,
         );
         debugPrint(
           '[SuperBook][video] received ${video.durationSeconds}s video: ${video.url}',
@@ -178,6 +179,44 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       if (mounted && _loading) {
         setState(() => _loading = false);
       }
+    }
+  }
+
+  Future<GeneratedVideo> _generateVideo({
+    required CloudflareSceneProvider cloudflareProvider,
+    required GeneratedScene generated,
+  }) async {
+    final mode = _videoProvider.trim().toLowerCase();
+    final hasLocal = _localVideoEndpoint.trim().isNotEmpty;
+
+    if (mode == 'local') {
+      if (!hasLocal) {
+        throw StateError(
+          'Local video mode is selected, but SUPERBOOK_LOCAL_VIDEO_ENDPOINT is not configured.',
+        );
+      }
+      debugPrint('[SuperBook][video] using local Wan provider');
+      return LocalVideoProvider(endpoint: _localVideoEndpoint).generateVideo(
+        plan: generated.plan,
+        imageBase64: generated.imageBase64,
+      );
+    }
+
+    try {
+      debugPrint('[SuperBook][video] trying Cloudflare I2V provider');
+      return await cloudflareProvider.generateVideo(
+        plan: generated.plan,
+        imageBase64: generated.imageBase64,
+      );
+    } catch (error, stack) {
+      if (mode != 'auto' || !hasLocal) rethrow;
+      debugPrint('[SuperBook][video] Cloudflare I2V unavailable: $error');
+      debugPrintStack(stackTrace: stack);
+      debugPrint('[SuperBook][video] falling back to local Wan provider');
+      return LocalVideoProvider(endpoint: _localVideoEndpoint).generateVideo(
+        plan: generated.plan,
+        imageBase64: generated.imageBase64,
+      );
     }
   }
 
