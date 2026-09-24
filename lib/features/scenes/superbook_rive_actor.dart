@@ -58,17 +58,24 @@ class _SuperBookRiveActorState extends State<SuperBookRiveActor> {
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
-      child: RiveWidgetBuilder(
+      child: rive.RiveWidgetBuilder(
         fileLoader: _loader,
         stateMachineSelector: _selector,
         onFailed: (_, __) {},
-        builder: (context, state) => switch (state) {
-          rive.RiveLoading() => const SizedBox.shrink(),
-          rive.RiveFailed() => const SizedBox.shrink(),
-          rive.RiveLoaded() => rive.RiveWidget(
+        builder: (context, state) {
+          if (state is rive.RiveLoading) {
+            return const SizedBox.shrink();
+          }
+          if (state is rive.RiveFailed) {
+            return const SizedBox.shrink();
+          }
+          if (state is rive.RiveLoaded) {
+            return rive.RiveWidget(
               controller: state.controller,
               fit: rive.Fit.contain,
-            ),
+            );
+          }
+          return const SizedBox.shrink();
         },
       ),
     );
