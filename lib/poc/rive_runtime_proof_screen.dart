@@ -10,7 +10,7 @@ class RiveRuntimeProofScreen extends StatefulWidget {
 
 class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
   static const _assetUrl =
-      'https://raw.githubusercontent.com/rive-app/rive-flutter/master/example/assets/perf/rivs/Zombie_Character.riv';
+      'https://raw.githubusercontent.com/videosdk-live/character-sdk-flutter-rive-example/main/assets/character.riv';
 
   late final rive.FileLoader _loader;
   rive.RiveWidgetController? _controller;
