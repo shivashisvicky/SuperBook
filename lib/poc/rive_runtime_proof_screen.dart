@@ -76,8 +76,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                     borderRadius: BorderRadius.circular(21),
                     child: RiveWidgetBuilder(
                       fileLoader: _loader,
-                      stateMachineSelector:
-                          const rive.StateMachineNamed('State Machine 1'),
+                      controller: (file) => _ProofCharacterController(file),
                       onLoaded: (state) {
                         _controller = state.controller;
                         _controller!.active = true;
@@ -190,5 +189,42 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
         ),
       ),
     );
+  }
+}
+
+
+class _ProofCharacterController extends rive.RiveWidgetController {
+  _ProofCharacterController(rive.File file) : super(file);
+
+  rive.Animation? _animation;
+  String _animationName = 'Blinking';
+
+  void play(String name) {
+    _animationName = name;
+    final candidate = artboard.animationNamed(name);
+    if (candidate != null) {
+      _animation?.dispose();
+      _animation = candidate;
+      _animation!.time = 0;
+      active = true;
+    }
+  }
+
+  @override
+  void artboardChanged(rive.Artboard artboard) {
+    super.artboardChanged(artboard);
+    _animation = artboard.animationNamed(_animationName) ??
+        artboard.animationNamed('Blinking') ??
+        artboard.animationAt(0);
+  }
+
+  @override
+  bool advance(double elapsedSeconds) {
+    final changed = super.advance(elapsedSeconds);
+    final animation = _animation;
+    if (animation == null) return changed;
+    animation.advance(elapsedSeconds);
+    animation.apply();
+    return true || changed;
   }
 }
