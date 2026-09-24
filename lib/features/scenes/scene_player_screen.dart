@@ -137,7 +137,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       if (!mounted) return;
       setState(() {
         _generated = generated;
-        _loading = false;
         _generationError = null;
       });
 
@@ -238,6 +237,10 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
           child: VideoPlayer(video),
         ),
       );
+    }
+
+    if (generated.imageBase64.isEmpty || generated.mimeType.isEmpty) {
+      return _FreeVideoPoster(plan: generated.plan);
     }
 
     return SuperBookCinematicStage(
@@ -358,6 +361,44 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
                     hasNext ? () => openChapter(currentIndex + 1) : null,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FreeVideoPoster extends StatelessWidget {
+  const _FreeVideoPoster({required this.plan});
+
+  final dynamic plan;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF070A10),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.fromLTRB(28, 110, 28, 170),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.movie_filter, size: 42, color: Colors.white70),
+          const SizedBox(height: 20),
+          Text(
+            plan.sceneSummary,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Generating the cinematic story moment…',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white60, fontSize: 14),
           ),
         ],
       ),
