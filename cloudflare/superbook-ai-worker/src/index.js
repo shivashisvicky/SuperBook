@@ -3,7 +3,8 @@
 const TEXT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
 const MOTION_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
-const VIDEO_MODEL = 'alibaba/hh1.1-i2v';
+const HF_VIDEO_SPACE = 'https://rahul7star-wan22-t2v-a14b.hf.space';
+const HF_VIDEO_API = 'generate_video';
 const MAX_PASSAGE = 3600;
 
 const sceneSchema = {
@@ -110,20 +111,167 @@ function trimPassage(value) {
 
 function videoPrompt(plan) {
   return [
-    'Animate the story moment described below as a restrained 3-6 second cinematic sequence.',
-    'Story summary: ' + plan.sceneSummary,
-    'Visual style: ' + plan.visualStyle,
+    'Create a short cinematic living-book scene from the supplied literary passage.',
+    'Preserve the exact narrative facts. Do not summarize the story into a generic trailer.',
+    'Visual style: grounded cinematic literary realism, period-appropriate, coherent characters and environment.',
+    'Scene: ' + plan.sceneSummary,
+    'Visual description: ' + plan.imagePrompt,
     'Environment: ' + plan.environment.location + ', ' + plan.environment.time + '. ' + plan.environment.description,
-    'Characters: ' + plan.characters.map((character) => character.description + ', ' + character.action + ', ' + character.emotion + ', runtime animation: ' + character.runtimeAnimation).join('; '),
-    'Do not introduce new characters, major objects, or events beyond the literary moment.',
+    'Characters: ' + plan.characters.map((character) => character.description + ', ' + character.action + ', ' + character.emotion).join('; '),
     'Meaningful motion: ' + plan.motion,
-    'Character actions: ' + plan.actions.join('; '),
+    'Actions: ' + plan.actions.join('; '),
     'Camera: ' + plan.camera.movement + ', ' + plan.camera.shot + ', ' + plan.camera.angle + '.',
     'Lighting: ' + plan.lighting,
-    'Natural movement only. Avoid warping faces, hands, clothing, furniture, or architecture.',
-    'No text, captions, logos, watermarks, or scene changes.',
-  ].join(' ');
+    'Keep motion physically plausible and continuous. Preserve faces, clothing, architecture and object identity.',
+    'No text, captions, logos, watermarks, scene changes, duplicate people, extra limbs, frozen frames, or abstract morphing.',
+  ].join(' ').slice(0, 5000);
 }
+
+function fallbackScenePlan(input) {
+  const passage = trimPassage(input && input.passage);
+  const title = String(input && input.title || 'Story moment').trim().slice(0, 160);
+  const author = String(input && input.author || '').trim().slice(0, 120);
+  const sceneText = passage || title;
+  const summary = sceneText.length > 900
+    ? sceneText.slice(0, 897) + '...'
+    : sceneText;
+
+  return {
+    schemaVersion: 'free-t2v-1',
+    sceneSummary: summary,
+    visualStyle: 'cinematic literary realism',
+    characters: [],
+    environment: {
+      location: title,
+      time: 'as described in the passage',
+      description: author
+        ? 'A faithful visualisation of the literary passage from ' + author + '.'
+        : 'A faithful visualisation of the supplied literary passage.',
+    },
+    props: [],
+    actions: ['subtle natural movement faithful to the passage'],
+    camera: {
+      shot: 'medium-wide cinematic shot',
+      angle: 'eye level',
+      movement: 'slow motivated camera movement',
+    },
+    lighting: 'natural cinematic lighting faithful to the passage',
+    motion: 'subtle continuous environmental movement and restrained character movement only where implied by the text',
+    imagePrompt: sceneText,
+  };
+}
+
+async function callHuggingFaceVideo(plan, origin, requestUrl) {
+  const prompt = videoPrompt(plan);
+  const negativePrompt = [
+    'static image, frozen frame, flicker, morphing, warped face, distorted hands, extra limbs, duplicate people,',
+    'new characters, scene change, text, captions, logo, watermark, low quality, blurry, deformed anatomy',
+  ].join(' ');
+
+  // 6 steps keeps an anonymous ZeroGPU call below its daily anonymous allowance
+  // while still producing a real Wan2.2 motion clip.
+  const payload = {
+    data: [
+      prompt,
+      negativePrompt,
+      480,
+      832,
+      25,
+      3.5,
+      2.5,
+      6,
+      42,
+      true,
+    ],
+  };
+
+  const startResponse = await fetch(
+    HF_VIDEO_SPACE + '/gradio_api/call/' + HF_VIDEO_API,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+
+  if (!startResponse.ok) {
+    const detail = await startResponse.text();
+    throw new Error('Hugging Face video queue rejected the request: HTTP ' + startResponse.status + ' ' + detail.slice(0, 500));
+  }
+
+  const started = await startResponse.json();
+  const eventId = started && started.event_id;
+  if (typeof eventId !== 'string' || eventId.length === 0) {
+    throw new Error('Hugging Face video queue returned no event id.');
+  }
+
+  const resultResponse = await fetch(
+    HF_VIDEO_SPACE + '/gradio_api/call/' + HF_VIDEO_API + '/' + encodeURIComponent(eventId),
+    {
+      headers: { Accept: 'text/event-stream' },
+    },
+  );
+
+  if (!resultResponse.ok) {
+    const detail = await resultResponse.text();
+    throw new Error('Hugging Face video result stream failed: HTTP ' + resultResponse.status + ' ' + detail.slice(0, 500));
+  }
+
+  const streamText = await resultResponse.text();
+  let eventType = '';
+  let completedData = null;
+  for (const line of streamText.split(/\\r?\\n/)) {
+    if (line.startsWith('event:')) {
+      eventType = line.slice(6).trim();
+      continue;
+    }
+    if (!line.startsWith('data:')) continue;
+    const raw = line.slice(5).trim();
+    if (!raw) continue;
+
+    if (eventType === 'error') {
+      throw new Error('Hugging Face video generation failed: ' + raw.slice(0, 800));
+    }
+
+    if (eventType === 'complete') {
+      try {
+        completedData = JSON.parse(raw);
+      } catch (_) {
+        throw new Error('Hugging Face returned invalid completion data.');
+      }
+    }
+  }
+
+  if (!Array.isArray(completedData) || completedData.length === 0) {
+    throw new Error('Hugging Face video generation completed without a video result.');
+  }
+
+  const output = completedData[0];
+  let videoUrl = null;
+  if (typeof output === 'string') {
+    videoUrl = output;
+  } else if (output && typeof output === 'object') {
+    videoUrl = output.url || output.path || null;
+  }
+
+  if (typeof videoUrl !== 'string' || videoUrl.length === 0) {
+    throw new Error('Hugging Face video result did not contain a playable file URL.');
+  }
+
+  if (videoUrl.startsWith('/')) {
+    videoUrl = HF_VIDEO_SPACE + videoUrl;
+  }
+
+  const proxyUrl = requestUrl.origin + '/video?url=' + encodeURIComponent(videoUrl);
+  return json({
+    video: {
+      url: proxyUrl,
+      durationSeconds: 25 / 16,
+      provider: 'huggingface-zerogpu-wan2.2-t2v',
+    },
+  }, 200, origin);
+}
+
 
 function parseScenePlan(reasoning) {
   const candidate = reasoning && reasoning.response !== undefined
@@ -265,49 +413,21 @@ async function generateMotionFrames(env, plan, imageBase64, origin) {
 }
 
 async function generateVideo(env, plan, imageBase64, origin, requestUrl) {
-  if (typeof imageBase64 !== 'string' || imageBase64.length === 0) {
-    return json({ error: 'A reference scene image is required for I2V.' }, 400, origin);
+  if (!validatePlan(plan)) {
+    return json({ error: 'A valid scenePlan is required.' }, 400, origin);
   }
 
-  const imageUri = imageBase64.startsWith('data:')
-    ? imageBase64
-    : 'data:image/jpeg;base64,' + imageBase64;
-  console.log('[SuperBook][video] starting I2V', {
-    model: VIDEO_MODEL,
-    duration: 4,
-    resolution: '720P',
-  });
-
-  const video = await env.AI.run(VIDEO_MODEL, {
-    image: imageUri,
-    prompt: [
-      videoPrompt(plan),
-      'This is a short living illustration, not a new plot event.',
-      'Keep movement subtle and localized to the described actions.',
-      'Preserve the exact reference composition, character identity, faces, clothing, furniture, architecture and lighting.',
-      'Do not replace the scene with a newly invented scene.',
-    ].join(' ').slice(0, 2500),
-    duration: 4,
-    resolution: '720P',
-    watermark: false,
-  });
-
-  let videoUrl = video && video.video
-    ? video.video
-    : video && video.result && video.result.video;
-
-  if (typeof videoUrl !== 'string' || videoUrl.length === 0) {
-    throw new Error('Video model returned no video URL.');
+  try {
+    return await callHuggingFaceVideo(plan, origin, requestUrl);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error('SuperBook free video generation failed', { detail });
+    return json({
+      error: 'Free cinematic video generation failed.',
+      detail,
+      provider: 'huggingface-zerogpu-wan2.2-t2v',
+    }, 502, origin);
   }
-
-  videoUrl = requestUrl.origin + '/video?url=' + encodeURIComponent(videoUrl);
-
-  return json({
-    video: {
-      url: videoUrl,
-      durationSeconds: 4,
-    },
-  }, 200, origin);
 }
 
 export default {
@@ -516,61 +636,14 @@ export default {
     if (!passage) return json({ error: 'passage is required.' }, 400, origin);
 
     try {
-      const context = [
-        input && input.title ? 'Book: ' + String(input.title) : '',
-        input && input.author ? 'Author: ' + String(input.author) : '',
-        input && input.chapterId ? 'Chapter: ' + String(input.chapterId) : '',
-        '',
-        'PASSAGE:',
-        passage,
-      ].filter(Boolean).join('\n');
-
-      const reasoning = await env.AI.run(TEXT_MODEL, {
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: context },
-        ],
-        response_format: {
-          type: 'json_schema',
-          json_schema: sceneSchema,
-        },
-        temperature: 0.1,
-        max_tokens: 640,
-      });
-
-      const plan = parseScenePlan(reasoning);
-      if (!validatePlan(plan)) {
-        return json({ error: 'AI returned an invalid scene plan.' }, 502, origin);
-      }
-
-      const image = await env.AI.run(IMAGE_MODEL, {
-        prompt: plan.imagePrompt.slice(0, 2048),
-        steps: 4,
-      });
-
-      if (!image || !image.image) {
-        return json({ error: 'Image model returned no image.' }, 502, origin);
-      }
-
+      const plan = fallbackScenePlan(input);
+      console.log('[SuperBook][scene] using free narrative scene plan');
       return json({
-        schemaVersion: '2',
+        schemaVersion: 'free-t2v-1',
         scenePlan: plan,
-        image: {
-          mimeType: 'image/jpeg',
-          base64: image.image,
-        },
+        image: null,
       }, 200, origin);
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      const code = error && typeof error === 'object' ? error.code : undefined;
-      const status = error && typeof error === 'object' ? error.status : undefined;
-      console.error('SuperBook scene generation failed', { detail, code, status });
-      return json({
-        error: 'SuperBook scene generation failed.',
-        detail,
-        code: code ?? null,
-        upstreamStatus: status ?? null,
-      }, 502, origin);
+
     }
   },
 };
