@@ -52,15 +52,24 @@ class _SuperBookRiveActorState extends State<SuperBookRiveActor> {
     super.dispose();
   }
 
-  rive.StateMachineSelector get _selector =>
-      const rive.StateMachineNamed('State Machine 1');
+  static const _animationAliases = <String, String>{
+    'talk': 'Talking',
+    'idle': 'Blinking',
+    'listen': 'Blinking',
+    'gesture': 'Talking',
+    'reach': 'Talking',
+    'walk': 'Talking',
+    'react': 'Blinking',
+  };
+
+  String get _animationName =>
+      _animationAliases[widget.action.trim().toLowerCase()] ?? 'Blinking';
 
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
       child: rive.RiveWidgetBuilder(
         fileLoader: _loader,
-        stateMachineSelector: _selector,
         onFailed: (_, __) {},
         builder: (context, state) {
           if (state is rive.RiveLoading) {
@@ -71,7 +80,10 @@ class _SuperBookRiveActorState extends State<SuperBookRiveActor> {
           }
           if (state is rive.RiveLoaded) {
             return rive.RiveWidget(
-              controller: state.controller,
+              controller: _InstructionalRiveController(
+                state.controller.file,
+                animationName: _animationName,
+              ),
               fit: rive.Fit.contain,
             );
           }
