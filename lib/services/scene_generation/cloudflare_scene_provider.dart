@@ -147,9 +147,13 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
   @override
   Future<GeneratedVideo> generateVideo({
     required AiScenePlan plan,
+    required String imageBase64,
   }) async {
     if (endpoint.trim().isEmpty) {
       throw StateError('SuperBook AI scene endpoint is not configured.');
+    }
+    if (imageBase64.trim().isEmpty) {
+      throw ArgumentError.value(imageBase64, 'imageBase64', 'must not be empty');
     }
 
     final videoEndpoint = _baseUri.replace(
@@ -166,6 +170,7 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
       },
       body: jsonEncode({
         'scenePlan': plan.toJson(),
+        'imageBase64': imageBase64,
       }),
     ).timeout(const Duration(seconds: 180));
 
