@@ -102,7 +102,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
                             child: Padding(
                               padding: const EdgeInsets.all(24),
                               child: Text(
-                                'Rive failed to load.\\n\\n${state.error}',
+                                'Rive failed to load.\n\n${state.error}',
                                 textAlign: TextAlign.center,
                               ),
                             ),
