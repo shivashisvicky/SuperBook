@@ -71,6 +71,7 @@ class AiSceneCharacter {
     required this.action,
     required this.emotion,
     required this.position,
+    this.runtimeAnimation = 'idle',
   });
 
   final String id;
@@ -78,6 +79,7 @@ class AiSceneCharacter {
   final String action;
   final String emotion;
   final String position;
+  final String runtimeAnimation;
 
   factory AiSceneCharacter.fromJson(Map<String, dynamic> json) => AiSceneCharacter(
         id: json['id'] as String? ?? '',
@@ -85,6 +87,7 @@ class AiSceneCharacter {
         action: json['action'] as String? ?? '',
         emotion: json['emotion'] as String? ?? '',
         position: json['position'] as String? ?? '',
+        runtimeAnimation: json['runtimeAnimation'] as String? ?? 'idle',
       );
 
   Map<String, dynamic> toJson() => {
@@ -93,6 +96,7 @@ class AiSceneCharacter {
         'action': action,
         'emotion': emotion,
         'position': position,
+        'runtimeAnimation': runtimeAnimation,
       };
 }
 
