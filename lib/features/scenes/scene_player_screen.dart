@@ -164,8 +164,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         if (mounted) {
           setState(() {
             _generationError =
-                'Real video generation unavailable: ' +
-                error.toString().replaceFirst('Bad state: ', '');
+                'Real video generation unavailable: ${error.toString().replaceFirst('Bad state: ', '')}';
           });
         }
       }
