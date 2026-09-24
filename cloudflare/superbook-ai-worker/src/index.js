@@ -23,6 +23,10 @@ const sceneSchema = {
           action: { type: 'string' },
           emotion: { type: 'string' },
           position: { type: 'string' },
+          runtimeAnimation: {
+            type: 'string',
+            enum: ['idle', 'talk', 'listen', 'gesture', 'reach', 'walk', 'react'],
+          },
         },
         required: ['id', 'description', 'action', 'emotion', 'position'],
       },
@@ -74,6 +78,7 @@ const SYSTEM_PROMPT = [
   'Prefer concrete visual details from the passage. Infer only harmless visual details needed for composition.',
   'The imagePrompt must describe one coherent cinematic frame, not a collage.',
   'Describe people with period-appropriate clothing and consistent physical appearance.',
+  'Each character must receive exactly one runtimeAnimation directive: idle, talk, listen, gesture, reach, walk, or react. This is an instruction to the character animation runtime, not prose. Choose the directive from the character\'s actual behavior in this passage. Do not use idle for a character who is speaking, gesturing, reaching, walking, or visibly reacting.',
   'The motion field must describe restrained, physically plausible movement for a short 3-6 second literary scene.',
   'The camera movement should be subtle and scene-specific, not a generic zoom.',
   'Avoid text, captions, speech bubbles, logos, watermarks, modern objects, duplicate people, extra limbs, and distorted anatomy.',
@@ -109,7 +114,7 @@ function videoPrompt(plan) {
     'Story summary: ' + plan.sceneSummary,
     'Visual style: ' + plan.visualStyle,
     'Environment: ' + plan.environment.location + ', ' + plan.environment.time + '. ' + plan.environment.description,
-    'Characters: ' + plan.characters.map((character) => character.description + ', ' + character.action + ', ' + character.emotion).join('; '),
+    'Characters: ' + plan.characters.map((character) => character.description + ', ' + character.action + ', ' + character.emotion + ', runtime animation: ' + character.runtimeAnimation).join('; '),
     'Do not introduce new characters, major objects, or events beyond the literary moment.',
     'Meaningful motion: ' + plan.motion,
     'Character actions: ' + plan.actions.join('; '),
@@ -163,7 +168,8 @@ function validatePlan(plan) {
       typeof character.description === 'string' &&
       typeof character.action === 'string' &&
       typeof character.emotion === 'string' &&
-      typeof character.position === 'string'
+      typeof character.position === 'string' &&
+      ['idle', 'talk', 'listen', 'gesture', 'reach', 'walk', 'react'].includes(character.runtimeAnimation)
     ) &&
     Array.isArray(plan.props) &&
     plan.props.length <= 3 &&
