@@ -196,7 +196,7 @@ class _RiveRuntimeProofScreenState extends State<RiveRuntimeProofScreen> {
 
 
 final class _ProofCharacterController extends rive.RiveWidgetController {
-  _ProofCharacterController(rive.File file) : super(file);
+  _ProofCharacterController(super.file);
 
   rive.Animation? _animation;
   String _animationName = 'Blinking';
