@@ -116,11 +116,9 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
 
     try {
       final cached = _sceneCache.get(_cacheKey);
-      if (cached != null && !force) {
+      if (cached != null && !force && cached.hasVideo) {
         setState(() => _generated = cached);
-        if (cached.hasVideo) {
-          await _loadVideo(cached.videoUrl!);
-        }
+        await _loadVideo(cached.videoUrl!);
         return;
       }
 
