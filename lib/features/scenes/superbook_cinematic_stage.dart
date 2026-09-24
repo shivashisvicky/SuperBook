@@ -18,8 +18,7 @@ class SuperBookCinematicStage extends StatefulWidget {
   State<SuperBookCinematicStage> createState() => _SuperBookCinematicStageState();
 }
 
-class _SuperBookCinematicStageState extends State<SuperBookCinematicStage>
-    with SingleTickerProviderStateMixin {
+class _SuperBookCinematicStageState extends State<SuperBookCinematicStage> {
   @override
   Widget build(BuildContext context) {
     final bytes = base64Decode(widget.imageBase64);
@@ -61,13 +60,6 @@ class _SuperBookCinematicStageState extends State<SuperBookCinematicStage>
         ],
       ),
     );
-  }
-
-  double _atmosphereIntensity(AiScenePlan plan) {
-    final text = '${plan.lighting} ${plan.motion}'.toLowerCase();
-    if (text.contains('rain') || text.contains('storm')) return 0.85;
-    if (text.contains('fire') || text.contains('candle')) return 0.65;
-    return 0.35;
   }
 }
 
