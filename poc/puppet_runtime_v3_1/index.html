@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>SuperBook · Puppet Runtime v3.1</title>
+<style>:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#080a0f;color:#eef1f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:820px;margin:auto;padding:20px 14px 42px}.card{background:#11151d;border:1px solid #2a303c;border-radius:24px;padding:18px}h1{font-size:23px;margin:0 0 5px}.sub{color:#9ca5b5;line-height:1.45;margin:0 0 14px}canvas{display:block;width:100%;height:auto;aspect-ratio:3/4;border:1px solid #2b3340;border-radius:18px;background:#0d131b}h2{font-size:15px;margin:16px 0 8px;color:#b8c1d0}.controls{display:flex;flex-wrap:wrap;gap:7px}button{appearance:none;border:1px solid #38414f;background:#171c25;color:#eef1f7;border-radius:999px;padding:9px 12px;font-size:14px}button.active{background:#eef1f7;color:#10131a}.status{margin-top:12px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#aab4c5}.small{font-size:13px;color:#8f99aa;line-height:1.45;margin-top:12px}</style></head>
+<body><main><section class="card"><h1>SuperBook · Living Puppet v3.1</h1><p class="sub">A clean runtime test with local joint targets, IK, recognizable motion phases and a demo timeline.</p><canvas id="stage" width="720" height="960"></canvas><h2>Actions</h2><div class="controls" id="actions"></div><h2>Locomotion</h2><div class="controls" id="loc"></div><div class="status" id="status">Starting runtime…</div><p class="small">Use Play demo first. Each action is phase-based and blended, while locomotion supplies the foot cycle.</p></section></main>
+<script>
+(function(){
+"use strict";
+var C=document.getElementById("stage"), g=C.getContext("2d"), status=document.getElementById("status"), TAU=Math.PI*2;
+window.onerror=function(msg){status.textContent="RUNTIME ERROR · "+msg;};
+function V(x,y){return{x:x,y:y}} function clamp(x,a,b){return Math.max(a,Math.min(b,x))} function lerp(a,b,t){return a+(b-a)*t}
+function smooth(t){return t*t*(3-2*t)} function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function ik(root,target,l1,l2,side){var d=clamp(dist(root,target),Math.abs(l1-l2)+.01,l1+l2-.01),a=Math.atan2(target.y-root.y,target.x-root.x),c=clamp((l1*l1+d*d-l2*l2)/(2*l1*d),-1,1),b=Math.acos(c)*side,e=V(root.x+Math.cos(a+b)*l1,root.y+Math.sin(a+b)*l1);return[e,target]}
+function line(a,b,w){g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.lineWidth=w;g.lineCap="round";g.stroke()}
+function joint(p,r){g.beginPath();g.arc(p.x,p.y,r||8,0,TAU);g.fill()}
+function drawHead(p,r){g.save();g.translate(p.x,p.y);g.rotate(r);g.fillStyle="#eef1f7";g.beginPath();g.arc(0,0,44,0,TAU);g.fill();g.fillStyle="#11151d";g.beginPath();g.arc(-15,-4,5,0,TAU);g.arc(15,-4,5,0,TAU);g.fill();g.strokeStyle="#11151d";g.lineWidth=4;g.beginPath();g.arc(0,7,15,.15,Math.PI-.15);g.stroke();g.restore()}
+var actions=["idle","talk","wave","point","reach","eat","listen","sit","crouch","react","carry"], locs=["stand","walk","run"], action="idle",loc="stand",previous="idle",changed=performance.now(),demo=false,demoIndex=0;
+var seq=[["talk","stand"],["wave","stand"],["point","stand"],["reach","stand"],["eat","stand"],["listen","stand"],["idle","walk"],["idle","run"],["sit","stand"],["idle","stand"]];
+var actionButtons={},locButtons={};
+function sync(){Object.keys(actionButtons).forEach(function(n){actionButtons[n].className=n===action?"active":""});Object.keys(locButtons).forEach(function(n){locButtons[n].className=n===loc?"active":""})}
+function setAction(n){demo=false;previous=action;action=n;changed=performance.now();sync()}
+function setLoc(n){loc=n;sync()}
+function addButton(parent,label,fn){var b=document.createElement("button");b.textContent=label;b.onclick=fn;parent.appendChild(b);return b}
+actions.forEach(function(n){actionButtons[n]=addButton(document.getElementById("actions"),n,function(){setAction(n)})});
+var play=addButton(document.getElementById("actions"),"▶ play demo",function(){demo=true;demoIndex=0;setState(seq[0][0],seq[0][1])});
+locs.forEach(function(n){locButtons[n]=addButton(document.getElementById("loc"),n,function(){setLoc(n)})});
+function setState(a,l){previous=action;action=a;loc=l;changed=performance.now();sync()}
+sync();
+
+function pose(n,u){
+ var s=Math.sin(TAU*u), pulse=(s+1)/2, p={head:0,lean:0,lHand:null,rHand:null,lFoot:null,rFoot:null};
+ if(n==="idle"){p.head=.025*s;p.lean=.012*s}
+ if(n==="talk"){p.head=.025*s;p.rHand=V(145,-10+24*s);p.lHand=V(-135,35-10*s)}
+ if(n==="wave"){p.head=.03*s;p.rHand=V(158,-105+18*s)}
+ if(n==="point"){p.head=-.08;p.rHand=V(185,-20+8*s)}
+ if(n==="reach"){p.lean=.035;p.rHand=V(125,105-80*pulse)}
+ if(n==="eat"){p.head=-.08;p.rHand=V(45,-88+28*Math.abs(Math.sin(Math.PI*u)));p.lean=.02}
+ if(n==="listen"){p.head=.17+.02*s;p.lHand=V(-130,35)}
+ if(n==="sit"){p.lean=-.035;p.lFoot=V(-65,155);p.rFoot=V(65,155);p.lHand=V(-110,80);p.rHand=V(110,80)}
+ if(n==="crouch"){p.lean=.035;p.lFoot=V(-70,185);p.rFoot=V(70,185);p.lHand=V(-105,105);p.rHand=V(105,105)}
+ if(n==="react"){p.head=.05*s;p.rHand=V(145,-25-55*Math.max(0,s));p.lHand=V(-145,-25-30*Math.max(0,-s))}
+ if(n==="carry"){p.lHand=V(-75,95);p.rHand=V(75,95);p.lean=.015*s}
+ return p
+}
+function locomotion(n,u){var a=TAU*u,s=Math.sin(a);if(n==="stand")return{x:0,bob:0,lf:V(-65,175),rf:V(65,175)};if(n==="walk")return{x:s*120,bob:-Math.abs(s)*7,lf:V(-65+50*s,175+12*Math.max(0,-s)),rf:V(65-50*s,175+12*Math.max(0,s))};return{x:s*145,bob:-Math.abs(s)*11,lf:V(-65+75*s,175+20*Math.max(0,-s)),rf:V(65-75*s,175+20*Math.max(0,s))}
+}
+function target(a,b,w){if(!a)return b;if(!b)return a;return V(lerp(a.x,b.x,w),lerp(a.y,b.y,w))}
+function render(now){
+ if(demo&&now-changed>1500){demoIndex=(demoIndex+1)%seq.length;setState(seq[demoIndex][0],seq[demoIndex][1])}
+ var e=(now-changed)/1000,u=e-Math.floor(e),w=smooth(clamp(e/.42,0,1)),A=pose(previous,u),B=pose(action,u),M=locomotion(loc,u);
+ var P={head:lerp(A.head,B.head,w),lean:lerp(A.lean,B.lean,w),lHand:target(A.lHand,B.lHand,w),rHand:target(A.rHand,B.rHand,w),lFoot:target(A.lFoot,B.lFoot,w),rFoot:target(A.rFoot,B.rFoot,w)};
+ var cx=360+M.x,ground=785+M.bob,hip=V(cx,ground-165),chest=V(cx+P.lean*80,ground-315),neck=V(chest.x,chest.y-70),shL=V(chest.x-72,chest.y+18),shR=V(chest.x+72,chest.y+18),hp=V(neck.x,neck.y-62);
+ var lf=V(cx+(P.lFoot?P.lFoot.x:M.lf.x),P.lFoot?ground-165+P.lFoot.y:ground),rf=V(cx+(P.rFoot?P.rFoot.x:M.rf.x),P.rFoot?ground-165+P.rFoot.y:ground);
+ var lh=V(cx+(P.lHand?P.lHand.x:-160),chest.y+(P.lHand?P.lHand.y:105)),rh=V(cx+(P.rHand?P.rHand.x:160),chest.y+(P.rHand?P.rHand.y:105));
+ var L=ik(V(cx-43,hip.y),lf,145,145,-1),R=ik(V(cx+43,hip.y),rf,145,145,1),LA=ik(shL,lh,105,92,-1),RA=ik(shR,rh,105,92,1);
+ g.clearRect(0,0,C.width,C.height);g.strokeStyle="#eef1f7";g.fillStyle="#eef1f7";
+ line(V(cx-43,hip.y),L[0],25);line(L[0],L[1],22);line(V(cx+43,hip.y),R[0],25);line(R[0],R[1],22);line(hip,chest,44);
+ line(shL,LA[0],22);line(LA[0],LA[1],19);line(shR,RA[0],22);line(RA[0],RA[1],19);
+ [hip,chest,shL,shR,LA[0],RA[0],L[0],R[0]].forEach(function(q){joint(q,8)});drawHead(hp,P.head);
+ g.strokeStyle="#303846";g.lineWidth=3;g.beginPath();g.moveTo(150,ground);g.lineTo(570,ground);g.stroke();
+ status.textContent=(demo?"DEMO · ":"")+(action+" + "+loc).toUpperCase()+" · local IK · "+Math.round(w*100)+"% blend";
+ requestAnimationFrame(render)
+}
+requestAnimationFrame(render)
+})();
+</script></body></html>
