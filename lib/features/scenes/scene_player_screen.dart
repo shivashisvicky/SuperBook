@@ -11,6 +11,12 @@ import '../../services/scene_generation/scene_generation_provider.dart';
 import 'superbook_cinematic_stage.dart';
 
 const _sceneEndpoint = String.fromEnvironment('SUPERBOOK_AI_SCENE_ENDPOINT');
+const _videoProvider = String.fromEnvironment(
+  'SUPERBOOK_VIDEO_PROVIDER',
+  defaultValue: 'auto',
+);
+const _localVideoEndpoint =
+    String.fromEnvironment('SUPERBOOK_LOCAL_VIDEO_ENDPOINT');
 final _sceneCache = SceneGenerationCache();
 
 class ScenePlayerScreen extends StatefulWidget {
