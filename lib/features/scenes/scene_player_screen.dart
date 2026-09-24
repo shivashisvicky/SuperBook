@@ -143,10 +143,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
           imageBase64: generated.imageBase64,
         );
         debugPrint(
-          '[SuperBook][video] received ' +
-              video.durationSeconds.toString() +
-              's video: ' +
-              video.url,
+          '[SuperBook][video] received ${video.durationSeconds}s video: ${video.url}',
         );
         if (!mounted) return;
         _sceneCache.put(
@@ -162,7 +159,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         setState(() => _generated = _sceneCache.get(_cacheKey));
         await _loadVideo(video.url);
       } catch (error, stack) {
-        debugPrint('[SuperBook][video] real I2V failed: ' + error.toString());
+        debugPrint('[SuperBook][video] real I2V failed: $error');
         debugPrintStack(stackTrace: stack);
         if (mounted) {
           setState(() {
