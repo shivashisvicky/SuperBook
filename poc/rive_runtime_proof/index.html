@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SuperBook · Rive Runtime Proof</title>
+<script src="https://unpkg.com/@rive-app/canvas@2.43.1"></script>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: #0b0d12; color: #eef1f7;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+  header { padding: 16px 18px 10px; border-bottom: 1px solid #202530; }
+  h1 { margin: 0; font-size: 18px; letter-spacing: .01em; }
+  .sub { margin-top: 5px; color: #9299a8; font-size: 12px; }
+  main { display: grid; place-items: center; padding: 18px; }
+  .stage {
+    width: min(92vw, 560px); aspect-ratio: 1 / 1;
+    border: 1px solid #272d38; border-radius: 22px; overflow: hidden;
+    background: radial-gradient(circle at 50% 35%, #202735, #0f1219 65%);
+    box-shadow: 0 24px 70px rgba(0,0,0,.38);
+  }
+  canvas { width: 100%; height: 100%; display: block; }
+  footer { padding: 12px 14px 18px; border-top: 1px solid #202530; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  button {
+    appearance:none; border:1px solid #303745; background:#171b24; color:#eef1f7;
+    border-radius:10px; padding:9px 12px; font:inherit; font-size:12px; cursor:pointer;
+  }
+  button:active { transform: translateY(1px); }
+  .status { margin-left:auto; color:#8f98aa; font-size:11px; }
+  #inputs { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+  .input { border:1px solid #252b35; background:#11151c; border-radius:10px; padding:8px 10px; }
+  .input label { display:block; color:#9ca4b4; font-size:10px; margin-bottom:4px; }
+  input[type=range] { width:130px; }
+  .ok { color:#8be28b; } .err { color:#ff8b8b; }
+</style>
+</head>
+<body>
+<div class="shell">
+<header>
+  <h1>SuperBook · real skeletal animation runtime proof</h1>
+  <div class="sub">Rive state machine · continuous runtime playback · no frame-by-frame image swapping</div>
+</header>
+<main>
+  <div class="stage"><canvas id="riveCanvas"></canvas></div>
+</main>
+<footer>
+  <div class="row">
+    <button id="pause">Pause</button>
+    <button id="restart">Restart</button>
+    <span id="status" class="status">Loading Rive asset…</span>
+  </div>
+  <div id="inputs"></div>
+</footer>
+</div>
+<script>
+(() => {
+  const canvas = document.getElementById('riveCanvas');
+  const status = document.getElementById('status');
+  const inputsEl = document.getElementById('inputs');
+  const STATE_MACHINE = 'State Machine 1';
+  let r = null;
+  let paused = false;
+
+  function setStatus(text, cls='') {
+    status.textContent = text;
+    status.className = 'status ' + cls;
+  }
+
+  function addRuntimeInputs() {
+    inputsEl.innerHTML = '';
+    let inputs = [];
+    try { inputs = r.stateMachineInputs(STATE_MACHINE) || []; } catch (_) {}
+    if (!inputs.length) {
+      const d = document.createElement('div');
+      d.className = 'sub';
+      d.textContent = 'State machine has no exposed runtime inputs. Its authored transitions still run continuously.';
+      inputsEl.appendChild(d);
+      return;
+    }
+    inputs.forEach((input) => {
+      const box = document.createElement('div');
+      box.className = 'input';
+      const label = document.createElement('label');
+      label.textContent = input.name || 'Input';
+      box.appendChild(label);
+
+      if (input.type === 56 || input.type === 'bool' || typeof input.value === 'boolean') {
+        const b = document.createElement('button');
+        b.textContent = input.value ? 'ON' : 'OFF';
+        b.onclick = () => { input.value = !input.value; b.textContent = input.value ? 'ON' : 'OFF'; };
+        box.appendChild(b);
+      } else if (input.type === 57 || input.type === 'number' || typeof input.value === 'number') {
+        const range = document.createElement('input');
+        range.type = 'range'; range.min = '-1'; range.max = '1'; range.step = '0.01';
+        range.value = String(input.value || 0);
+        range.oninput = () => { input.value = Number(range.value); };
+        box.appendChild(range);
+      } else {
+        const b = document.createElement('button');
+        b.textContent = 'Trigger';
+        b.onclick = () => { try { input.fire(); } catch (_) {} };
+        box.appendChild(b);
+      }
+      inputsEl.appendChild(box);
+    });
+  }
+
+  r = new rive.Rive({
+    src: 'Zombie_Character.riv',
+    canvas,
+    autoplay: true,
+    stateMachines: STATE_MACHINE,
+    onLoad: () => {
+      r.resizeDrawingSurfaceToCanvas();
+      addRuntimeInputs();
+      setStatus('LIVE · State Machine 1 running', 'ok');
+    },
+    onLoadError: (err) => {
+      console.error(err);
+      setStatus('Rive asset failed to load', 'err');
+    }
+  });
+
+  document.getElementById('pause').onclick = () => {
+    paused = !paused;
+    if (paused) { r.pause(); } else { r.play(); }
+    document.getElementById('pause').textContent = paused ? 'Resume' : 'Pause';
+  };
+  document.getElementById('restart').onclick = () => {
+    paused = false;
+    r.stop();
+    r.play(STATE_MACHINE);
+    document.getElementById('pause').textContent = 'Pause';
+    setStatus('LIVE · State Machine 1 restarted', 'ok');
+  };
+  window.addEventListener('resize', () => r && r.resizeDrawingSurfaceToCanvas());
+})();
+</script>
+</body>
+</html>
