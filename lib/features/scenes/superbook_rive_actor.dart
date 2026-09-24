@@ -105,7 +105,7 @@ final class _InstructionalRiveController extends rive.RiveWidgetController {
   });
 
   final String animationName;
-  rive.LinearAnimationInstance? _animation;
+  rive.Animation? _animation;
 
   @override
   void artboardChanged(rive.Artboard artboard) {
