@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart' as rive;
 
-/// Runtime adapter for a living illustrated character.
+/// Renders a character from the scene director's semantic animation intent.
 ///
-/// The scene director supplies semantic intent. This layer owns continuous
-/// playback and maps that intent to authored Rive state-machine/animation
-/// inputs. It deliberately contains no camera motion or image swapping.
+/// The director says what the character is doing. The authored Rive asset
+/// decides how that intent looks. There is deliberately no homemade IK,
+/// camera motion, or image swapping here.
 class SuperBookRiveActor extends StatefulWidget {
   const SuperBookRiveActor({
     super.key,
@@ -29,21 +29,20 @@ class _SuperBookRiveActorState extends State<SuperBookRiveActor> {
   @override
   void initState() {
     super.initState();
-    _loader = rive.FileLoader.fromUrl(
-      widget.assetUrl,
-      riveFactory: rive.Factory.rive,
-    );
+    _loader = _createLoader();
   }
+
+  rive.FileLoader _createLoader() => rive.FileLoader.fromUrl(
+        widget.assetUrl,
+        riveFactory: rive.Factory.rive,
+      );
 
   @override
   void didUpdateWidget(covariant SuperBookRiveActor oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.assetUrl == widget.assetUrl) return;
     _loader.dispose();
-    _loader = rive.FileLoader.fromUrl(
-      widget.assetUrl,
-      riveFactory: rive.Factory.rive,
-    );
+    _loader = _createLoader();
   }
 
   @override
@@ -52,18 +51,22 @@ class _SuperBookRiveActorState extends State<SuperBookRiveActor> {
     super.dispose();
   }
 
-  static const _animationAliases = <String, String>{
-    'talk': 'Talking',
-    'idle': 'Blinking',
-    'listen': 'Blinking',
-    'gesture': 'Talking',
-    'reach': 'Talking',
-    'walk': 'Talking',
-    'react': 'Blinking',
-  };
-
-  String get _animationName =>
-      _animationAliases[widget.action.trim().toLowerCase()] ?? 'Blinking';
+  String get _runtimeAnimation {
+    switch (widget.action.trim().toLowerCase()) {
+      case 'talk':
+        return 'Talking';
+      case 'idle':
+      case 'listen':
+      case 'react':
+        return 'Blinking';
+      case 'gesture':
+      case 'reach':
+      case 'walk':
+        return 'Talking';
+      default:
+        return 'Blinking';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +74,10 @@ class _SuperBookRiveActorState extends State<SuperBookRiveActor> {
       child: rive.RiveWidgetBuilder(
         fileLoader: _loader,
         onFailed: (_, __) {},
+        controller: (file) => _InstructionalRiveController(
+          file,
+          animationName: _runtimeAnimation,
+        ),
         builder: (context, state) {
           if (state is rive.RiveLoading) {
             return const SizedBox.shrink();
@@ -80,10 +87,7 @@ class _SuperBookRiveActorState extends State<SuperBookRiveActor> {
           }
           if (state is rive.RiveLoaded) {
             return rive.RiveWidget(
-              controller: _InstructionalRiveController(
-                state.controller.file,
-                animationName: _animationName,
-              ),
+              controller: state.controller,
               fit: rive.Fit.contain,
             );
           }
@@ -91,5 +95,45 @@ class _SuperBookRiveActorState extends State<SuperBookRiveActor> {
         },
       ),
     );
+  }
+}
+
+final class _InstructionalRiveController extends rive.RiveWidgetController {
+  _InstructionalRiveController(
+    super.file, {
+    required this.animationName,
+  });
+
+  final String animationName;
+  rive.LinearAnimationInstance? _animation;
+
+  @override
+  void artboardChanged(rive.Artboard artboard) {
+    super.artboardChanged(artboard);
+    _selectAnimation();
+  }
+
+  void _selectAnimation() {
+    final previous = _animation;
+    previous?.dispose();
+    _animation = artboard.animationNamed(animationName);
+    _animation?.time = 0;
+  }
+
+  @override
+  bool advance(double elapsedSeconds) {
+    final changed = super.advance(elapsedSeconds);
+    final animation = _animation;
+    if (animation == null) return changed;
+    final animationChanged = animation.advance(elapsedSeconds);
+    animation.apply();
+    return changed || animationChanged;
+  }
+
+  @override
+  void dispose() {
+    _animation?.dispose();
+    _animation = null;
+    super.dispose();
   }
 }
