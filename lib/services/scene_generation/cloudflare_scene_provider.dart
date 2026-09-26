@@ -218,8 +218,8 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
     final source = base64Decode(base64Image);
     final codec = await ui.instantiateImageCodec(
       Uint8List.fromList(source),
-      targetWidth: 512,
-      targetHeight: 384,
+      targetWidth: 480,
+      targetHeight: 360,
     );
     final frame = await codec.getNextFrame();
     final bytes = await frame.image.toByteData(format: ui.ImageByteFormat.png);
