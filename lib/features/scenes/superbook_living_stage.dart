@@ -418,10 +418,13 @@ class _LivingCharacterPainter extends CustomPainter {
     double rotation, {
     required double opacity,
   }) {
+    // source is one pose cell from the 4x2 sheet, so only that cell
+    // should be scaled into the scene. Scaling with the full sheet dimensions
+    // makes the neighbouring rows/poses spill into view.
     final destination = Rect.fromCenter(
       center: center,
-      width: source.width * scale,
-      height: source.height * scale,
+      width: source.width * scale / _columns,
+      height: source.height * scale / _rows,
     );
 
     canvas.save();
