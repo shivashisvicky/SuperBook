@@ -14,6 +14,7 @@ const sceneSchema = {
     visualStyle: { type: 'string' },
     characters: {
       type: 'array',
+      minItems: 1,
       maxItems: 2,
       items: {
         type: 'object',
@@ -71,6 +72,8 @@ const SYSTEM_PROMPT = [
   'Read the supplied literary passage and design one faithful cinematic visual moment.',
   'sceneSummary is the reader-facing narrative summary. Write 1-2 concise sentences, about 25-45 words, explaining the immediate literary moment and why it matters. Preserve facts and do not invent events.',
   'Do not invent named characters, major objects, locations, or actions that contradict the passage.',
+  'If the passage contains one or more people who are present in the visual moment, characters MUST list the principal visible people, up to 2. Never leave characters empty when people are part of the moment.',
+  'Each character entry must describe a visually identifiable person, their current physical action, emotion, and stage position. These entries are animation instructions, not optional metadata.',
   'Prefer concrete visual details from the passage. Infer only harmless visual details needed for composition.',
   'The imagePrompt must describe one coherent cinematic frame, not a collage.',
   'Describe people with period-appropriate clothing and consistent physical appearance.',
@@ -248,12 +251,72 @@ function normalizeScenePlan(plan) {
   };
 }
 
+async function repairCharacters(env, passage, plan) {
+  const repairSchema = {
+    type: 'object',
+    properties: {
+      characters: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 2,
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            description: { type: 'string' },
+            action: { type: 'string' },
+            emotion: { type: 'string' },
+            position: { type: 'string' },
+          },
+          required: ['id', 'description', 'action', 'emotion', 'position'],
+        },
+      },
+    },
+    required: ['characters'],
+  };
+
+  const response = await env.AI.run(TEXT_MODEL, {
+    messages: [
+      {
+        role: 'system',
+        content: [
+          'You are the character-action repair pass for SuperBook.',
+          'Extract the principal people who are actually present in the supplied literary passage and define them as animation subjects.',
+          'Return only JSON. Use at most 2 people. Do not invent people who are absent.',
+          'Every returned person must have a concrete current action, emotion, and position suitable for a 2D animated scene.',
+        ].join(' '),
+      },
+      {
+        role: 'user',
+        content: [
+          'Existing scene summary: ' + plan.sceneSummary,
+          'Existing actions: ' + plan.actions.join('; '),
+          'PASSAGE:',
+          passage,
+        ].join('\\n'),
+      },
+    ],
+    response_format: {
+      type: 'json_schema',
+      json_schema: repairSchema,
+    },
+    temperature: 0,
+    max_tokens: 320,
+  });
+
+  const repaired = parseScenePlan(response);
+  return repaired && Array.isArray(repaired.characters)
+    ? repaired.characters
+    : [];
+}
+
 function validatePlan(plan) {
   return plan &&
     typeof plan.schemaVersion === 'string' &&
     typeof plan.sceneSummary === 'string' &&
     typeof plan.visualStyle === 'string' &&
     Array.isArray(plan.characters) &&
+    plan.characters.length >= 1 &&
     plan.characters.length <= 2 &&
     plan.characters.every((character) =>
       character &&
@@ -600,7 +663,18 @@ export default {
       });
 
       const rawPlan = parseScenePlan(reasoning);
-      const plan = normalizeScenePlan(rawPlan);
+      let plan = normalizeScenePlan(rawPlan);
+      if (!plan) {
+        return json({ error: 'AI returned an invalid scene plan.' }, 502, origin);
+      }
+
+      if (plan.characters.length === 0) {
+        const repairedCharacters = await repairCharacters(env, passage, plan);
+        if (repairedCharacters.length > 0) {
+          plan = normalizeScenePlan({ ...plan, characters: repairedCharacters });
+        }
+      }
+
       if (!validatePlan(plan)) {
         return json({ error: 'AI returned an invalid scene plan.' }, 502, origin);
       }
