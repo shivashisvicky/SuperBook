@@ -4,16 +4,19 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../domain/experience/ai_scene_plan.dart';
+import '../../services/scene_generation/scene_generation_provider.dart';
 
 class SuperBookCinematicStage extends StatefulWidget {
   const SuperBookCinematicStage({
     super.key,
     required this.imageBase64,
     required this.plan,
+    this.motionFrames = const <GeneratedMotionFrame>[],
   });
 
   final String imageBase64;
   final AiScenePlan plan;
+  final List<GeneratedMotionFrame> motionFrames;
 
   @override
   State<SuperBookCinematicStage> createState() => _SuperBookCinematicStageState();
@@ -26,10 +29,23 @@ class _SuperBookCinematicStageState extends State<SuperBookCinematicStage>
   @override
   void initState() {
     super.initState();
+    final seconds = math.max(5.0, widget.motionFrames.length * 1.8);
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 8),
-    )..repeat(reverse: true);
+      duration: Duration(milliseconds: (seconds * 1000).round()),
+    )..repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant SuperBookCinematicStage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.motionFrames.length != widget.motionFrames.length) {
+      final seconds = math.max(5.0, widget.motionFrames.length * 1.8);
+      _controller.duration = Duration(milliseconds: (seconds * 1000).round());
+      _controller
+        ..reset()
+        ..repeat();
+    }
   }
 
   @override
@@ -40,88 +56,158 @@ class _SuperBookCinematicStageState extends State<SuperBookCinematicStage>
 
   @override
   Widget build(BuildContext context) {
-    final bytes = base64Decode(widget.imageBase64);
+    final frames = widget.motionFrames;
     return ClipRect(
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, _) {
-          final eased = Curves.easeInOutCubic.transform(_controller.value);
-          final movement = _movement(widget.plan.camera.movement);
-          final breathe = math.sin(eased * math.pi) * 0.006;
-          final scale =
-              1.045 + movement.zoom * math.sin(eased * math.pi) + breathe;
-          final dx = movement.x * (eased - 0.5);
-          final dy = movement.y * (eased - 0.5);
+          if (frames.isEmpty) {
+            return _singleFrame();
+          }
+          return _motionStory(frames);
+        },
+      ),
+    );
+  }
 
-          return Stack(
+  Widget _singleFrame() {
+    final bytes = base64Decode(widget.imageBase64);
+    final movement = _movement(widget.plan.camera.movement);
+    final breathe = math.sin(_controller.value * math.pi * 2) * 0.004;
+    final scale = 1.045 + movement.zoom + breathe;
+    final drift = math.sin(_controller.value * math.pi * 2);
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ColoredBox(
+          color: const Color(0xFF080A0E),
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..translateByDouble(
+                movement.x * drift,
+                movement.y * drift,
+                0,
+                1,
+              )
+              ..scaleByDouble(scale, scale, 1, 1),
+            child: Image.memory(
+              bytes,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
+          ),
+        ),
+        IgnorePointer(
+          child: CustomPaint(
+            painter: _CinematicAtmospherePainter(
+              progress: _controller.value,
+              intensity: _atmosphereIntensity(widget.plan),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _motionStory(List<GeneratedMotionFrame> frames) {
+    final position = _controller.value * frames.length;
+    final index = position.floor().clamp(0, frames.length - 1);
+    final local = position - index;
+    final next = (index + 1) % frames.length;
+
+    // Hold each AI-authored acting state, then smoothly hand the scene to the
+    // next state. The crossfade is deliberately short so the page reads as a
+    // moving story moment rather than a slideshow.
+    final blend = Curves.easeInOutCubic.transform(
+      ((local - 0.52) / 0.48).clamp(0.0, 1.0),
+    );
+
+    final current = base64Decode(frames[index].base64);
+    final following = base64Decode(frames[next].base64);
+    final drift = math.sin((position + 0.2) * math.pi * 2) * 0.006;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ColoredBox(
+          color: const Color(0xFF080A0E),
+          child: Stack(
             fit: StackFit.expand,
             children: [
-              ColoredBox(
-                color: const Color(0xFF080A0E),
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()
-                    ..translateByDouble(dx, dy, 0, 1)
-                    ..scaleByDouble(scale, scale, 1, 1),
-                  child: Image.memory(
-                    bytes,
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
-                    errorBuilder: (_, __, ___) => const Center(
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: Colors.white54,
-                        size: 42,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              IgnorePointer(
-                child: CustomPaint(
-                  painter: _CinematicAtmospherePainter(
-                    progress: eased,
-                    intensity: _atmosphereIntensity(widget.plan),
-                  ),
-                ),
-              ),
-              IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.10),
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.38),
-                      ],
-                      stops: const [0.0, 0.55, 1.0],
-                    ),
-                  ),
-                ),
-              ),
+              _frameImage(current, 1.0 - blend, drift),
+              _frameImage(following, blend, -drift),
             ],
-          );
-        },
+          ),
+        ),
+        IgnorePointer(
+          child: CustomPaint(
+            painter: _CinematicAtmospherePainter(
+              progress: position / frames.length,
+              intensity: _atmosphereIntensity(widget.plan),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 16,
+          bottom: 16,
+          child: SafeArea(
+            top: false,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: .32),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                child: Text(
+                  frames[index].beat,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: Colors.white70),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _frameImage(Uint8List bytes, double opacity, double drift) {
+    final scale = 1.035 + math.sin(_controller.value * math.pi * 2) * .006;
+    return Opacity(
+      opacity: opacity,
+      child: Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..translateByDouble(drift * 80, drift * 35, 0, 1)
+          ..scaleByDouble(scale, scale, 1, 1),
+        child: Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          filterQuality: FilterQuality.high,
+        ),
       ),
     );
   }
 
   ({double x, double y, double zoom}) _movement(String value) {
     final text = value.toLowerCase();
-    if (text.contains('pan left')) return (x: -22, y: 3, zoom: 0.010);
-    if (text.contains('pan right')) return (x: 22, y: 3, zoom: 0.010);
-    if (text.contains('tilt')) return (x: 5, y: -12, zoom: 0.008);
-    if (text.contains('pull')) return (x: 8, y: 3, zoom: 0.006);
-    return (x: -8, y: -3, zoom: 0.012);
+    if (text.contains('pan left')) return (x: -22, y: 3, zoom: .010);
+    if (text.contains('pan right')) return (x: 22, y: 3, zoom: .010);
+    if (text.contains('tilt')) return (x: 5, y: -12, zoom: .008);
+    if (text.contains('pull')) return (x: 8, y: 3, zoom: .006);
+    return (x: -8, y: -3, zoom: .012);
   }
 
   double _atmosphereIntensity(AiScenePlan plan) {
-    final text = '${plan.lighting} ${plan.motion}'.toLowerCase();
-    if (text.contains('rain') || text.contains('storm')) return 0.85;
-    if (text.contains('fire') || text.contains('candle')) return 0.65;
-    return 0.35;
+    final text = (plan.lighting + ' ' + plan.motion).toLowerCase();
+    if (text.contains('rain') || text.contains('storm')) return .85;
+    if (text.contains('fire') || text.contains('candle')) return .65;
+    return .35;
   }
 }
 
@@ -136,37 +222,20 @@ class _CinematicAtmospherePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final pulse = math.sin(progress * math.pi);
+    final pulse = math.sin(progress * math.pi * 2);
     final glow = Paint()
       ..shader = RadialGradient(
-        center: Alignment(-0.38 + progress * 0.35, -0.34),
-        radius: 0.72,
+        center: Alignment(-.38 + progress * .35, -.34),
+        radius: .72,
         colors: [
-          Colors.white.withValues(alpha: 0.055 * intensity * pulse),
+          Colors.white.withValues(alpha: .055 * intensity * (pulse.abs() * .5 + .5)),
           Colors.transparent,
         ],
       ).createShader(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, glow);
-
-    if (intensity < 0.7) return;
-
-    final particlePaint =
-        Paint()..color = Colors.white.withValues(alpha: 0.055 * intensity);
-    for (var i = 0; i < 18; i++) {
-      final seed = (i * 37) % 101;
-      final x = ((seed / 100) + progress * 0.08) % 1.0;
-      final y = ((i * 0.173 + progress * 0.42) % 1.0);
-      final radius = 0.7 + (i % 3) * 0.45;
-      canvas.drawCircle(
-        Offset(x * size.width, y * size.height),
-        radius,
-        particlePaint,
-      );
-    }
   }
 
   @override
   bool shouldRepaint(_CinematicAtmospherePainter oldDelegate) =>
-      oldDelegate.progress != progress ||
-      oldDelegate.intensity != intensity;
+      oldDelegate.progress != progress || oldDelegate.intensity != intensity;
 }
