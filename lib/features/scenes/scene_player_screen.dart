@@ -7,7 +7,7 @@ import '../../domain/book.dart';
 import '../../services/scene_generation/cloudflare_scene_provider.dart';
 import '../../services/scene_generation/scene_generation_cache.dart';
 import '../../services/scene_generation/scene_generation_provider.dart';
-import 'superbook_cinematic_stage.dart';
+import 'superbook_living_stage.dart';
 
 const _sceneEndpoint = String.fromEnvironment('SUPERBOOK_AI_SCENE_ENDPOINT');
 final _sceneCache = SceneGenerationCache();
@@ -32,7 +32,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   GeneratedScene? _generated;
   bool _loading = false;
   VideoPlayerController? _video;
-  List<GeneratedMotionFrame> _motionFrames = const [];
   bool _detailsExpanded = false;
   String? _generationError;
 
@@ -51,8 +50,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
     super.initState();
     final cached = _sceneCache.get(_cacheKey);
     _generated = cached;
-    final cachedMotion = _sceneCache.getMotion(_cacheKey);
-    _motionFrames = cachedMotion ?? const [];
     if (cached?.hasVideo == true) {
       unawaited(_loadVideo(cached!.videoUrl!));
     }
@@ -65,30 +62,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   void dispose() {
     _video?.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadMotionFrames(GeneratedScene generated, {bool force = false}) async {
-    if (!force) {
-      final cached = _sceneCache.getMotion(_cacheKey);
-      if (cached != null && cached.isNotEmpty) {
-        if (mounted) setState(() => _motionFrames = cached);
-        return;
-      }
-    }
-
-    try {
-      final provider = CloudflareSceneProvider(endpoint: _sceneEndpoint);
-      final frames = await provider.generateMotionFrames(
-        plan: generated.plan,
-        imageBase64: generated.imageBase64,
-      );
-      if (frames.isEmpty) return;
-      _sceneCache.putMotion(_cacheKey, frames);
-      if (mounted) setState(() => _motionFrames = frames);
-    } catch (_) {
-      // The canonical still remains the safe fallback. Motion generation is
-      // deliberately non-blocking so a slow AI edit never makes the reader wait.
-    }
   }
 
   Future<void> _loadVideo(String url) async {
@@ -127,8 +100,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       final oldVideo = _video;
       _video = null;
       await oldVideo?.dispose();
-      _sceneCache.clearMotion(_cacheKey);
-      _motionFrames = const [];
     }
 
     setState(() {
@@ -143,9 +114,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         if (cached.hasVideo) {
           await _loadVideo(cached.videoUrl!);
         }
-        if (_sceneCache.getMotion(_cacheKey) == null) {
-          unawaited(_loadMotionFrames(cached));
-        }
         return;
       }
 
@@ -158,12 +126,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         title: widget.book.title,
       );
       _sceneCache.put(_cacheKey, generated);
-      if (!force) {
-        unawaited(_loadMotionFrames(generated));
-      } else {
-        unawaited(_loadMotionFrames(generated, force: true));
-      }
-
       if (!mounted) return;
       setState(() {
         _generated = generated;
@@ -197,10 +159,10 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       );
     }
 
-    return SuperBookCinematicStage(
+    return SuperBookLivingStage(
       imageBase64: generated.imageBase64,
       plan: generated.plan,
-      motionFrames: _motionFrames,
+      endpoint: _sceneEndpoint,
     );
   }
 
