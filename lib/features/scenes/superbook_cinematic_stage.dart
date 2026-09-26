@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -25,10 +26,16 @@ class SuperBookCinematicStage extends StatefulWidget {
 class _SuperBookCinematicStageState extends State<SuperBookCinematicStage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  List<Uint8List> _frameBytes = const [];
+  Uint8List? _singleBytes;
 
   @override
   void initState() {
     super.initState();
+    _singleBytes = base64Decode(widget.imageBase64);
+    _frameBytes = widget.motionFrames
+        .map((frame) => base64Decode(frame.base64))
+        .toList(growable: false);
     final seconds = math.max(5.0, widget.motionFrames.length * 1.8);
     _controller = AnimationController(
       vsync: this,
@@ -39,7 +46,12 @@ class _SuperBookCinematicStageState extends State<SuperBookCinematicStage>
   @override
   void didUpdateWidget(covariant SuperBookCinematicStage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.motionFrames.length != widget.motionFrames.length) {
+    if (oldWidget.imageBase64 != widget.imageBase64 ||
+        oldWidget.motionFrames.length != widget.motionFrames.length) {
+      _singleBytes = base64Decode(widget.imageBase64);
+      _frameBytes = widget.motionFrames
+          .map((frame) => base64Decode(frame.base64))
+          .toList(growable: false);
       final seconds = math.max(5.0, widget.motionFrames.length * 1.8);
       _controller.duration = Duration(milliseconds: (seconds * 1000).round());
       _controller
@@ -71,7 +83,7 @@ class _SuperBookCinematicStageState extends State<SuperBookCinematicStage>
   }
 
   Widget _singleFrame() {
-    final bytes = base64Decode(widget.imageBase64);
+    final bytes = _singleBytes ?? base64Decode(widget.imageBase64);
     final movement = _movement(widget.plan.camera.movement);
     final breathe = math.sin(_controller.value * math.pi * 2) * 0.004;
     final scale = 1.045 + movement.zoom + breathe;
@@ -124,8 +136,8 @@ class _SuperBookCinematicStageState extends State<SuperBookCinematicStage>
       ((local - 0.52) / 0.48).clamp(0.0, 1.0),
     );
 
-    final current = base64Decode(frames[index].base64);
-    final following = base64Decode(frames[next].base64);
+    final current = _frameBytes[index];
+    final following = _frameBytes[next];
     final drift = math.sin((position + 0.2) * math.pi * 2) * 0.006;
 
     return Stack(

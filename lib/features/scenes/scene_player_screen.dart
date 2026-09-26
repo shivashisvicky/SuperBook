@@ -143,6 +143,9 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         if (cached.hasVideo) {
           await _loadVideo(cached.videoUrl!);
         }
+        if (_sceneCache.getMotion(_cacheKey) == null) {
+          unawaited(_loadMotionFrames(cached));
+        }
         return;
       }
 
