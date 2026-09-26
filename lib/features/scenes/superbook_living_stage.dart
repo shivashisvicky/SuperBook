@@ -234,7 +234,6 @@ class _LivingCharacterPainter extends CustomPainter {
 
   static const int _columns = 4;
   static const int _rows = 2;
-  static const double _frameRate = 8.0;
   static const double _beatSeconds = 3.0;
 
   @override
