@@ -151,11 +151,12 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
       final g = pixels[i + 1];
       final b = pixels[i + 2];
 
-      // FLUX often compresses the requested chroma blue into a pale blue.
+      // FLUX/JPEG can turn the requested #0066FF key into pale cyan.
+      // Remove the keyed background completely so it can never render as a
+      // translucent rectangle over the generated scene.
       final blueDominance = b - ((r + g) ~/ 2);
-      if (b > 120 && blueDominance > 18 && b > r * 1.08) {
-        final strength = ((blueDominance - 18) / 80).clamp(0.0, 1.0);
-        pixels[i + 3] = (pixels[i + 3] * (1.0 - strength)).round();
+      if (b > 145 && blueDominance > 22 && b > r + 18 && b > g - 2) {
+        pixels[i + 3] = 0;
       }
     }
 
@@ -258,6 +259,7 @@ class _PoseSheet {
   final ui.Image image;
 }
 
+
 class _LivingCharacterPainter extends CustomPainter {
   _LivingCharacterPainter({
     required this.animation,
@@ -269,8 +271,10 @@ class _LivingCharacterPainter extends CustomPainter {
   final AiScenePlan plan;
   final List<_PoseSheet> sheets;
 
+  // AI prepares one semantic-part sheet. Flutter is the actor: joints,
+  // timing, walk cycles, gestures, head movement and breathing all run locally.
   static const int _columns = 4;
-  static const int _rows = 2;
+  static const int _rows = 3;
   static const double _beatSeconds = 3.0;
 
   @override
@@ -301,130 +305,193 @@ class _LivingCharacterPainter extends CustomPainter {
     final beatIndex = (elapsed / _beatSeconds).floor() % actions.length;
     final beatProgress =
         (elapsed - beatIndex * _beatSeconds) / _beatSeconds;
-    final action = '${actions[beatIndex]} ${character.action}'.toLowerCase();
+    final action = actions[beatIndex] + ' ' + character.action;
+    final lowerAction = action.toLowerCase();
+
+    final isWalk = _containsAny(lowerAction, const [
+      'walk', 'enter', 'move', 'approach', 'cross', 'traverse'
+    ]);
+    final isTalk = _containsAny(lowerAction, const [
+      'talk', 'speak', 'say', 'conversation', 'discuss'
+    ]);
+    final isGesture = _containsAny(lowerAction, const [
+      'gesture', 'point', 'reach', 'raise', 'pick', 'take', 'wave'
+    ]);
+    final isReact = _containsAny(lowerAction, const [
+      'react', 'listen', 'notice', 'surprise', 'look', 'turn'
+    ]);
+    final isEat = _containsAny(lowerAction, const ['eat', 'drink']);
 
     final position = _positionAnchor(
       character.position,
       characterIndex,
       characterCount,
     );
-    final isWalk = _containsAny(action, const [
-      'walk',
-      'enter',
-      'move',
-      'approach',
-      'cross',
-      'traverse',
-    ]);
-    final isTalk = _containsAny(action, const [
-      'talk',
-      'speak',
-      'say',
-      'conversation',
-    ]);
-    final isGesture = _containsAny(action, const [
-      'gesture',
-      'point',
-      'reach',
-      'raise',
-      'pick',
-      'take',
-    ]);
-    final isReact = _containsAny(action, const [
-      'react',
-      'listen',
-      'notice',
-      'surprise',
-      'look',
-      'turn',
-    ]);
-    final isEat = _containsAny(action, const ['eat', 'drink']);
 
-    final walkWave = math.sin(elapsed * math.pi * 2.0 * 1.25);
-    final idleWave = math.sin(elapsed * math.pi * 2.0 * 0.55 + characterIndex);
+    final cycle = elapsed * math.pi * 2.0;
+    final walkCycle = math.sin(cycle * 1.25);
+    final talkCycle = math.sin(cycle * 2.0);
+    final breathe = math.sin(cycle * 0.7 + characterIndex * 0.7);
+    final gestureCycle = math.sin(cycle * 0.9 + characterIndex);
+
     final walkOffset = isWalk
-        ? ui.lerpDouble(-size.width * 0.11, size.width * 0.11, beatProgress)!
+        ? ui.lerpDouble(
+            -size.width * 0.12,
+            size.width * 0.12,
+            Curves.easeInOut.transform(beatProgress),
+          )!
         : 0.0;
 
-    final center = Offset(
+    final bodyHeight = size.height * 0.46;
+    final top = size.height * 0.43;
+    final anchor = Offset(
       size.width * position + walkOffset,
-      size.height * 0.68 + idleWave * size.height * 0.006,
+      top + bodyHeight * 0.52 -
+          (isWalk ? walkCycle.abs() * size.height * 0.008 : 0),
     );
 
-    final cellWidth = sheet.width / _columns;
-    final cellHeight = sheet.height / _rows;
-    final sequence = _poseSequence(
-      isWalk: isWalk,
-      isTalk: isTalk,
-      isGesture: isGesture,
-      isReact: isReact,
-      isEat: isEat,
-    );
+    final torsoScale = 1.0 + breathe * 0.012;
+    final headTilt = isReact ? gestureCycle * 0.06 : breathe * 0.018;
+    final torsoTilt = isWalk ? walkCycle * 0.035 : breathe * 0.008;
 
-    final poseTime = beatProgress * sequence.length;
-    final posePosition = poseTime % sequence.length;
-    final poseIndex = posePosition.floor();
-    final poseA = sequence[poseIndex];
-    final poseB = sequence[(poseIndex + 1) % sequence.length];
-    final poseBlend = posePosition - poseIndex;
+    final armSwing = isWalk ? walkCycle * 0.42 : 0.0;
+    final forearmSwing = isWalk ? -walkCycle * 0.24 : 0.0;
+    final talkArm = isTalk ? talkCycle * 0.24 : 0.0;
+    final gestureArm = isGesture ? (0.35 + gestureCycle * 0.18) : 0.0;
+    final reactArm = isReact ? (-0.18 + gestureCycle * 0.12) : 0.0;
 
-    final breathing =
-        1.0 + math.sin(elapsed * math.pi * 2.0 * 0.7 + characterIndex) * 0.012;
-    final stepBounce = isWalk ? (walkWave.abs() * 0.012) : 0.0;
-    final scale = (size.height * 0.47 / cellHeight) * breathing;
-    final angle = isWalk
-        ? math.sin(elapsed * math.pi * 2.0 * 1.25) * 0.018
-        : math.sin(elapsed * math.pi * 2.0 * 0.3) * 0.008;
+    final leftArmAngle = -armSwing - talkArm - gestureArm - reactArm;
+    final rightArmAngle = armSwing + talkArm + gestureArm + reactArm;
+    final leftForearmAngle = forearmSwing + talkArm * 0.7;
+    final rightForearmAngle = -forearmSwing - talkArm * 0.7;
 
-    final centerWithBounce = center.translate(0, -stepBounce * size.height);
+    final leftLegAngle = isWalk ? walkCycle * 0.18 : breathe * 0.008;
+    final rightLegAngle = -leftLegAngle;
 
-    _drawPose(
+    // Shared normalized skeleton. Each anatomical texture is transformed
+    // independently, so the runtime produces continuous acting rather than
+    // switching between whole-character images.
+    final head = anchor.translate(0, -bodyHeight * 0.40);
+    final torso = anchor.translate(0, -bodyHeight * 0.08);
+    final leftShoulder =
+        anchor.translate(-bodyHeight * 0.145, -bodyHeight * 0.24);
+    final rightShoulder =
+        anchor.translate(bodyHeight * 0.145, -bodyHeight * 0.24);
+    final leftElbow =
+        anchor.translate(-bodyHeight * 0.19, bodyHeight * 0.01);
+    final rightElbow =
+        anchor.translate(bodyHeight * 0.19, bodyHeight * 0.01);
+    final leftHand =
+        anchor.translate(-bodyHeight * 0.19, bodyHeight * 0.15);
+    final rightHand =
+        anchor.translate(bodyHeight * 0.19, bodyHeight * 0.15);
+    final leftHip =
+        anchor.translate(-bodyHeight * 0.075, bodyHeight * 0.25);
+    final rightHip =
+        anchor.translate(bodyHeight * 0.075, bodyHeight * 0.25);
+    final leftKnee =
+        anchor.translate(-bodyHeight * 0.08, bodyHeight * 0.50);
+    final rightKnee =
+        anchor.translate(bodyHeight * 0.08, bodyHeight * 0.50);
+    final leftFoot =
+        anchor.translate(-bodyHeight * 0.09, bodyHeight * 0.76);
+    final rightFoot =
+        anchor.translate(bodyHeight * 0.09, bodyHeight * 0.76);
+
+    _drawPart(canvas, sheet, 8, leftKnee, bodyHeight * 0.13,
+        bodyHeight * 0.30, leftLegAngle);
+    _drawPart(canvas, sheet, 9, rightKnee, bodyHeight * 0.13,
+        bodyHeight * 0.30, rightLegAngle);
+    _drawPart(canvas, sheet, 6, leftHip, bodyHeight * 0.16,
+        bodyHeight * 0.30, leftLegAngle * 0.65);
+    _drawPart(canvas, sheet, 7, rightHip, bodyHeight * 0.16,
+        bodyHeight * 0.30, rightLegAngle * 0.65);
+
+    _drawPart(canvas, sheet, 1, torso, bodyHeight * 0.36 * torsoScale,
+        bodyHeight * 0.38 * torsoScale, torsoTilt);
+
+    _drawPart(canvas, sheet, 2, leftShoulder, bodyHeight * 0.14,
+        bodyHeight * 0.27, leftArmAngle);
+    _drawPart(canvas, sheet, 3, rightShoulder, bodyHeight * 0.14,
+        bodyHeight * 0.27, rightArmAngle);
+    _drawPart(canvas, sheet, 4, leftElbow, bodyHeight * 0.12,
+        bodyHeight * 0.25, leftForearmAngle);
+    _drawPart(canvas, sheet, 5, rightElbow, bodyHeight * 0.12,
+        bodyHeight * 0.25, rightForearmAngle);
+    _drawPart(canvas, sheet, 10, leftHand, bodyHeight * 0.11,
+        bodyHeight * 0.12, leftForearmAngle);
+    _drawPart(canvas, sheet, 11, rightHand, bodyHeight * 0.11,
+        bodyHeight * 0.12, rightForearmAngle);
+
+    _drawPart(
       canvas,
       sheet,
-      Rect.fromLTWH(
-        (poseA % _columns) * cellWidth,
-        (poseA ~/ _columns) * cellHeight,
-        cellWidth,
-        cellHeight,
+      0,
+      head.translate(
+        isReact ? gestureCycle * bodyHeight * 0.012 : 0,
+        breathe * bodyHeight * 0.006,
       ),
-      centerWithBounce,
-      scale,
-      angle,
-      opacity: 1.0 - poseBlend,
+      bodyHeight * 0.23,
+      bodyHeight * 0.25,
+      headTilt,
     );
 
-    _drawPose(
-      canvas,
-      sheet,
-      Rect.fromLTWH(
-        (poseB % _columns) * cellWidth,
-        (poseB ~/ _columns) * cellHeight,
-        cellWidth,
-        cellHeight,
+    final shadow = Paint()
+      ..color = Colors.black.withValues(alpha: 0.20)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(anchor.dx, math.max(leftFoot.dy, rightFoot.dy) + 3),
+        width: bodyHeight * 0.34,
+        height: bodyHeight * 0.035,
       ),
-      centerWithBounce,
-      scale,
-      angle,
-      opacity: poseBlend,
+      shadow,
     );
+
+    if (isEat) {
+      final handBob = math.sin(cycle * 1.5) * bodyHeight * 0.035;
+      _drawPart(
+        canvas,
+        sheet,
+        10,
+        head.translate(-bodyHeight * 0.08, bodyHeight * 0.08 + handBob),
+        bodyHeight * 0.11,
+        bodyHeight * 0.12,
+        -0.35,
+      );
+      _drawPart(
+        canvas,
+        sheet,
+        11,
+        head.translate(bodyHeight * 0.08, bodyHeight * 0.08 - handBob),
+        bodyHeight * 0.11,
+        bodyHeight * 0.12,
+        0.35,
+      );
+    }
   }
 
-  void _drawPose(
+  void _drawPart(
     Canvas canvas,
     ui.Image sheet,
-    Rect source,
+    int cell,
     Offset center,
-    double scale,
-    double rotation, {
-    required double opacity,
-  }) {
-    // source is one pose cell from the 4x2 sheet, so only that cell
-    // should be scaled into the scene. Scaling with the full sheet dimensions
-    // makes the neighbouring rows/poses spill into view.
+    double width,
+    double height,
+    double rotation,
+  ) {
+    final cellWidth = sheet.width / _columns;
+    final cellHeight = sheet.height / _rows;
+    final source = Rect.fromLTWH(
+      (cell % _columns) * cellWidth,
+      (cell ~/ _columns) * cellHeight,
+      cellWidth,
+      cellHeight,
+    );
     final destination = Rect.fromCenter(
       center: center,
-      width: source.width * scale / _columns,
-      height: source.height * scale / _rows,
+      width: width,
+      height: height,
     );
 
     canvas.save();
@@ -432,25 +499,9 @@ class _LivingCharacterPainter extends CustomPainter {
     canvas.rotate(rotation);
     canvas.translate(-center.dx, -center.dy);
 
-    final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: opacity * 0.22)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(
-          center.dx,
-          destination.bottom - destination.height * 0.06,
-        ),
-        width: destination.width * 0.42,
-        height: destination.height * 0.035,
-      ),
-      shadowPaint,
-    );
-
     final paint = Paint()
       ..filterQuality = FilterQuality.high
-      ..isAntiAlias = true
-      ..color = Colors.white.withValues(alpha: opacity);
+      ..isAntiAlias = true;
 
     canvas.drawImageRect(sheet, source, destination, paint);
     canvas.restore();
@@ -469,21 +520,6 @@ class _LivingCharacterPainter extends CustomPainter {
     return actions.take(6).toList(growable: false);
   }
 
-  List<int> _poseSequence({
-    required bool isWalk,
-    required bool isTalk,
-    required bool isGesture,
-    required bool isReact,
-    required bool isEat,
-  }) {
-    if (isWalk) return const [2, 3, 2, 3];
-    if (isTalk) return const [4, 5, 4, 5];
-    if (isGesture) return const [4, 6, 4, 6];
-    if (isReact) return const [1, 7, 1, 7];
-    if (isEat) return const [4, 6, 4, 6];
-    return const [0, 1, 0, 1];
-  }
-
   bool _containsAny(String value, List<String> terms) =>
       terms.any(value.contains);
 
@@ -492,11 +528,11 @@ class _LivingCharacterPainter extends CustomPainter {
     if (value.contains('far left') || value.contains('left')) return 0.29;
     if (value.contains('far right') || value.contains('right')) return 0.71;
     if (value.contains('center') || value.contains('middle')) return 0.50;
-    if (count == 2) return index == 0 ? 0.34 : 0.66;
+    if (count == 2) return index == 0 ? 0.36 : 0.64;
     return 0.50;
   }
 
   @override
-  bool shouldRepaint(covariant _LivingCharacterPainter oldDelegate) =>
-      oldDelegate.plan != plan || oldDelegate.sheets != sheets;
+  bool shouldRepaint(covariant _LivingCharacterPainter oldDelegate) => true;
 }
+
