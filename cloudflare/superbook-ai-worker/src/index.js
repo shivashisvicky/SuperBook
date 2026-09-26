@@ -151,7 +151,8 @@ function parseScenePlan(reasoning) {
 }
 
 function asString(value, fallback = '') {
-  return typeof value === 'string' ? value.trim() : fallback;
+  const text = typeof value === 'string' ? value.trim() : '';
+  return text || fallback;
 }
 
 function asStringList(value, maxItems) {
