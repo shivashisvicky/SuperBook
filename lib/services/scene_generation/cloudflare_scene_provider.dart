@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:http/http.dart' as http;
 
@@ -96,6 +98,11 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
         : '${_baseUri.path}/motion';
     final motionEndpoint = _baseUri.replace(path: motionPath);
 
+    // FLUX.2 [klein] accepts reference images only below 512x512. The
+    // canonical scene can be larger, so resize it locally before sending the
+    // motion request. This keeps the animation path independent of paid T2V.
+    final motionImageBase64 = await _prepareMotionReference(imageBase64);
+
     final response = await _client.post(
       motionEndpoint,
       headers: const {
@@ -104,7 +111,7 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
       },
       body: jsonEncode({
         'scenePlan': plan.toJson(),
-        'imageBase64': imageBase64,
+        'imageBase64': motionImageBase64,
       }),
     ).timeout(const Duration(seconds: 150));
 
@@ -205,6 +212,23 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
       url: url,
       durationSeconds: duration.toInt(),
     );
+  }
+
+  Future<String> _prepareMotionReference(String base64Image) async {
+    final source = base64Decode(base64Image);
+    final codec = await ui.instantiateImageCodec(
+      Uint8List.fromList(source),
+      targetWidth: 512,
+      targetHeight: 384,
+    );
+    final frame = await codec.getNextFrame();
+    final bytes = await frame.image.toByteData(format: ui.ImageByteFormat.png);
+    frame.image.dispose();
+    codec.dispose();
+    if (bytes == null) {
+      throw StateError('Unable to prepare the scene image for motion generation.');
+    }
+    return base64Encode(bytes.buffer.asUint8List());
   }
 
   Map<String, dynamic> _decodeBody(http.Response response) {
