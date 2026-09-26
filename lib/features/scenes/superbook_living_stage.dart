@@ -151,11 +151,11 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
       final g = pixels[i + 1];
       final b = pixels[i + 2];
 
-      if (b > 125 && b > r * 1.35 && b > g * 1.15) {
-        pixels[i] = 0;
-        pixels[i + 1] = 0;
-        pixels[i + 2] = 0;
-        pixels[i + 3] = 0;
+      // FLUX often compresses the requested chroma blue into a pale blue.
+      final blueDominance = b - ((r + g) ~/ 2);
+      if (b > 120 && blueDominance > 18 && b > r * 1.08) {
+        final strength = ((blueDominance - 18) / 80).clamp(0.0, 1.0);
+        pixels[i + 3] = (pixels[i + 3] * (1.0 - strength)).round();
       }
     }
 
