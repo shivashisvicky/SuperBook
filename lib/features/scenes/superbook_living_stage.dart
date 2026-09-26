@@ -49,11 +49,11 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
     super.didUpdateWidget(oldWidget);
     final oldCharacters = oldWidget.plan.characters
         .map((character) =>
-            '\${character.id}|\${character.description}|\${character.action}|\${character.emotion}')
+            '${character.id}|${character.description}|${character.action}|${character.emotion}')
         .join('||');
     final newCharacters = widget.plan.characters
         .map((character) =>
-            '\${character.id}|\${character.description}|\${character.action}|\${character.emotion}')
+            '${character.id}|${character.description}|${character.action}|${character.emotion}')
         .join('||');
 
     if (oldCharacters != newCharacters ||
@@ -89,9 +89,9 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
           (character) => provider.generate(
             character: [
               character.description,
-              'Primary action: \${character.action}.',
-              'Emotion: \${character.emotion}.',
-              'Stage position: \${character.position}.',
+              'Primary action: ${character.action}.',
+              'Emotion: ${character.emotion}.',
+              'Stage position: ${character.position}.',
             ].join(' '),
           ),
         ),
@@ -301,7 +301,7 @@ class _LivingCharacterPainter extends CustomPainter {
     final beatIndex = (elapsed / _beatSeconds).floor() % actions.length;
     final beatProgress =
         (elapsed - beatIndex * _beatSeconds) / _beatSeconds;
-    final action = '\${actions[beatIndex]} \${character.action}'.toLowerCase();
+    final action = '${actions[beatIndex]} ${character.action}'.toLowerCase();
 
     final position = _positionAnchor(
       character.position,
