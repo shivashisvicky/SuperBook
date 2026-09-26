@@ -305,7 +305,7 @@ class _LivingCharacterPainter extends CustomPainter {
     final beatIndex = (elapsed / _beatSeconds).floor() % actions.length;
     final beatProgress =
         (elapsed - beatIndex * _beatSeconds) / _beatSeconds;
-    final action = actions[beatIndex] + ' ' + character.action;
+    final action = '${actions[beatIndex]} ${character.action}';
     final lowerAction = action.toLowerCase();
 
     final isWalk = _containsAny(lowerAction, const [
