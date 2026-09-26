@@ -150,6 +150,103 @@ function parseScenePlan(reasoning) {
   }
 }
 
+function asString(value, fallback = '') {
+  return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function asStringList(value, maxItems) {
+  const values = Array.isArray(value)
+    ? value
+    : typeof value === 'string' && value.trim()
+      ? [value]
+      : [];
+  return values
+    .filter((item) => typeof item === 'string' && item.trim())
+    .map((item) => item.trim())
+    .slice(0, maxItems);
+}
+
+function normalizeScenePlan(plan) {
+  if (!plan || typeof plan !== 'object' || Array.isArray(plan)) return null;
+
+  const rawCharacters = Array.isArray(plan.characters)
+    ? plan.characters
+    : [];
+  const characters = rawCharacters
+    .filter((character) => character && typeof character === 'object')
+    .slice(0, 2)
+    .map((character, index) => ({
+      id: asString(character.id, 'character-' + (index + 1)),
+      description: asString(character.description),
+      action: asString(character.action, 'subtle natural movement'),
+      emotion: asString(character.emotion, 'natural'),
+      position: asString(character.position, index === 0 ? 'foreground' : 'background'),
+    }));
+
+  const rawEnvironment = plan.environment && typeof plan.environment === 'object'
+    ? plan.environment
+    : {};
+  const environment = {
+    location: asString(rawEnvironment.location, 'the location described in the passage'),
+    time: asString(rawEnvironment.time, 'the time described in the passage'),
+    description: asString(rawEnvironment.description),
+  };
+
+  const props = asStringList(plan.props, 3);
+  const actions = asStringList(plan.actions, 3);
+  const rawCamera = plan.camera && typeof plan.camera === 'object'
+    ? plan.camera
+    : {};
+  const camera = {
+    shot: asString(rawCamera.shot, 'medium'),
+    angle: asString(rawCamera.angle, 'eye level'),
+    movement: asString(rawCamera.movement, 'subtle natural camera movement'),
+  };
+
+  const visualStyle = asString(plan.visualStyle, 'cinematic literary realism');
+  const sceneSummary = asString(
+    plan.sceneSummary,
+    characters.length
+      ? characters.map((character) => character.description).join(' ')
+      : 'A faithful visual moment from the literary passage.'
+  );
+  const lighting = asString(plan.lighting, 'natural period-appropriate lighting');
+  const motion = asString(
+    plan.motion,
+    actions.join('; ') || characters.map((character) => character.action).join('; ') ||
+      'subtle natural movement'
+  );
+  const imagePrompt = asString(
+    plan.imagePrompt,
+    [
+      visualStyle + '.',
+      environment.location + ', ' + environment.time + '.',
+      environment.description,
+      characters.map((character) =>
+        character.description + ', ' + character.position + ', ' + character.emotion
+      ).join('; '),
+      props.length ? 'Props: ' + props.join(', ') + '.' : '',
+      actions.length ? 'Action: ' + actions.join('; ') + '.' : '',
+      lighting + '.',
+      'One coherent cinematic frame. No text, logos, watermarks, duplicate people, or modern objects.',
+    ].filter(Boolean).join(' ')
+  );
+
+  return {
+    schemaVersion: asString(plan.schemaVersion, '2'),
+    sceneSummary,
+    visualStyle,
+    characters,
+    environment,
+    props,
+    actions,
+    camera,
+    lighting,
+    motion,
+    imagePrompt,
+  };
+}
+
 function validatePlan(plan) {
   return plan &&
     typeof plan.schemaVersion === 'string' &&
@@ -492,7 +589,8 @@ export default {
         max_tokens: 640,
       });
 
-      const plan = parseScenePlan(reasoning);
+      const rawPlan = parseScenePlan(reasoning);
+      const plan = normalizeScenePlan(rawPlan);
       if (!validatePlan(plan)) {
         return json({ error: 'AI returned an invalid scene plan.' }, 502, origin);
       }
