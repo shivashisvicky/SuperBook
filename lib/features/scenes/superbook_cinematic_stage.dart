@@ -216,7 +216,7 @@ class _SuperBookCinematicStageState extends State<SuperBookCinematicStage>
   }
 
   double _atmosphereIntensity(AiScenePlan plan) {
-    final text = (plan.lighting + ' ' + plan.motion).toLowerCase();
+    final text = '${plan.lighting} ${plan.motion}'.toLowerCase();
     if (text.contains('rain') || text.contains('storm')) return .85;
     if (text.contains('fire') || text.contains('candle')) return .65;
     return .35;
