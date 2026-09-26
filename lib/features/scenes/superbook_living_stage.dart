@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import '../../domain/experience/ai_scene_plan.dart';
 import '../../services/scene_generation/puppet_asset_provider.dart';
 
+/// The scene image is the environment. Characters are AI-authored pose sheets
+/// and are animated locally by this runtime. AI is never called per frame.
 class SuperBookLivingStage extends StatefulWidget {
   const SuperBookLivingStage({
     super.key,
@@ -28,7 +30,7 @@ class SuperBookLivingStage extends StatefulWidget {
 class _SuperBookLivingStageState extends State<SuperBookLivingStage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  List<_PuppetSheet> _sheets = const [];
+  List<_PoseSheet> _sheets = const [];
   bool _loading = true;
 
   @override
@@ -36,7 +38,7 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 12),
+      duration: const Duration(seconds: 18),
     )..repeat();
     unawaited(_loadAssets());
   }
@@ -44,9 +46,17 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
   @override
   void didUpdateWidget(covariant SuperBookLivingStage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.plan.characters.length != widget.plan.characters.length ||
-        oldWidget.plan.characters.map((e) => e.description).join('|') !=
-            widget.plan.characters.map((e) => e.description).join('|')) {
+    final oldCharacters = oldWidget.plan.characters
+        .map((character) =>
+            '\${character.id}|\${character.description}|\${character.action}|\${character.emotion}')
+        .join('||');
+    final newCharacters = widget.plan.characters
+        .map((character) =>
+            '\${character.id}|\${character.description}|\${character.action}|\${character.emotion}')
+        .join('||');
+
+    if (oldCharacters != newCharacters ||
+        oldWidget.imageBase64 != widget.imageBase64) {
       unawaited(_loadAssets());
     }
   }
@@ -67,6 +77,10 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
       return;
     }
 
+    if (mounted) {
+      setState(() => _loading = true);
+    }
+
     try {
       final provider = PuppetAssetProvider(endpoint: widget.endpoint);
       final generated = await Future.wait(
@@ -74,19 +88,19 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
           (character) => provider.generate(
             character: [
               character.description,
-              'Action: ${character.action}.',
-              'Emotion: ${character.emotion}.',
-              'Position: ${character.position}.',
+              'Primary action: \${character.action}.',
+              'Emotion: \${character.emotion}.',
+              'Stage position: \${character.position}.',
             ].join(' '),
           ),
         ),
       );
 
-      final decoded = <_PuppetSheet>[];
+      final decoded = <_PoseSheet>[];
       for (final sheet in generated) {
         final bytes = base64Decode(sheet.base64);
         final image = await _decodeAndChromaKey(bytes);
-        decoded.add(_PuppetSheet(image));
+        decoded.add(_PoseSheet(image));
       }
 
       if (!mounted) {
@@ -105,7 +119,9 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
         sheet.image.dispose();
       }
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -124,7 +140,7 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
     codec.dispose();
 
     if (raw == null) {
-      throw StateError('Unable to decode puppet sprite sheet.');
+      throw StateError('Unable to decode animation pose sheet.');
     }
 
     final pixels = Uint8List.fromList(raw.buffer.asUint8List());
@@ -132,7 +148,8 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
       final r = pixels[i];
       final g = pixels[i + 1];
       final b = pixels[i + 2];
-      if (b > 110 && b > r * 1.22 && b > g * 1.08) {
+
+      if (b > 125 && b > r * 1.35 && b > g * 1.15) {
         pixels[i] = 0;
         pixels[i + 1] = 0;
         pixels[i + 2] = 0;
@@ -164,7 +181,7 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
         ),
         if (_sheets.isNotEmpty)
           CustomPaint(
-            painter: _LivingPuppetPainter(
+            painter: _LivingCharacterPainter(
               animation: _controller,
               plan: widget.plan,
               sheets: _sheets,
@@ -198,14 +215,14 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
   }
 }
 
-class _PuppetSheet {
-  const _PuppetSheet(this.image);
+class _PoseSheet {
+  const _PoseSheet(this.image);
 
   final ui.Image image;
 }
 
-class _LivingPuppetPainter extends CustomPainter {
-  _LivingPuppetPainter({
+class _LivingCharacterPainter extends CustomPainter {
+  _LivingCharacterPainter({
     required this.animation,
     required this.plan,
     required this.sheets,
@@ -213,36 +230,23 @@ class _LivingPuppetPainter extends CustomPainter {
 
   final Animation<double> animation;
   final AiScenePlan plan;
-  final List<_PuppetSheet> sheets;
+  final List<_PoseSheet> sheets;
 
-  static const double _cell = 256;
-
-  static const Map<String, int> _cells = {
-    'head': 0,
-    'torso': 1,
-    'armR': 4,
-    'forearmR': 5,
-    'handR': 6,
-    'footR': 7,
-    'armL': 8,
-    'forearmL': 9,
-    'handL': 10,
-    'footL': 11,
-    'legR': 12,
-    'shinR': 13,
-    'legL': 14,
-    'shinL': 15,
-  };
+  static const int _columns = 4;
+  static const int _rows = 2;
+  static const double _frameRate = 8.0;
+  static const double _beatSeconds = 3.0;
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (var i = 0; i < sheets.length; i++) {
+    for (var index = 0; index < sheets.length; index++) {
+      if (index >= plan.characters.length) break;
       _paintCharacter(
         canvas,
         size,
-        sheets[i].image,
-        plan.characters[i],
-        i,
+        sheets[index].image,
+        plan.characters[index],
+        index,
         sheets.length,
       );
     }
@@ -256,157 +260,204 @@ class _LivingPuppetPainter extends CustomPainter {
     int characterIndex,
     int characterCount,
   ) {
-    final phase = animation.value * math.pi * 2;
-    final action = _actionFor(characterIndex);
-    final anchorX = _anchorX(character.position, characterIndex, characterCount);
-    final anchor = Offset(
-      size.width * anchorX,
-      size.height * 0.70,
-    );
+    final elapsed = animation.value * 18.0;
+    final actions = _narrativeActions();
+    final beatIndex = (elapsed / _beatSeconds).floor() % actions.length;
+    final beatProgress =
+        (elapsed - beatIndex * _beatSeconds) / _beatSeconds;
+    final action = '\${actions[beatIndex]} \${character.action}'.toLowerCase();
 
-    final characterScale = math.min(size.width, size.height) / 1050;
-    final walk = action.contains('walk') ||
-        action.contains('enter') ||
-        action.contains('move') ||
-        action.contains('travers');
-    final travel = walk
-        ? math.sin(animation.value * math.pi * 2) * size.width * 0.16
+    final position = _positionAnchor(
+      character.position,
+      characterIndex,
+      characterCount,
+    );
+    final isWalk = _containsAny(action, const [
+      'walk',
+      'enter',
+      'move',
+      'approach',
+      'cross',
+      'traverse',
+    ]);
+    final isTalk = _containsAny(action, const [
+      'talk',
+      'speak',
+      'say',
+      'conversation',
+    ]);
+    final isGesture = _containsAny(action, const [
+      'gesture',
+      'point',
+      'reach',
+      'raise',
+      'pick',
+      'take',
+    ]);
+    final isReact = _containsAny(action, const [
+      'react',
+      'listen',
+      'notice',
+      'surprise',
+      'look',
+      'turn',
+    ]);
+    final isEat = _containsAny(action, const ['eat', 'drink']);
+
+    final walkWave = math.sin(elapsed * math.pi * 2.0 * 1.25);
+    final idleWave = math.sin(elapsed * math.pi * 2.0 * 0.55 + characterIndex);
+    final walkOffset = isWalk
+        ? ui.lerpDouble(-size.width * 0.11, size.width * 0.11, beatProgress)!
         : 0.0;
-    final breath = math.sin(phase * 1.7 + characterIndex) * 0.012;
-    final sway = math.sin(phase * 1.15 + characterIndex) * 0.025;
-    final talking = action.contains('talk') || action.contains('speak');
-    final listening = action.contains('listen') || action.contains('react');
-    final gesture = action.contains('gesture') ||
-        action.contains('point') ||
-        action.contains('reach');
-    final eating = action.contains('eat');
-    final handWave = math.sin(phase * 1.8) * 0.08;
 
-    final center = anchor.translate(travel, breath * 40 * characterScale);
-
-    final transforms = <ui.RSTransform>[];
-    final rects = <Rect>[];
-
-    void addPart(
-      String name,
-      Offset pivot,
-      double rotation, {
-      double scale = 1,
-      double anchorX = _cell / 2,
-      double anchorY = _cell / 2,
-    }) {
-      final cellIndex = _cells[name];
-      if (cellIndex == null) return;
-      final row = cellIndex ~/ 4;
-      final col = cellIndex % 4;
-      rects.add(
-        Rect.fromLTWH(
-          col * _cell,
-          row * _cell,
-          _cell,
-          _cell,
-        ),
-      );
-      transforms.add(
-        ui.RSTransform.fromComponents(
-          rotation: rotation,
-          scale: characterScale * scale,
-          anchorX: anchorX,
-          anchorY: anchorY,
-          translateX: center.dx + pivot.dx * characterScale,
-          translateY: center.dy + pivot.dy * characterScale,
-        ),
-      );
-    }
-
-    final walkPhase = math.sin(phase * 1.6 + characterIndex);
-    final armTalk = talking ? math.sin(phase * 2.1) * 0.12 : 0.0;
-    final armGesture = gesture
-        ? -0.35 - math.sin(phase * 1.35).abs() * 0.28
-        : 0.0;
-    final armEat = eating ? -0.72 + math.sin(phase * 1.2) * 0.18 : 0.0;
-
-    addPart('legL', const Offset(-72, 245), walk ? -walkPhase * 0.12 : 0);
-    addPart('shinL', const Offset(-72, 480), walk ? walkPhase * 0.10 : 0);
-    addPart('legR', const Offset(72, 245), walk ? walkPhase * 0.12 : 0);
-    addPart('shinR', const Offset(72, 480), walk ? -walkPhase * 0.10 : 0);
-    addPart('footL', const Offset(-72, 620), walk ? -walkPhase * 0.06 : 0);
-    addPart('footR', const Offset(72, 620), walk ? walkPhase * 0.06 : 0);
-
-    addPart('torso', const Offset(0, 60), sway);
-    addPart('armL', const Offset(-150, -40), -sway * 0.7);
-    addPart(
-      'armR',
-      const Offset(150, -40),
-      talking ? armTalk : (gesture || eating ? armGesture + armEat : sway * 0.5),
-      anchorY: 18,
-    );
-    addPart(
-      'forearmL',
-      const Offset(-150, 150),
-      -sway * 0.4,
-      anchorY: 18,
-    );
-    addPart(
-      'forearmR',
-      const Offset(150, 150),
-      eating ? -0.55 + math.sin(phase * 1.2) * 0.18 : armTalk * 0.6,
-      anchorY: 18,
+    final center = Offset(
+      size.width * position + walkOffset,
+      size.height * 0.68 + idleWave * size.height * 0.006,
     );
 
-    addPart(
-      'head',
-      const Offset(0, -220),
-      listening
-          ? -0.055 + math.sin(phase * .8) * .025
-          : math.sin(phase * .65) * .035,
-      anchorY: 238,
-    );
-    addPart(
-      'handL',
-      const Offset(-165, 300),
-      handWave * .4,
-    );
-    addPart(
-      'handR',
-      const Offset(165, 300),
-      eating
-          ? -0.38 + math.sin(phase * 1.2) * .12
-          : (gesture ? -0.22 + handWave : armTalk),
+    final cellWidth = sheet.width / _columns;
+    final cellHeight = sheet.height / _rows;
+    final sequence = _poseSequence(
+      isWalk: isWalk,
+      isTalk: isTalk,
+      isGesture: isGesture,
+      isReact: isReact,
+      isEat: isEat,
     );
 
-    canvas.drawAtlas(
+    final poseTime = beatProgress * sequence.length;
+    final posePosition = poseTime % sequence.length;
+    final poseIndex = posePosition.floor();
+    final poseA = sequence[poseIndex];
+    final poseB = sequence[(poseIndex + 1) % sequence.length];
+    final poseBlend = posePosition - poseIndex;
+
+    final breathing =
+        1.0 + math.sin(elapsed * math.pi * 2.0 * 0.7 + characterIndex) * 0.012;
+    final stepBounce = isWalk ? (walkWave.abs() * 0.012) : 0.0;
+    final scale = (size.height * 0.47 / cellHeight) * breathing;
+    final angle = isWalk
+        ? math.sin(elapsed * math.pi * 2.0 * 1.25) * 0.018
+        : math.sin(elapsed * math.pi * 2.0 * 0.3) * 0.008;
+
+    final centerWithBounce = center.translate(0, -stepBounce * size.height);
+
+    _drawPose(
+      canvas,
       sheet,
-      transforms,
-      rects,
-      null,
-      null,
-      null,
-      Paint()..filterQuality = FilterQuality.high,
+      Rect.fromLTWH(
+        (poseA % _columns) * cellWidth,
+        (poseA ~/ _columns) * cellHeight,
+        cellWidth,
+        cellHeight,
+      ),
+      centerWithBounce,
+      scale,
+      angle,
+      opacity: 1.0 - poseBlend,
+    );
+
+    _drawPose(
+      canvas,
+      sheet,
+      Rect.fromLTWH(
+        (poseB % _columns) * cellWidth,
+        (poseB ~/ _columns) * cellHeight,
+        cellWidth,
+        cellHeight,
+      ),
+      centerWithBounce,
+      scale,
+      angle,
+      opacity: poseBlend,
     );
   }
 
-  String _actionFor(int index) {
-    final actions = plan.actions.isNotEmpty
-        ? plan.actions
-        : plan.characters.map((character) => character.action).toList();
-    if (actions.isEmpty) return 'idle';
+  void _drawPose(
+    Canvas canvas,
+    ui.Image sheet,
+    Rect source,
+    Offset center,
+    double scale,
+    double rotation, {
+    required double opacity,
+  }) {
+    final destination = Rect.fromCenter(
+      center: center,
+      width: source.width * scale,
+      height: source.height * scale,
+    );
 
-    final slot = (animation.value * actions.length).floor() % actions.length;
-    final action = actions[(slot + index) % actions.length].toLowerCase();
-    final characterAction = plan.characters[index].action.toLowerCase();
-    return '$action $characterAction';
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
+    canvas.translate(-center.dx, -center.dy);
+
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: opacity * 0.22)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(
+          center.dx,
+          destination.bottom - destination.height * 0.06,
+        ),
+        width: destination.width * 0.42,
+        height: destination.height * 0.035,
+      ),
+      shadowPaint,
+    );
+
+    final paint = Paint()
+      ..filterQuality = FilterQuality.high
+      ..isAntiAlias = true
+      ..color = Colors.white.withValues(alpha: opacity);
+
+    canvas.drawImageRect(sheet, source, destination, paint);
+    canvas.restore();
   }
 
-  double _anchorX(String position, int index, int count) {
-    final text = position.toLowerCase();
-    if (text.contains('left')) return .30;
-    if (text.contains('right')) return .70;
-    if (count == 2) return index == 0 ? .34 : .66;
-    return .50;
+  List<String> _narrativeActions() {
+    final actions = <String>[
+      ...plan.actions,
+      ...plan.characters.map((character) => character.action),
+    ]
+        .map((action) => action.trim())
+        .where((action) => action.isNotEmpty)
+        .toList();
+
+    if (actions.isEmpty) return const ['idle', 'idle', 'idle'];
+    return actions.take(6).toList(growable: false);
+  }
+
+  List<int> _poseSequence({
+    required bool isWalk,
+    required bool isTalk,
+    required bool isGesture,
+    required bool isReact,
+    required bool isEat,
+  }) {
+    if (isWalk) return const [2, 3, 2, 3];
+    if (isTalk) return const [4, 5, 4, 5];
+    if (isGesture) return const [4, 6, 4, 6];
+    if (isReact) return const [1, 7, 1, 7];
+    if (isEat) return const [4, 6, 4, 6];
+    return const [0, 1, 0, 1];
+  }
+
+  bool _containsAny(String value, List<String> terms) =>
+      terms.any(value.contains);
+
+  double _positionAnchor(String position, int index, int count) {
+    final value = position.toLowerCase();
+    if (value.contains('far left') || value.contains('left')) return 0.29;
+    if (value.contains('far right') || value.contains('right')) return 0.71;
+    if (value.contains('center') || value.contains('middle')) return 0.50;
+    if (count == 2) return index == 0 ? 0.34 : 0.66;
+    return 0.50;
   }
 
   @override
-  bool shouldRepaint(covariant _LivingPuppetPainter oldDelegate) =>
+  bool shouldRepaint(covariant _LivingCharacterPainter oldDelegate) =>
       oldDelegate.plan != plan || oldDelegate.sheets != sheets;
 }
