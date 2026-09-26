@@ -32,6 +32,7 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
   late final AnimationController _controller;
   List<_PoseSheet> _sheets = const [];
   bool _loading = true;
+  String? _assetError;
 
   @override
   void initState() {
@@ -118,21 +119,22 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
       for (final sheet in old) {
         sheet.image.dispose();
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
-        setState(() => _loading = false);
+        setState(() {
+          _loading = false;
+          _assetError = error.toString().replaceFirst('Bad state: ', '');
+        });
       }
     }
   }
 
   Future<ui.Image> _decodeAndChromaKey(Uint8List bytes) async {
-    final codec = await ui.instantiateImageCodec(
-      bytes,
-      targetWidth: 1024,
-      targetHeight: 1024,
-    );
+    final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
     final image = frame.image;
+    final width = image.width;
+    final height = image.height;
     final raw = await image.toByteData(
       format: ui.ImageByteFormat.rawStraightRgba,
     );
@@ -157,14 +159,24 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
       }
     }
 
-    return ui.decodeImageFromPixelsSync(
-      pixels,
-      1024,
-      1024,
-      ui.PixelFormat.rgba8888,
-    );
+    return _decodePixels(pixels, width, height);
   }
 
+  Future<ui.Image> _decodePixels(
+    Uint8List pixels,
+    int width,
+    int height,
+  ) {
+    final completer = Completer<ui.Image>();
+    ui.decodeImageFromPixels(
+      pixels,
+      width,
+      height,
+      ui.PixelFormat.rgba8888,
+      completer.complete,
+    );
+    return completer.future;
+  }
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -205,6 +217,31 @@ class _SuperBookLivingStageState extends State<SuperBookLivingStage>
                   child: Text(
                     'Bringing the characters to life…',
                     style: TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (!_loading && _sheets.isEmpty && _assetError != null)
+          const Positioned(
+            left: 16,
+            top: 16,
+            child: SafeArea(
+              bottom: false,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Color(0xCC6B1D1D),
+                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  child: Text(
+                    'Animation asset unavailable',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
