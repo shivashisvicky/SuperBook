@@ -1,5 +1,5 @@
-name: interactive_book_app
-description: Offline interactive book with cinematic audio
+name: superbook
+description: SuperBook, a narrative-first interactive reading experience.
 publish_to: "none"
 
 environment:
@@ -8,6 +8,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  http: ^1.5.0
+  video_player: ^2.9.5
   camera: ^0.10.5
   permission_handler: ^11.0.1
   flutter_riverpod: ^2.4.0
@@ -15,6 +17,12 @@ dependencies:
   isar: ^3.1.0
   isar_flutter_libs: ^3.1.0
   just_audio: ^0.9.36
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true

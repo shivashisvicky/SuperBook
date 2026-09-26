@@ -1,0 +1,51 @@
+name: SuperBook Test Pages
+
+on:
+  push:
+    branches:
+      - 'test/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-test
+  cancel-in-progress: true
+
+env:
+  SUPERBOOK_AI_SCENE_ENDPOINT: https://superbook-ai-scene.shivashisvicky112.workers.dev
+
+jobs:
+  build:
+    name: Build test web app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter create . --platforms web
+      - run: flutter build web --release --pwa-strategy=none --base-href "/SuperBook/test/" --dart-define=SUPERBOOK_AI_SCENE_ENDPOINT=${SUPERBOOK_AI_SCENE_ENDPOINT}
+      - run: |
+          mkdir -p _site/test
+          cp -R build/web/. _site/test/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy test Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,34 @@
+name: SuperBook CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'test/**'
+      - 'fix/**'
+      - 'architecture/**'
+  pull_request:
+    branches:
+      - main
+      - 'test/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Flutter validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter create . --platforms web
+      - run: rm -f test/widget_test.dart
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build web --release --pwa-strategy=none --base-href "/SuperBook/test/"

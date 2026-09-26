@@ -1,0 +1,11 @@
+name = "superbook-ai-scene"
+main = "src/index.js"
+compatibility_date = "2026-09-21"
+
+# Workers Builds deploys this Worker from the SuperBook AI scene test branch.
+
+[ai]
+binding = "AI"
+
+[observability]
+enabled = true
