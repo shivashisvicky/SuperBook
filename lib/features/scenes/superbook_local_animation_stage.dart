@@ -256,7 +256,7 @@ class _LocalStoryPainter extends CustomPainter {
 
   void _paintCarriage(Canvas canvas, Size size, double progress) {
     final e = Curves.easeOutCubic.transform(progress.clamp(0.0, 1.0));
-    final x = math.lerp(size.width * 1.08, size.width * .72, e);
+    final x = (size.width * 1.08) + ((size.width * .72) - (size.width * 1.08)) * e;
     final y = size.height * .49;
     final body = Paint()..color = const Color(0xFF5B3425);
     final trim = Paint()..color = const Color(0xFFD1A45B)..style = PaintingStyle.stroke..strokeWidth = 4;
