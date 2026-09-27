@@ -5,7 +5,6 @@ import 'features/explore/explore_screen.dart';
 import 'features/home/superbook_home_screen.dart';
 import 'features/library/library_screen.dart';
 import 'features/reader/reader_screen.dart';
-import 'features/scenes/scenes_screen.dart';
 import 'features/scenes/superbook_animation_lab_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'services/current_book_store.dart';
