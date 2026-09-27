@@ -31,7 +31,7 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 <div class="grid">
 <section class="panel">
 <h1>One complete story moment</h1>
-<p>This is no longer a generic animation loop. It is a tiny offline scene engine: narrative beat → authored action clip → prop interaction → next beat.</p>
+<p>This is no longer a generic animation loop. It is a tiny offline scene engine: narrative beat → authored action clip → weight shift → prop interaction → next beat.</p>
 <div class="stage" id="stage">
 <svg id="scene" viewBox="0 0 450 800" aria-label="Animated literary scene">
 <defs>
@@ -109,13 +109,13 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 <h3 style="margin-top:18px">Engine rules</h3>
 <div class="accept">
 <div><b>01 · Scene graph</b><span>Actors, furniture, window, carriage</span></div>
-<div><b>02 · Rig</b><span>Head, torso, arms, legs, feet</span></div>
+<div><b>02 · Rig</b><span>Head, torso, arms, knees, legs, feet</span></div>
 <div><b>03 · Clips</b><span>Hear, turn, stand, walk, look</span></div>
 <div><b>04 · Blocking</b><span>Actor positions are intentional</span></div>
 <div><b>05 · Timing</b><span>Read time ≠ action time</span></div>
 <div><b>06 · Props</b><span>Actions have visible targets</span></div>
 </div>
-<p class="small" style="margin-top:12px">This build uses explicit key poses, two-segment legs, grounded feet, spatial blocking, gait cycles, target-based reach and an independently animated carriage. Reader integration remains separate until this scene earns the test.</p>
+<p class="small" style="margin-top:12px">This build uses explicit key poses, a weight-shift stand, two-segment legs, planted feet, spatial blocking, gait cycles, target-based reach and an independently animated carriage. Reader integration remains separate until this scene earns the test.</p>
 </aside>
 </div>
 </main>
@@ -166,7 +166,8 @@ function drawActor(prefix,a){
  const shoulder={x:a.x+Math.sin(a.lean*Math.PI/180)*105,y:hip.y-108};
  const head={x:shoulder.x+Math.sin(a.lean*Math.PI/180)*22,y:shoulder.y-48};
  const seated=a.pose==="sit";
- const stand=a.pose==="stand"||a.pose==="walk"||a.pose==="look";
+ const stand=a.pose==="stand"||a.pose==="standup"||a.pose==="walk"||a.pose==="look";
+ const standT=clamp(a.standT||0);
  const dressTop={x:shoulder.x,y:shoulder.y+10};
  const dressY=hip.y+4;
  $(prefix+"Dress").setAttribute("d","M"+(dressTop.x-29)+" "+dressTop.y+" Q"+dressTop.x+" "+(dressTop.y-14)+" "+(dressTop.x+29)+" "+dressTop.y+" L"+(hip.x+43)+" "+dressY+" Q"+hip.x+" "+(dressY+18)+" "+(hip.x-43)+" "+dressY+" Z");
@@ -179,6 +180,20 @@ function drawActor(prefix,a){
    lk={x:hip.x-31,y:hip.y+34}; rk={x:hip.x+31,y:hip.y+34};
    la={x:hip.x-34,y:footY}; ra={x:hip.x+34,y:footY};
    lf={x:la.x-20,y:footY}; rf={x:ra.x+20,y:footY};
+ }else if(a.pose==="standup"){
+   const u=ease(standT);
+   const slk={x:hip.x-31,y:hip.y+34},srk={x:hip.x+31,y:hip.y+34};
+   const sla={x:hip.x-34,y:footY},sra={x:hip.x+34,y:footY};
+   const slf={x:sla.x-20,y:footY},srf={x:sra.x+20,y:footY};
+   const vlk={x:hip.x-12,y:hip.y+37},vrk={x:hip.x+12,y:hip.y+37};
+   const vla={x:hip.x-13,y:footY},vra={x:hip.x+13,y:footY};
+   const vlf={x:vla.x+15,y:footY},vrf={x:vra.x+15,y:footY};
+   lk={x:lerp(slk.x,vlk.x,u),y:lerp(slk.y,vlk.y,u)};
+   rk={x:lerp(srk.x,vrk.x,u),y:lerp(srk.y,vrk.y,u)};
+   la={x:lerp(sla.x,vla.x,u),y:lerp(sla.y,vla.y,u)};
+   ra={x:lerp(sra.x,vra.x,u),y:lerp(sra.y,vra.y,u)};
+   lf={x:lerp(slf.x,vlf.x,u),y:lerp(slf.y,vlf.y,u)};
+   rf={x:lerp(srf.x,vrf.x,u),y:lerp(srf.y,vrf.y,u)};
  }else if(a.pose==="walk"){
    const ph=a.phase;
    const stride=10*Math.sin(ph), lift=Math.max(0,Math.cos(ph))*7;
@@ -198,8 +213,13 @@ function drawActor(prefix,a){
  const lShoulder={x:shoulder.x-18,y:armY},rShoulder={x:shoulder.x+18,y:armY};
  const swing=a.armSwing||0;
  const idleL={x:shoulder.x-40-swing,y:shoulder.y+70},idleR={x:shoulder.x+40+swing,y:shoulder.y+70};
- const lHand={x:lerp(idleL.x,shoulder.x+20,reach),y:lerp(idleL.y,shoulder.y+80,reach)};
- const rHand={x:lerp(idleR.x,shoulder.x+78,reach),y:lerp(idleR.y,shoulder.y+35,reach)};
+ let lHand={x:lerp(idleL.x,shoulder.x+20,reach),y:lerp(idleL.y,shoulder.y+80,reach)};
+ let rHand={x:lerp(idleR.x,shoulder.x+78,reach),y:lerp(idleR.y,shoulder.y+35,reach)};
+ if(a.pose==="standup"){
+   const u=ease(standT);
+   lHand={x:lerp(shoulder.x-30,shoulder.x-40,u),y:lerp(478,shoulder.y+76,u)};
+   rHand={x:lerp(shoulder.x+25,shoulder.x+40,u),y:lerp(478,shoulder.y+76,u)};
+ }
  arm(prefix,"Left",lShoulder,lHand,{x:(lShoulder.x+lHand.x)/2-8,y:(lShoulder.y+lHand.y)/2+10});
  arm(prefix,"Right",rShoulder,rHand,{x:(rShoulder.x+rHand.x)/2+8,y:(rShoulder.y+rHand.y)/2+6});
 }
@@ -227,14 +247,17 @@ function sample(index,q){
    A.x=188;A.ground=581;A.hipY=-55;A.pose="sit";A.head=lerp(-16,-55,e);A.lean=lerp(-5,-13,e);
    J.x=108;J.head=lerp(-10,-35,e);
  }else if(index===3){
-   A.x=188;A.ground=581;A.pose="stand";
-   A.hipY=lerp(-55,-78,e);A.head=-55;A.lean=lerp(-13,0,e);
+   A.x=lerp(188,190,e);A.ground=581;A.pose="standup";A.standT=e;
+   const rise=ease(e);
+   A.hipY=lerp(-55,-78,rise);A.head=lerp(-55,-52,e);A.lean=lerp(-13,-5,e);
+   A.armSwing=0;
    J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=-35;
  }else if(index===4){
    A.pose="walk";A.ground=581;A.hipY=-78;A.x=lerp(188,283,e);A.head=lerp(-55,-8,e);A.lean=lerp(0,2,e);
    A.phase=e*Math.PI*4.0;
    A.armSwing=Math.sin(A.phase)*7;
    A.hipY=-78-Math.abs(Math.sin(A.phase))*2;
+   A.lean=lerp(0,2,e);
    J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=lerp(-35,-8,e);
  }else if(index===5){
    A.pose="look";A.ground=581;A.hipY=-78;A.x=283;A.head=lerp(-8,-38,e);A.lean=lerp(2,7,e);A.reach=e;
