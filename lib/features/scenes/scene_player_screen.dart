@@ -7,7 +7,6 @@ import '../../domain/book.dart';
 import '../../services/scene_generation/cloudflare_scene_provider.dart';
 import '../../services/scene_generation/scene_generation_cache.dart';
 import '../../services/scene_generation/scene_generation_provider.dart';
-import 'superbook_cinematic_stage.dart';
 import 'superbook_local_animation_stage.dart';
 
 const _sceneEndpoint = String.fromEnvironment('SUPERBOOK_AI_SCENE_ENDPOINT');
@@ -35,8 +34,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   VideoPlayerController? _video;
   bool _detailsExpanded = false;
   String? _generationError;
-  List<GeneratedMotionFrame> _motionFrames = const [];
-  bool _motionLoading = false;
   bool _useLocalAnimation = false;
 
   Chapter get _chapter => widget.book.chapters.firstWhere(
@@ -101,9 +98,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       _video = null;
       await oldVideo?.dispose();
       if (mounted) {
-        setState(() {
-          _motionFrames = const [];
-        });
       }
     }
 
@@ -180,33 +174,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
     );
   }
 
-  Future<void> _generateMotion(GeneratedScene generated) async {
-    if (_motionLoading || generated.plan.characters.isEmpty) return;
-    if (!mounted) return;
-
-    setState(() {
-      _motionLoading = true;
-    });
-
-    try {
-      final provider = CloudflareSceneProvider(endpoint: _sceneEndpoint);
-      final frames = await provider.generateMotionFrames(
-        plan: generated.plan,
-        imageBase64: generated.imageBase64,
-      );
-      if (!mounted) return;
-      setState(() {
-        _motionFrames = frames;
-        _motionLoading = false;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _motionLoading = false;
-        _useLocalAnimation = true;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
