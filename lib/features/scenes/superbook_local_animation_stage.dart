@@ -110,6 +110,8 @@ class _LocalStoryPainter extends CustomPainter {
   final String avatarSeed;
   final bool drawBackground;
 
+  bool get widgetHasImage => !drawBackground;
+
   int get _avatarVariant {
     var h = 0;
     for (final code in avatarSeed.codeUnits) {
@@ -157,9 +159,19 @@ class _LocalStoryPainter extends CustomPainter {
       final x = currentAction == 'walk'
           ? baseX + (i == 0 ? size.width * .25 : -size.width * .18) * travel
           : baseX;
-      final scale = math.min(size.width, size.height) / 430;
+      final scale = math.min(size.width, size.height) / 430 *
+          (widgetHasImage ? .78 : 1.0);
       final action = i == 0 ? currentAction : _secondaryAction(beat);
-      _paintCharacter(canvas, Offset(x, size.height * .69), scale, phaseProgress, i, action, actionProgress: phaseProgress);
+      _paintCharacter(
+        canvas,
+        Offset(x, size.height * (widgetHasImage ? .665 : .69)),
+        scale,
+        phaseProgress,
+        i,
+        action,
+        actionProgress: phaseProgress,
+        integrated: widgetHasImage,
+      );
     }
 
     if (currentAction == 'carriage' && !narrativePhase) {
@@ -517,6 +529,7 @@ class _LocalStoryPainter extends CustomPainter {
   void _paintCharacter(
     Canvas canvas, Offset feet, double s, double phase, int index, String action, {
     double actionProgress = 0,
+    bool integrated = false,
   }) {
     final swing = math.sin(phase * math.pi * 2);
     final act = Curves.easeInOut.transform(actionProgress.clamp(0.0, 1.0));
@@ -533,6 +546,9 @@ class _LocalStoryPainter extends CustomPainter {
     const hairs = [Color(0xFF4A3027),Color(0xFF2F2927),Color(0xFF6A422D),Color(0xFF211D1B),Color(0xFF8A5A35),Color(0xFF3A2420),Color(0xFF5A3A28),Color(0xFF2B2423)];
     final variant = (_avatarVariant + index * 3) % 8;
     final skin = skins[variant], coat = coats[variant], hair = hairs[variant];
+    final coatLight = Color.lerp(coat, Colors.white, .18)!;
+    final coatDark = Color.lerp(coat, Colors.black, .18)!;
+    final skinShadow = Color.lerp(skin, Colors.black, .12)!;
     final taller = variant == 1 || variant == 5;
     final bodyScale = taller ? 1.08 : (variant == 2 || variant == 7 ? .94 : 1.0);
     final hip = feet + Offset(lean * s, -78 * s * bodyScale + bob);
@@ -560,12 +576,72 @@ class _LocalStoryPainter extends CustomPainter {
       canvas.drawLine(leftFoot, leftFoot + Offset(15 * s, 0), footPaint);
       canvas.drawLine(rightFoot, rightFoot + Offset(15 * s, 0), footPaint);
     }
-    canvas.drawOval(Rect.fromCenter(center: feet + Offset(0, 3 * s), width: 64 * s, height: 11 * s), Paint()..color = Colors.black.withValues(alpha: .22));
+    final contactShadow = Paint()
+      ..color = Colors.black.withValues(alpha: integrated ? .30 : .22)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: feet + Offset(0, 3 * s),
+        width: 64 * s,
+        height: 11 * s,
+      ),
+      contactShadow,
+    );
     final dress = Path()..moveTo(shoulder.dx - 20 * s, shoulder.dy + 4 * s)..quadraticBezierTo(hip.dx - 28 * s, hip.dy + 18 * s, feet.dx - 40 * s, feet.dy - 5 * s)..lineTo(feet.dx + 40 * s, feet.dy - 5 * s)..quadraticBezierTo(hip.dx + 28 * s, hip.dy + 18 * s, shoulder.dx + 20 * s, shoulder.dy + 4 * s)..close();
     canvas.drawPath(dress, Paint()..color = coat);
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: shoulder + Offset(0, 23 * s), width: 38 * s, height: 56 * s), Radius.circular(11 * s)), Paint()..color = coat);
+    canvas.drawPath(
+      Path()
+        ..moveTo(shoulder.dx, shoulder.dy + 8 * s)
+        ..lineTo(hip.dx - 18 * s, hip.dy + 14 * s)
+        ..lineTo(hip.dx - 10 * s, hip.dy + 18 * s)
+        ..lineTo(shoulder.dx + 3 * s, shoulder.dy + 13 * s)
+        ..close(),
+      Paint()..color = coatLight.withValues(alpha: integrated ? .72 : .9),
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(hip.dx + 10 * s, hip.dy + 12 * s)
+        ..lineTo(feet.dx + 34 * s, feet.dy - 5 * s)
+        ..lineTo(feet.dx + 20 * s, feet.dy - 5 * s)
+        ..lineTo(hip.dx + 2 * s, hip.dy + 16 * s)
+        ..close(),
+      Paint()..color = coatDark.withValues(alpha: integrated ? .70 : .9),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: shoulder + Offset(0, 23 * s),
+          width: 38 * s,
+          height: 56 * s,
+        ),
+        Radius.circular(11 * s),
+      ),
+      Paint()..color = coat,
+    );
     canvas.drawCircle(head, (20 + (variant % 3) * 2) * s, Paint()..color = skin);
-    canvas.drawOval(Rect.fromCenter(center: head + Offset(0, -10 * s), width: (43 + variant * 1.3) * s, height: 27 * s), Paint()..color = hair);
+    canvas.drawArc(
+      Rect.fromCircle(center: head, radius: (20 + (variant % 3) * 2) * s),
+      .35,
+      2.45,
+      false,
+      Paint()
+        ..color = skinShadow
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3 * s,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: head + Offset(0, -10 * s),
+        width: (43 + variant * 1.3) * s,
+        height: 27 * s,
+      ),
+      Paint()..color = hair,
+    );
+    canvas.drawCircle(
+      head + Offset((listen ? 14 : 13) * s, 4 * s),
+      1.7 * s,
+      Paint()..color = skinShadow,
+    );
     final eye = Paint()..color = const Color(0xFF211D1A);
     final eyeShift = listen ? 3 * s : 0.0;
     canvas.drawCircle(head + Offset(-7 * s + eyeShift, 1 * s), 1.5 * s, eye);
@@ -581,7 +657,10 @@ class _LocalStoryPainter extends CustomPainter {
         Paint()..color = const Color(0xFF6B3E3B),
       );
     }
-    final armPaint = Paint()..color = skin..strokeWidth = 10 * s..strokeCap = StrokeCap.round;
+    final armPaint = Paint()
+      ..color = skin
+      ..strokeWidth = 9 * s
+      ..strokeCap = StrokeCap.round;
     Offset leftHand, rightHand;
     if (reach) {
       leftHand = shoulder + Offset(28 * s + 38 * s * act, 56 * s - 16 * s * act);
@@ -603,6 +682,23 @@ class _LocalStoryPainter extends CustomPainter {
     final leftShoulder = shoulder + Offset(-17 * s, 7 * s), rightShoulder = shoulder + Offset(17 * s, 7 * s);
     _drawLimb(canvas, leftShoulder, leftHand, armPaint, bend: -7 * s);
     _drawLimb(canvas, rightShoulder, rightHand, armPaint, bend: 7 * s);
+    if (talk) {
+      final gesture = .5 + .5 * math.sin(phase * math.pi * 2);
+      final accent = Paint()
+        ..color = Colors.white.withValues(alpha: integrated ? .16 : .10)
+        ..strokeWidth = 2 * s
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(
+        shoulder + Offset(-10 * s, 22 * s),
+        shoulder + Offset((-5 + gesture * 8) * s, 34 * s),
+        accent,
+      );
+      canvas.drawLine(
+        shoulder + Offset(10 * s, 22 * s),
+        shoulder + Offset((5 - gesture * 8) * s, 34 * s),
+        accent,
+      );
+    }
   }
 
   void _drawLimb(Canvas canvas, Offset shoulder, Offset hand, Paint paint, {double bend = 0}) {
