@@ -62,28 +62,34 @@ class _SuperBookLocalAnimationStageState
         child: AnimatedBuilder(
           animation: _controller,
           builder: (context, _) => Stack(
-        fit: StackFit.expand,
-        children: [
-          if (widget.backgroundImageBase64 != null && widget.backgroundImageBase64!.isNotEmpty)
-            Image.memory(
-              base64Decode(widget.backgroundImageBase64!),
-              fit: BoxFit.cover,
-              gaplessPlayback: true,
-            ),
-          CustomPaint(
-            painter: _LocalStoryPainter(
-              progress: _controller.value,
-              scene: widget.scene,
-              passage: widget.passage,
-              characters: widget.characters,
-              actionHint: widget.actionHint,
-              avatarSeed: '${widget.scene.title}|${widget.scene.moment}|${widget.passage.join(' ')}',
-            ),
-            child: const SizedBox.expand(),
+            fit: StackFit.expand,
+            children: [
+              if (widget.backgroundImageBase64 != null &&
+                  widget.backgroundImageBase64!.isNotEmpty)
+                Image.memory(
+                  base64Decode(widget.backgroundImageBase64!),
+                  fit: BoxFit.cover,
+                  gaplessPlayback: true,
+                ),
+              CustomPaint(
+                painter: _LocalStoryPainter(
+                  progress: _controller.value,
+                  scene: widget.scene,
+                  passage: widget.passage,
+                  characters: widget.characters,
+                  actionHint: widget.actionHint,
+                  avatarSeed:
+                      '${widget.scene.title}|${widget.scene.moment}|${widget.passage.join(' ')}',
+                  drawBackground: widget.backgroundImageBase64 == null ||
+                      widget.backgroundImageBase64!.isEmpty,
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ],
           ),
         ),
       );
-}
+
 
 class _LocalStoryPainter extends CustomPainter {
   _LocalStoryPainter({
@@ -93,6 +99,7 @@ class _LocalStoryPainter extends CustomPainter {
     required this.characters,
     required this.actionHint,
     required this.avatarSeed,
+    required this.drawBackground,
   });
 
   final double progress;
@@ -541,15 +548,7 @@ class _LocalStoryPainter extends CustomPainter {
     canvas.drawLine(elbow, hand, paint);
     canvas.drawCircle(hand, paint.strokeWidth * .46, paint);
   }
-  void _arm(Canvas canvas, Offset shoulder, double angle, double length, Paint paint) {
-    final elbow = shoulder +
-        Offset(math.cos(angle) * length * .52, math.sin(angle) * length * .52);
-    final hand = shoulder +
-        Offset(math.cos(angle) * length, math.sin(angle) * length);
-    canvas.drawLine(shoulder, elbow, paint);
-    canvas.drawLine(elbow, hand, paint);
-    canvas.drawCircle(hand, paint.strokeWidth * .48, paint);
-  }
+
 
   void _paintRain(Canvas canvas, Size size) {
     final rain = Paint()
