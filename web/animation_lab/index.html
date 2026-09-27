@@ -233,33 +233,53 @@ let current=0,playing=false,start=0,elapsed=0,raf=0;
 const worldButtons=[...document.querySelectorAll(".world")];
 const WORLD_IDS=["worldGarden","worldHouse","worldRoad","worldPark","worldStreet","worldCafeteria","worldAirplane"];
 function setWorld(world){
- WORLD_IDS.forEach(id=>$(id).setAttribute("opacity",id.replace("world","").toLowerCase()===world?"1":"0"));
+ // "room" is the base interior already drawn in the scene. World overlays are exterior/location plates.
+ WORLD_IDS.forEach(id=>$(id).setAttribute("opacity","0"));
+ if(world!=="room") {
+   const overlay=$("world"+world.charAt(0).toUpperCase()+world.slice(1));
+   if(overlay) overlay.setAttribute("opacity","1");
+ }
  worldButtons.forEach(b=>b.classList.toggle("active",b.dataset.world===world));
 }
 worldButtons.forEach(b=>b.addEventListener("click",()=>setWorld(b.dataset.world)));
 
 const ENVIRONMENTS={
- house:{label:"House",interior:"room",exterior:"road",props:["window","furniture","carriage"]},
+ house:{label:"House",interior:"room",exterior:"road",props:["window","dining room","furniture","carriage"]},
  garden:{label:"Garden",interior:"garden",exterior:"garden",props:["trees","path","flowers"]},
  park:{label:"Park",interior:"park",exterior:"park",props:["trees","path","benches"]},
- road:{label:"Road",interior:"road",exterior:"road",props:["road","carriage"]},
- street:{label:"Street",interior:"street",exterior:"street",props:["buildings","road"]},
+ road:{label:"Road",interior:"road",exterior:"road",props:["road","vehicles"]},
+ street:{label:"Street",interior:"street",exterior:"street",props:["buildings","sidewalk"]},
  cafeteria:{label:"Cafeteria",interior:"cafeteria",exterior:"street",props:["tables","chairs","counter"]},
  airplane:{label:"Airplane",interior:"airplane",exterior:"airplane",props:["seats","windows"]},
  room:{label:"Room",interior:"room",exterior:"garden",props:["furniture","window"]}
 };
+
+// Resolve the PLACE, not merely the most visible prop.
+// A carriage/horse/wagon is an object that can appear outside a house.
+// It must not override stronger indoor evidence such as dining-room, family, chair or window.
 function resolveEnvironment(text){
- const rules=[
-  ["airplane",/\b(airplane|aeroplane|plane|flight|cockpit|cabin|boarding|pilot|airport)\b/],
-  ["cafeteria",/\b(cafeteria|cafe|coffee shop|restaurant|dining hall|counter|waiter|waitress|menu)\b/],
-  ["park",/\b(park|playground|picnic|bench|fountain)\b/],
-  ["garden",/\b(garden|yard|orchard|lawn|flowers|hedge)\b/],
-  ["street",/\b(street|avenue|sidewalk|town|shopfront|crosswalk)\b/],
-  ["road",/\b(road|highway|carriage|coach|wagon|horse-drawn)\b/],
-  ["house",/\b(house|home|dining-room|dining room|bedroom|parlor|parlour|window|chair|family sat|room)\b/]
+ const t=text.toLowerCase();
+ const scores={house:0,garden:0,park:0,road:0,street:0,cafeteria:0,airplane:0};
+
+ const weighted=[
+  ["house",/\b(house|home|dining-room|dining room|bedroom|parlor|parlour|sitting room|family sat|family together|inside|indoors|window|chair|table|fireplace)\b/g,6],
+  ["garden",/\b(garden|yard|orchard|lawn|flowers|hedge|rose garden)\b/g,7],
+  ["park",/\b(park|playground|picnic|bench|fountain)\b/g,7],
+  ["street",/\b(street|avenue|sidewalk|town|shopfront|crosswalk|boulevard)\b/g,7],
+  ["road",/\b(road|highway|lane|carriageway|street road)\b/g,7],
+  ["cafeteria",/\b(cafeteria|cafe|coffee shop|restaurant|dining hall|counter|waiter|waitress|menu|tables)\b/g,7],
+  ["airplane",/\b(airplane|aeroplane|flight|cockpit|cabin|boarding|pilot|airport|aisle|seatbelt)\b/g,8]
  ];
- for(const [kind,re] of rules) if(re.test(text.toLowerCase())) return ENVIRONMENTS[kind];
- return ENVIRONMENTS.room;
+ for(const [kind,re,weight] of weighted){
+   const hits=t.match(re);
+   if(hits) scores[kind]+=hits.length*weight;
+ }
+ // Transport props are secondary evidence only. They describe an object, not necessarily the setting.
+ if(/\b(carriage|coach|wagon|horse-drawn|horse)\b/.test(t)){
+   scores.road+=1;
+ }
+ const winner=Object.entries(scores).sort((a,b)=>b[1]-a[1])[0];
+ return winner[1]>0 ? ENVIRONMENTS[winner[0]] : ENVIRONMENTS.room;
 }
 const sceneEnvironment=resolveEnvironment(beats.map(b=>b.text).join(" "));
 function applyResolvedEnvironment(){
