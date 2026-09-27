@@ -182,18 +182,18 @@ class _LocalStoryPainter extends CustomPainter {
     if (t.contains('attention') || t.contains('drawn to') || t.contains('look') ||
         t.contains('notice') || t.contains('see') || t.contains('watch') ||
         t.contains('window') || t.contains('sound') || t.contains('hear') ||
-        t.contains('listen') || t.contains('turn')) return 'look';
+        t.contains('listen') || t.contains('turn')) { return 'look'; }
     if (t.contains('walk') || t.contains('approach') || t.contains('cross') ||
         t.contains('enter') || t.contains('step') || t.contains('move') ||
-        t.contains('leave') || t.contains('arrive') || t.contains('go ')) return 'walk';
+        t.contains('leave') || t.contains('arrive') || t.contains('go ')) { return 'walk'; }
     if (t.contains('reach') || t.contains('open') || t.contains('lift') ||
         t.contains('take') || t.contains('pick') || t.contains('hold') ||
-        t.contains('door')) return 'reach';
-    if (t.contains('sit') || t.contains('sitting')) return 'sit';
-    if (t.contains('stand') || t.contains('rise')) return 'stand';
+        t.contains('door')) { return 'reach'; }
+    if (t.contains('sit') || t.contains('sitting')) { return 'sit'; }
+    if (t.contains('stand') || t.contains('rise')) { return 'stand'; }
     if (t.contains('say') || t.contains('speak') || t.contains('tell') ||
         t.contains('ask') || t.contains('reply') || t.contains('answer') ||
-        t.contains('conversation')) return 'talk';
+        t.contains('conversation')) { return 'talk'; }
     return 'look';
   }
 
@@ -201,9 +201,9 @@ class _LocalStoryPainter extends CustomPainter {
     final t = beat.toLowerCase();
     if (t.contains('attention') || t.contains('drawn to') || t.contains('look') ||
         t.contains('notice') || t.contains('window') || t.contains('sound') ||
-        t.contains('hear') || t.contains('listen')) return 'look';
+        t.contains('hear') || t.contains('listen')) { return 'look'; }
     if (t.contains('say') || t.contains('speak') || t.contains('tell') ||
-        t.contains('ask') || t.contains('reply')) return 'talk';
+        t.contains('ask') || t.contains('reply')) { return 'talk'; }
     return 'listen';
   }
 
