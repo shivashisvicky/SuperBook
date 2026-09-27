@@ -405,7 +405,7 @@ class _LocalStoryPainter extends CustomPainter {
     final walk = action == 'walk';
     final reach = action == 'reach';
     final bob = math.sin(phase * math.pi * 4) * (walk ? 5 : 1.5) * s;
-    final bodyLean = action == 'look' ? math.sin(act * math.pi) * 10 * s : 0;
+    final double bodyLean = action == 'look' ? math.sin(act * math.pi) * 10 * s : 0.0;
     final body = feet + Offset(bodyLean, -88 * s + bob);
     final head = body + Offset((action == 'look' ? math.sin(act * math.pi) * 22 : 0) * s, -65 * s);
 
