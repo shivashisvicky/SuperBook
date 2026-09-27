@@ -26,7 +26,7 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 </style>
 </head>
 <body>
-<header><b>SuperBook Animation Lab</b><span class="pill">10/10 test build · isolated</span></header>
+<header><b>SuperBook Animation Lab</b><span class="pill">Animation Lab · isolated</span></header>
 <main>
 <div class="grid">
 <section class="panel">
@@ -115,7 +115,8 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
   <path d="M40 230 L102 180 L165 230" fill="#45403c"/>
   <rect x="80" y="290" width="42" height="55" fill="#e1c978"/>
 </g>
-<g id="carriage" opacity="0" clip-path="url(#windowClip)" transform="translate(500 365) scale(1.18)">
+<g id="carriageClip" clip-path="url(#windowClip)">
+<g id="carriage" opacity="0" transform="translate(500 365) scale(1.18)">
   <rect x="-120" y="-34" width="112" height="50" rx="13" fill="#4e3029"/>
   <path d="M-108-34v-31h78v31" fill="#6b4739"/>
   <path d="M-101-31h62" stroke="#a77b56" stroke-width="4"/>
@@ -125,6 +126,7 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
   <path d="M-158 12q-12-21-27-5q-9 11 2 25h25" fill="#6d4b39"/>
   <circle cx="-187" cy="21" r="10" fill="#4b342b"/>
   <path d="M-201 11l-12-8M-201 31l-12 8" stroke="#4b342b" stroke-width="6" stroke-linecap="round"/>
+</g>
 </g>
 <g opacity=".8">
   <rect x="25" y="185" width="92" height="6" rx="3" fill="#8d765f"/>
@@ -314,7 +316,7 @@ function drawActor(prefix,a){
 }
 function render(){
  drawActor("eliz",state.eliz);drawActor("jane",state.jane);
- $("carriage").setAttribute("transform","translate("+state.carriage.x+" "+state.carriage.y+")");
+ $("carriage").setAttribute("transform","translate("+state.carriage.x+" "+state.carriage.y+") scale(1.18)");
  $("carriage").setAttribute("opacity",state.carriage.opacity);
  $("wheelA").setAttribute("transform","rotate("+state.carriage.wheelTurn+" -70 16)");
  $("wheelB").setAttribute("transform","rotate("+state.carriage.wheelTurn+" -23 16)");
