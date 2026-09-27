@@ -189,8 +189,8 @@ class _LocalStoryPainter extends CustomPainter {
     if (t.contains('reach') || t.contains('open') || t.contains('lift') ||
         t.contains('take') || t.contains('pick') || t.contains('hold') ||
         t.contains('door')) return 'reach';
-    if (t.contains('sit') || t.contains('sitting')) return 'sit';
-    if (t.contains('stand') || t.contains('rise')) return 'stand';
+    if (t.contains('sit') || t.contains('sitting')) { return 'sit'; }
+    if (t.contains('stand') || t.contains('rise')) { return 'stand'; }
     if (t.contains('say') || t.contains('speak') || t.contains('tell') ||
         t.contains('ask') || t.contains('reply') || t.contains('answer') ||
         t.contains('conversation')) return 'talk';
