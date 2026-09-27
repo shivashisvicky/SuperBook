@@ -21,7 +21,7 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}button{border:1px solid #394252;background:#1c2430;color:#f4f0e8;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}button:hover{background:#263142}.primary{background:#efe4c5;color:#19150f;border-color:#efe4c5}
 .metric{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #242b38}.metric:last-child{border:0}.ok{color:var(--green)}.warn{color:#e8b86b}
 .timeline{display:flex;flex-direction:column;gap:6px;margin-top:10px}.beat{display:grid;grid-template-columns:42px 58px 1fr 54px;gap:8px;align-items:center;background:#0d121b;border:1px solid #202938;border-radius:9px;padding:7px 8px;font-size:11px}.beat.active{border-color:#d9b96e;background:#1a1a17}.beat.done{opacity:.58}.beat .n{color:#788496}.beat .type{font-weight:800;color:var(--gold)}.beat .dur{text-align:right;color:#8490a1}
-.small{font-size:12px;color:var(--muted)}code{color:#d9c28a}.accept{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.accept div{padding:8px 10px;border-radius:9px;background:#0d121b;border:1px solid #202938}.accept b{display:block;font-size:11px}.accept span{font-size:11px;color:#9aa5b5}
+.small{font-size:12px;color:var(--muted)}.world-controls{margin-top:6px}.world.active{border-color:#e8c77a;background:#2a251a;color:#f3d88d}code{color:#d9c28a}.accept{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.accept div{padding:8px 10px;border-radius:9px;background:#0d121b;border:1px solid #202938}.accept b{display:block;font-size:11px}.accept span{font-size:11px;color:#9aa5b5}
 @media(max-width:800px){.grid{grid-template-columns:1fr}header{position:relative}.stage{max-height:none}}
 </style>
 </head>
@@ -53,6 +53,35 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 <path d="M45 468q90-30 185 0" fill="#72513c"/>
 <g id="chairA"><rect x="70" y="475" width="55" height="12" rx="5" fill="#654633"/><rect x="72" y="487" width="7" height="70" fill="#4a3328"/><rect x="116" y="487" width="7" height="70" fill="#4a3328"/></g>
 <g id="chairB"><rect x="174" y="475" width="55" height="12" rx="5" fill="#654633"/><rect x="176" y="487" width="7" height="70" fill="#4a3328"/><rect x="220" y="487" width="7" height="70" fill="#4a3328"/></g>
+<g id="worldGarden" opacity="0">
+  <rect x="0" y="0" width="450" height="585" fill="#b9c99f"/>
+  <circle cx="70" cy="185" r="62" fill="#55734f"/><circle cx="385" cy="175" r="72" fill="#4f6d4a"/>
+  <path d="M0 520 Q220 430 450 520 L450 585 L0 585Z" fill="#6f8157"/>
+  <path d="M225 585 Q235 510 310 430 Q330 410 345 392" fill="none" stroke="#c9b98e" stroke-width="48"/>
+  <g id="gardenHouse">
+    <path d="M250 320 L330 255 L410 320 V500 H250Z" fill="#8d6f58"/>
+    <path d="M235 325 L330 245 L425 325" fill="#4a403a"/>
+    <rect x="285" y="350" width="42" height="75" fill="#5d473a"/>
+    <rect x="350" y="350" width="34" height="34" fill="#e8d08b"/>
+  </g>
+</g>
+<g id="worldHouse" opacity="0">
+  <rect x="0" y="0" width="450" height="585" fill="#c8b49a"/>
+  <path d="M55 475 V240 L225 120 L395 240 V475Z" fill="#8b684f"/>
+  <path d="M35 245 L225 105 L415 245" fill="#403b39"/>
+  <rect x="190" y="330" width="70" height="145" fill="#5d4437"/>
+  <rect x="92" y="285" width="65" height="65" fill="#d9c989"/>
+  <rect x="293" y="285" width="65" height="65" fill="#d9c989"/>
+  <circle cx="70" cy="455" r="46" fill="#55734f"/><circle cx="380" cy="450" r="52" fill="#4f6d4a"/>
+</g>
+<g id="worldRoad" opacity="0">
+  <rect x="0" y="0" width="450" height="585" fill="#9fa88f"/>
+  <path d="M0 520 Q110 470 225 505 Q340 540 450 480 V585 H0Z" fill="#6b6259"/>
+  <path d="M0 500 Q225 450 450 475" fill="none" stroke="#d2c7aa" stroke-width="7" opacity=".7"/>
+  <rect x="55" y="225" width="95" height="210" fill="#8d765f"/>
+  <path d="M40 230 L102 180 L165 230" fill="#45403c"/>
+  <rect x="80" y="290" width="42" height="55" fill="#e1c978"/>
+</g>
 <g id="carriage" opacity="0" transform="translate(500 420)">
   <rect x="-95" y="-34" width="90" height="43" rx="12" fill="#4e3029"/>
   <path d="M-82-34v-26h62v26" fill="#6b4739"/>
@@ -86,7 +115,13 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 <div id="caption" class="caption"><div class="card"><div id="captionKind" class="kind"></div><div id="captionText"></div></div></div>
 <div class="hud"><span id="actionHud">INITIALIZING</span><span id="clockHud">0.0s</span></div>
 </div>
-<div class="controls"><button class="primary" id="play">▶ Play scene</button><button id="pause">Ⅱ Pause</button><button id="restart">↺ Restart</button></div>
+<div class="controls"><button class="primary" id="play">▶ Play scene</button><button id="pause">Ⅱ Pause</button><button id="restart">↺ Restart</button></div><div class="controls world-controls">
+<button class="world active" data-world="room">🏠 Room</button>
+<button class="world" data-world="garden">🌳 Garden</button>
+<button class="world" data-world="house">🏡 House</button>
+<button class="world" data-world="road">🛣️ Road</button>
+</div>
+<p class="small">Animation is tested separately from AI imagery. World objects are semantic assets the story can request: house, garden, trees, window, furniture, carriage, road and other props.</p>
 </section>
 
 <aside class="panel">
@@ -137,6 +172,14 @@ const beats=[
 ];
 
 let current=0,playing=false,start=0,elapsed=0,raf=0;
+const worldButtons=[...document.querySelectorAll(".world")];
+function setWorld(world){
+  ["worldGarden","worldHouse","worldRoad"].forEach(id=>$(id).setAttribute("opacity",id==="world"+world.charAt(0).toUpperCase()+world.slice(1)? "1":"0"));
+  worldButtons.forEach(b=>b.classList.toggle("active",b.dataset.world===world));
+}
+worldButtons.forEach(b=>b.addEventListener("click",()=>setWorld(b.dataset.world)));
+setWorld("room");
+
 const initial={
  eliz:{x:188,ground:581,hipY:-55,lean:0,head:0,pose:"sit"},
  jane:{x:108,ground:581,hipY:-55,lean:0,head:0,pose:"sit"},
@@ -280,7 +323,10 @@ function setCaption(b){
  $("caption").style.opacity=b.type==="read"?"1":".86";
 }
 function enterBeat(i){
- current=i;setCaption(beats[i]);
+ current=i;
+ if(i===0)setWorld("room");
+ else if(i===6||i===7)setWorld("road");
+ setCaption(beats[i]);
  beats.forEach((_,n)=>{const el=$("beat"+n);el.classList.toggle("active",n===i);el.classList.toggle("done",n<i);});
  $("actionHud").textContent=beats[i].label+" · "+(beats[i].type==="read"?"NARRATIVE":"ACTING");
 }
