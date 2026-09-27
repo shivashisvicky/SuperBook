@@ -89,7 +89,7 @@ class _SuperBookLocalAnimationStageState
           ),
         ),
       );
-
+}
 
 class _LocalStoryPainter extends CustomPainter {
   _LocalStoryPainter({
