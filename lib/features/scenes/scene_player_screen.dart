@@ -7,7 +7,7 @@ import '../../domain/book.dart';
 import '../../services/scene_generation/cloudflare_scene_provider.dart';
 import '../../services/scene_generation/scene_generation_cache.dart';
 import '../../services/scene_generation/scene_generation_provider.dart';
-import 'superbook_living_stage.dart';
+import 'superbook_cinematic_stage.dart';
 
 const _sceneEndpoint = String.fromEnvironment('SUPERBOOK_AI_SCENE_ENDPOINT');
 final _sceneCache = SceneGenerationCache();
@@ -34,6 +34,9 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   VideoPlayerController? _video;
   bool _detailsExpanded = false;
   String? _generationError;
+  List<GeneratedMotionFrame> _motionFrames = const [];
+  bool _motionLoading = false;
+  String? _motionError;
 
   Chapter get _chapter => widget.book.chapters.firstWhere(
         (chapter) => chapter.id == widget.beat.chapterId,
@@ -53,7 +56,9 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
     if (cached?.hasVideo == true) {
       unawaited(_loadVideo(cached!.videoUrl!));
     }
-    if (cached == null) {
+    if (cached != null) {
+      unawaited(_generateMotion(cached));
+    } else {
       unawaited(_generate());
     }
   }
@@ -100,6 +105,12 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       final oldVideo = _video;
       _video = null;
       await oldVideo?.dispose();
+      if (mounted) {
+        setState(() {
+          _motionFrames = const [];
+          _motionError = null;
+        });
+      }
     }
 
     setState(() {
@@ -113,6 +124,8 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         setState(() => _generated = cached);
         if (cached.hasVideo) {
           await _loadVideo(cached.videoUrl!);
+        } else {
+          await _generateMotion(cached);
         }
         return;
       }
@@ -132,6 +145,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         _loading = false;
         _generationError = null;
       });
+      unawaited(_generateMotion(generated));
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -159,11 +173,41 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       );
     }
 
-    return SuperBookLivingStage(
+    return SuperBookCinematicStage(
       imageBase64: generated.imageBase64,
       plan: generated.plan,
-      endpoint: _sceneEndpoint,
+      motionFrames: _motionFrames,
     );
+  }
+
+  Future<void> _generateMotion(GeneratedScene generated) async {
+    if (_motionLoading || generated.plan.characters.isEmpty) return;
+    if (!mounted) return;
+
+    setState(() {
+      _motionLoading = true;
+      _motionError = null;
+    });
+
+    try {
+      final provider = CloudflareSceneProvider(endpoint: _sceneEndpoint);
+      final frames = await provider.generateMotionFrames(
+        plan: generated.plan,
+        imageBase64: generated.imageBase64,
+      );
+      if (!mounted) return;
+      setState(() {
+        _motionFrames = frames;
+        _motionLoading = false;
+        _motionError = frames.isEmpty ? 'No motion frames were returned.' : null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _motionLoading = false;
+        _motionError = error.toString().replaceFirst('Bad state: ', '');
+      });
+    }
   }
 
   @override
@@ -238,6 +282,27 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
                     style: TextStyle(fontSize: 16),
                   ),
                 ],
+              ),
+            ),
+          if (generated != null && _motionLoading)
+            const Positioned(
+              left: 16,
+              top: 16,
+              child: SafeArea(
+                bottom: false,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Color(0x99000000),
+                    borderRadius: BorderRadius.all(Radius.circular(999)),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    child: Text(
+                      'Animating the story moment…',
+                      style: TextStyle(fontSize: 11, color: Colors.white70),
+                    ),
+                  ),
+                ),
               ),
             ),
           if (generated == null && !_loading && _generationError != null)
