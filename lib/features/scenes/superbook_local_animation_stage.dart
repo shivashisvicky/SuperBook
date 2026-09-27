@@ -10,6 +10,7 @@ class SuperBookLocalAnimationStage extends StatefulWidget {
     required this.scene,
     required this.passage,
     required this.characters,
+    this.actionHint = '',
   });
 
   final Scene scene;
@@ -51,6 +52,7 @@ class _SuperBookLocalAnimationStageState
               scene: widget.scene,
               passage: widget.passage,
               characters: widget.characters,
+              actionHint: widget.actionHint,
             ),
             child: const SizedBox.expand(),
           ),
@@ -64,12 +66,14 @@ class _LocalStoryPainter extends CustomPainter {
     required this.scene,
     required this.passage,
     required this.characters,
+    required this.actionHint,
   });
 
   final double progress;
   final Scene scene;
   final List<String> passage;
   final List<BookCharacter> characters;
+  final String actionHint;
 
   String get _text => '${scene.atmosphere} ${scene.moment} ${passage.join(' ')}'.toLowerCase();
 
