@@ -103,6 +103,7 @@ class _LocalStoryPainter extends CustomPainter {
     final t = progress * math.pi * 2;
     _paintBackground(canvas, size, t);
 
+    final narrativeAction = _action(0);
     final count = math.min(2, math.max(1, characters.length));
     for (var i = 0; i < count; i++) {
       final x = size.width * (i == 0 ? .35 : .67);
@@ -113,17 +114,17 @@ class _LocalStoryPainter extends CustomPainter {
         scale,
         (progress + i * .18) % 1,
         i,
-        _action(i),
+        i == 0 ? narrativeAction : _secondaryAction(),
       );
     }
 
     if (_rain) _paintRain(canvas, size);
     if (_warmLight) _paintWarmLight(canvas, size, t);
-    _paintCaption(canvas, size);
+    _paintNarrativeCloud(canvas, size);
   }
 
   String _action(int index) {
-    final t = _text;
+    final t = '$_text $actionHint'.toLowerCase();
     if (t.contains('walk') ||
         t.contains('approach') ||
         t.contains('cross') ||
@@ -147,7 +148,51 @@ class _LocalStoryPainter extends CustomPainter {
         t.contains('see')) {
       return 'look';
     }
+    if (t.contains('wait') || t.contains('pause') || t.contains('stop')) return 'idle';
     return 'talk';
+  }
+
+  String _secondaryAction() {
+    final t = '$_text $actionHint'.toLowerCase();
+    if (t.contains('notice') || t.contains('look') || t.contains('see') || t.contains('discover')) return 'look';
+    if (t.contains('talk') || t.contains('say') || t.contains('speak')) return 'talk';
+    return 'listen';
+  }
+
+  void _paintNarrativeCloud(Canvas canvas, Size size) {
+    final sentences = passage
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    if (sentences.isEmpty) return;
+    final index = (progress * sentences.length).floor().clamp(0, sentences.length - 1);
+    final narrative = sentences[index];
+    final text = TextPainter(
+      text: TextSpan(
+        text: narrative,
+        style: const TextStyle(
+          color: Color(0xFF24201C),
+          fontSize: 14,
+          height: 1.25,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: 4,
+      ellipsis: '…',
+    )..layout(maxWidth: size.width * .68);
+
+    final center = Offset(size.width * .50, size.height * .18);
+    final rect = Rect.fromCenter(
+      center: center,
+      width: math.min(size.width * .78, text.width + 42),
+      height: text.height + 30,
+    );
+    final paint = Paint()..color = Colors.white.withValues(alpha: .92);
+    canvas.drawOval(rect, paint);
+    canvas.drawCircle(center + Offset(-rect.width * .28, rect.height * .42), 11, paint);
+    canvas.drawCircle(center + Offset(-rect.width * .20, rect.height * .52), 6, paint);
+    text.paint(canvas, Offset(rect.left + 21, rect.top + 15));
   }
 
   void _paintBackground(Canvas canvas, Size size, double t) {
