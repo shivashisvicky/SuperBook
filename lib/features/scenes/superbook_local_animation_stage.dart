@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../domain/book.dart';
@@ -11,12 +12,14 @@ class SuperBookLocalAnimationStage extends StatefulWidget {
     required this.passage,
     required this.characters,
     this.actionHint = '',
+    this.backgroundImageBase64,
   });
 
   final Scene scene;
   final List<String> passage;
   final List<BookCharacter> characters;
   final String actionHint;
+  final String? backgroundImageBase64;
 
   @override
   State<SuperBookLocalAnimationStage> createState() =>
@@ -34,7 +37,7 @@ class _SuperBookLocalAnimationStageState
     _controller = AnimationController(
       vsync: this,
       duration: Duration(seconds: _cycleSeconds()),
-    )..repeat();
+    )..forward();
   }
 
   int _cycleSeconds() {
@@ -58,7 +61,16 @@ class _SuperBookLocalAnimationStageState
   Widget build(BuildContext context) => RepaintBoundary(
         child: AnimatedBuilder(
           animation: _controller,
-          builder: (context, _) => CustomPaint(
+          builder: (context, _) => Stack(
+        fit: StackFit.expand,
+        children: [
+          if (widget.backgroundImageBase64 != null && widget.backgroundImageBase64!.isNotEmpty)
+            Image.memory(
+              base64Decode(widget.backgroundImageBase64!),
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
+          CustomPaint(
             painter: _LocalStoryPainter(
               progress: _controller.value,
               scene: widget.scene,
@@ -89,6 +101,7 @@ class _LocalStoryPainter extends CustomPainter {
   final List<BookCharacter> characters;
   final String actionHint;
   final String avatarSeed;
+  final bool drawBackground;
 
   int get _avatarVariant {
     var h = 0;
@@ -123,7 +136,7 @@ class _LocalStoryPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final t = progress * math.pi * 2;
-    _paintBackground(canvas, size, t);
+    if (drawBackground) _paintBackground(canvas, size, t);
 
     final beat = _currentBeat;
     final narrativePhase = _isNarrativePhase;
@@ -452,108 +465,82 @@ class _LocalStoryPainter extends CustomPainter {
   }
 
   void _paintCharacter(
-    Canvas canvas,
-    Offset feet,
-    double s,
-    double phase,
-    int index,
-    String action, {
+    Canvas canvas, Offset feet, double s, double phase, int index, String action, {
     double actionProgress = 0,
   }) {
     final swing = math.sin(phase * math.pi * 2);
     final act = Curves.easeInOut.transform(actionProgress.clamp(0.0, 1.0));
     final walk = action == 'walk';
+    final stand = action == 'stand';
     final reach = action == 'reach';
-    final bob = math.sin(phase * math.pi * 4) * (walk ? 5 : 1.5) * s;
-    final double bodyLean = action == 'look' ? math.sin(act * math.pi) * 18 * s : action == 'walk' ? math.sin(act * math.pi) * 5 * s : 0.0;
-    const skins = [
-      Color(0xFFF1D9B7), Color(0xFFD7A77D), Color(0xFFC78C69),
-      Color(0xFF9B654B), Color(0xFFE5C09A), Color(0xFFB97858),
-      Color(0xFFF0CBA8), Color(0xFF8D5A43),
-    ];
-    const coats = [
-      Color(0xFF6F4050), Color(0xFF3E5870), Color(0xFF7A5A3A),
-      Color(0xFF3F6B5B), Color(0xFF7B4E3D), Color(0xFF5C4A73),
-      Color(0xFF596B46), Color(0xFF754B63),
-    ];
-    const hairs = [
-      Color(0xFF4A3027), Color(0xFF2F2927), Color(0xFF6A422D),
-      Color(0xFF211D1B), Color(0xFF8A5A35), Color(0xFF3A2420),
-      Color(0xFF5A3A28), Color(0xFF2B2423),
-    ];
+    final listen = action == 'listen' || action == 'look';
+    final bob = math.sin(phase * math.pi * 4) * (walk ? 3.5 : 1.0) * s;
+    final lean = stand ? -10 * (1 - act) : action == 'look' ? 4 * act : walk ? 2 : 0;
+    const skins = [Color(0xFFF1D9B7),Color(0xFFD7A77D),Color(0xFFC78C69),Color(0xFF9B654B),Color(0xFFE5C09A),Color(0xFFB97858),Color(0xFFF0CBA8),Color(0xFF8D5A43)];
+    const coats = [Color(0xFF6F4050),Color(0xFF3E5870),Color(0xFF7A5A3A),Color(0xFF3F6B5B),Color(0xFF7B4E3D),Color(0xFF5C4A73),Color(0xFF596B46),Color(0xFF754B63)];
+    const hairs = [Color(0xFF4A3027),Color(0xFF2F2927),Color(0xFF6A422D),Color(0xFF211D1B),Color(0xFF8A5A35),Color(0xFF3A2420),Color(0xFF5A3A28),Color(0xFF2B2423)];
     final variant = (_avatarVariant + index * 3) % 8;
-    final coat = coats[variant];
-    final hair = hairs[variant];
-    final skin = skins[variant];
+    final skin = skins[variant], coat = coats[variant], hair = hairs[variant];
     final taller = variant == 1 || variant == 5;
-    final compact = variant == 2 || variant == 7;
-    final bodyScale = taller ? 1.12 : compact ? .90 : 1.0;
-    final body = feet + Offset(bodyLean, -88 * s * bodyScale + bob);
-    final head = body + Offset((action == 'look' ? math.sin(act * math.pi) * 30 : 0) * s, -65 * s * bodyScale);
-
-    final dress = Path()
-      ..moveTo(body.dx - 22 * s * bodyScale, body.dy)
-      ..lineTo(body.dx - 42 * s * bodyScale, feet.dy - 3 * s)
-      ..lineTo(body.dx + 42 * s * bodyScale, feet.dy - 3 * s)
-      ..lineTo(body.dx + 22 * s * bodyScale, body.dy)
-      ..close();
-
-    canvas.drawOval(
-      Rect.fromCenter(center: feet + Offset(0, 2 * s), width: 58 * s, height: 15 * s),
-      Paint()..color = Colors.black.withValues(alpha: .28),
-    );
-
+    final bodyScale = taller ? 1.08 : (variant == 2 || variant == 7 ? .94 : 1.0);
+    final hip = feet + Offset(lean * s, -78 * s * bodyScale + bob);
+    final shoulder = hip + Offset(lean * .55 * s, -70 * s * bodyScale);
+    final head = shoulder + Offset(lean * .18 * s, -49 * s * bodyScale);
+    final leg = Paint()..color = const Color(0xFF29282C)..strokeWidth = 11 * s..strokeCap = StrokeCap.round;
+    final footPaint = Paint()..color = const Color(0xFF1E1D20)..strokeWidth = 7 * s..strokeCap = StrokeCap.round;
+    final stride = walk ? swing * 12 * s : 0.0;
+    final liftL = walk ? math.max(0, math.cos(phase * math.pi * 2)) * 6 * s : 0.0;
+    final liftR = walk ? math.max(0, -math.cos(phase * math.pi * 2)) * 6 * s : 0.0;
+    final leftHip = hip + Offset(-11 * s, 0), rightHip = hip + Offset(11 * s, 0);
+    final leftKnee = leftHip + Offset(-3 * s + stride * .35, 34 * s - liftL);
+    final rightKnee = rightHip + Offset(3 * s - stride * .35, 34 * s - liftR);
+    final leftFoot = Offset(feet.dx - 13 * s + stride, feet.dy - liftL);
+    final rightFoot = Offset(feet.dx + 13 * s - stride, feet.dy - liftR);
     if (action == 'sit') {
-      feet = feet + Offset(0, 16 * s);
+      final seatedY = feet.dy - 4 * s;
+      canvas.drawLine(hip + Offset(-10 * s, 0), Offset(feet.dx - 31 * s, seatedY - 34 * s), leg);
+      canvas.drawLine(Offset(feet.dx - 31 * s, seatedY - 34 * s), Offset(feet.dx - 31 * s, seatedY), leg);
+      canvas.drawLine(hip + Offset(10 * s, 0), Offset(feet.dx + 31 * s, seatedY - 34 * s), leg);
+      canvas.drawLine(Offset(feet.dx + 31 * s, seatedY - 34 * s), Offset(feet.dx + 31 * s, seatedY), leg);
+    } else {
+      canvas.drawLine(leftHip, leftKnee, leg); canvas.drawLine(leftKnee, leftFoot, leg);
+      canvas.drawLine(rightHip, rightKnee, leg); canvas.drawLine(rightKnee, rightFoot, leg);
+      canvas.drawLine(leftFoot, leftFoot + Offset(15 * s, 0), footPaint);
+      canvas.drawLine(rightFoot, rightFoot + Offset(15 * s, 0), footPaint);
     }
-
+    canvas.drawOval(Rect.fromCenter(center: feet + Offset(0, 3 * s), width: 64 * s, height: 11 * s), Paint()..color = Colors.black.withValues(alpha: .22));
+    final dress = Path()..moveTo(shoulder.dx - 20 * s, shoulder.dy + 4 * s)..quadraticBezierTo(hip.dx - 28 * s, hip.dy + 18 * s, feet.dx - 40 * s, feet.dy - 5 * s)..lineTo(feet.dx + 40 * s, feet.dy - 5 * s)..quadraticBezierTo(hip.dx + 28 * s, hip.dy + 18 * s, shoulder.dx + 20 * s, shoulder.dy + 4 * s)..close();
     canvas.drawPath(dress, Paint()..color = coat);
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(center: body + Offset(0, -24 * s * bodyScale), width: 36 * s * bodyScale, height: 48 * s * bodyScale),
-        Radius.circular(12 * s),
-      ),
-      Paint()..color = coat,
-    );
-
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: shoulder + Offset(0, 23 * s), width: 38 * s, height: 56 * s), Radius.circular(11 * s)), Paint()..color = coat);
     canvas.drawCircle(head, (20 + (variant % 3) * 2) * s, Paint()..color = skin);
-    canvas.drawOval(
-      Rect.fromCenter(center: head + Offset(0, -10 * s), width: (43 + variant * 1.5) * s, height: 27 * s),
-      Paint()..color = hair,
-    );
-
+    canvas.drawOval(Rect.fromCenter(center: head + Offset(0, -10 * s), width: (43 + variant * 1.3) * s, height: 27 * s), Paint()..color = hair);
     final eye = Paint()..color = const Color(0xFF211D1A);
-    canvas.drawCircle(head + Offset(-7 * s, 1 * s), 1.6 * s, eye);
-    canvas.drawCircle(head + Offset(7 * s, 1 * s), 1.6 * s, eye);
-
-    final armPaint = Paint()
-      ..color = skin
-      ..strokeWidth = 11 * s
-      ..strokeCap = StrokeCap.round;
-
-    final leftAngle = reach ? -1.15 - .75 * act : action == 'talk' ? -.95 + swing * .85 : -.35 + swing * .25;
-    final rightAngle = reach ? .35 + 1.05 * act : action == 'talk' ? .95 - swing * .85 : .35 - swing * .25;
-    _arm(canvas, body + Offset(-16 * s, -18 * s), leftAngle, 40 * s, armPaint);
-    _arm(canvas, body + Offset(16 * s, -18 * s), rightAngle, 40 * s, armPaint);
-
-    final legPaint = Paint()
-      ..color = const Color(0xFF2B2A2D)
-      ..strokeWidth = 12 * s
-      ..strokeCap = StrokeCap.round;
-    final step = walk ? swing * 13 * s : 0;
-    canvas.drawLine(
-      feet + Offset(-11 * s, -4 * s),
-      feet + Offset(-13 * s + step, 2 * s),
-      legPaint,
-    );
-    canvas.drawLine(
-      feet + Offset(11 * s, -4 * s),
-      feet + Offset(13 * s - step, 2 * s),
-      legPaint,
-    );
+    final eyeShift = listen ? 3 * s : 0.0;
+    canvas.drawCircle(head + Offset(-7 * s + eyeShift, 1 * s), 1.5 * s, eye);
+    canvas.drawCircle(head + Offset(7 * s + eyeShift, 1 * s), 1.5 * s, eye);
+    final armPaint = Paint()..color = skin..strokeWidth = 10 * s..strokeCap = StrokeCap.round;
+    Offset leftHand, rightHand;
+    if (reach) {
+      leftHand = shoulder + Offset(28 * s + 38 * s * act, 56 * s - 16 * s * act);
+      rightHand = shoulder + Offset(42 * s + 52 * s * act, 42 * s - 10 * s * act);
+    } else if (stand) {
+      leftHand = shoulder + Offset(-28 * s, 68 * s + 8 * s * (1 - act));
+      rightHand = shoulder + Offset(28 * s, 68 * s + 8 * s * (1 - act));
+    } else {
+      leftHand = shoulder + Offset(-30 * s - swing * 10 * s, 58 * s);
+      rightHand = shoulder + Offset(30 * s + swing * 10 * s, 58 * s);
+    }
+    final leftShoulder = shoulder + Offset(-17 * s, 7 * s), rightShoulder = shoulder + Offset(17 * s, 7 * s);
+    _drawLimb(canvas, leftShoulder, leftHand, armPaint, bend: -7 * s);
+    _drawLimb(canvas, rightShoulder, rightHand, armPaint, bend: 7 * s);
   }
 
+  void _drawLimb(Canvas canvas, Offset shoulder, Offset hand, Paint paint, {double bend = 0}) {
+    final elbow = Offset((shoulder.dx + hand.dx) / 2 + bend, (shoulder.dy + hand.dy) / 2 + 7);
+    canvas.drawLine(shoulder, elbow, paint);
+    canvas.drawLine(elbow, hand, paint);
+    canvas.drawCircle(hand, paint.strokeWidth * .46, paint);
+  }
   void _arm(Canvas canvas, Offset shoulder, double angle, double length, Paint paint) {
     final elbow = shoulder +
         Offset(math.cos(angle) * length * .52, math.sin(angle) * length * .52);
