@@ -462,31 +462,6 @@ class _LocalStoryPainter extends CustomPainter {
     );
   }
 
-  void _paintCaption(Canvas canvas, Size size) {
-    final caption = scene.caption.trim().isEmpty ? scene.moment : scene.caption;
-    if (caption.trim().isEmpty) return;
-    final text = TextPainter(
-      text: TextSpan(
-        text: caption,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-          height: 1.25,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-      maxLines: 2,
-      ellipsis: '…',
-    )..layout(maxWidth: size.width * .72);
-
-    final rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(size.width * .10, size.height * .075, size.width * .80, text.height + 20),
-      const Radius.circular(16),
-    );
-    canvas.drawRRect(rect, Paint()..color = Colors.black.withValues(alpha: .45));
-    text.paint(canvas, Offset(size.width * .10 + 12, size.height * .075 + 10));
-  }
 
   @override
   bool shouldRepaint(covariant _LocalStoryPainter oldDelegate) =>
