@@ -33,8 +33,14 @@ class _SuperBookLocalAnimationStageState
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 18),
+      duration: Duration(seconds: _cycleSeconds()),
     )..repeat();
+  }
+
+  int _cycleSeconds() {
+    final text = widget.passage.join(' ').trim();
+    final count = text.isEmpty ? 1 : text.split('.').where((s) => s.trim().isNotEmpty).length;
+    return (count * 9).clamp(18, 360);
   }
 
   @override
@@ -105,6 +111,7 @@ class _LocalStoryPainter extends CustomPainter {
 
     final sentence = _currentNarrative;
     final narrativePhase = _isNarrativePhase;
+    final phaseProgress = _phaseProgress;
     final currentAction = _action(sentence);
     final count = math.min(2, math.max(1, characters.length));
     for (var i = 0; i < count; i++) {
@@ -120,6 +127,7 @@ class _LocalStoryPainter extends CustomPainter {
         (progress + i * .18) % 1,
         i,
         action,
+        actionProgress: phaseProgress,
       );
     }
 
@@ -142,15 +150,18 @@ class _LocalStoryPainter extends CustomPainter {
     return [raw];
   }
 
-  bool get _isNarrativePhase => (progress % 1.0) < .58;
+  double get _beatProgress => progress * _sentences.length;
+  int get _sentenceIndex => math.min(_sentences.length - 1, _beatProgress.floor());
+  bool get _isNarrativePhase => (_beatProgress % 1.0) < (2.0 / 3.0);
+  double get _phaseProgress {
+    final phase = _beatProgress % 1.0;
+    return _isNarrativePhase ? phase / (2.0 / 3.0) : (phase - 2.0 / 3.0) / (1.0 / 3.0);
+  }
 
   String get _currentNarrative {
     final sentences = _sentences;
     if (sentences.isEmpty) return scene.moment;
-    final index = ((progress % 1.0) / 1.0 * sentences.length)
-        .floor()
-        .clamp(0, sentences.length - 1);
-    return sentences[index];
+    return sentences[_sentenceIndex];
   }
 
   String _action(String sentence) {
@@ -400,9 +411,11 @@ class _LocalStoryPainter extends CustomPainter {
     double s,
     double phase,
     int index,
-    String action,
-  ) {
+    String action, {
+    double actionProgress = 0,
+  }) {
     final swing = math.sin(phase * math.pi * 2);
+    final act = Curves.easeInOut.transform(actionProgress.clamp(0.0, 1.0));
     final walk = action == 'walk';
     final reach = action == 'reach';
     final bob = math.sin(phase * math.pi * 4) * (walk ? 5 : 1.5) * s;
