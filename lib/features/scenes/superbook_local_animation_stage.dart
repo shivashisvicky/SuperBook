@@ -65,6 +65,7 @@ class _SuperBookLocalAnimationStageState
               passage: widget.passage,
               characters: widget.characters,
               actionHint: widget.actionHint,
+              avatarSeed: '${widget.scene.title}|${widget.scene.moment}|${widget.passage.join(' ')}',
             ),
             child: const SizedBox.expand(),
           ),
@@ -79,6 +80,7 @@ class _LocalStoryPainter extends CustomPainter {
     required this.passage,
     required this.characters,
     required this.actionHint,
+    required this.avatarSeed,
   });
 
   final double progress;
@@ -86,6 +88,15 @@ class _LocalStoryPainter extends CustomPainter {
   final List<String> passage;
   final List<BookCharacter> characters;
   final String actionHint;
+  final String avatarSeed;
+
+  int get _avatarVariant {
+    var h = 0;
+    for (final code in avatarSeed.codeUnits) {
+      h = (h * 31 + code) & 0x7fffffff;
+    }
+    return h % 8;
+  }
 
   String get _text => '${scene.atmosphere} ${scene.moment} ${passage.join(' ')}'.toLowerCase();
 
@@ -405,12 +416,31 @@ class _LocalStoryPainter extends CustomPainter {
     final reach = action == 'reach';
     final bob = math.sin(phase * math.pi * 4) * (walk ? 5 : 1.5) * s;
     final double bodyLean = action == 'look' ? math.sin(act * math.pi) * 18 * s : action == 'walk' ? math.sin(act * math.pi) * 5 * s : 0.0;
-    final body = feet + Offset(bodyLean, -88 * s + bob);
-    final head = body + Offset((action == 'look' ? math.sin(act * math.pi) * 30 : 0) * s, -65 * s);
+    final body = feet + Offset(bodyLean, -88 * s * bodyScale + bob);
+    final head = body + Offset((action == 'look' ? math.sin(act * math.pi) * 30 : 0) * s, -65 * s * bodyScale);
 
-    final coat = index == 0 ? const Color(0xFF6F4050) : const Color(0xFF4B596D);
-    final hair = index == 0 ? const Color(0xFF4A3027) : const Color(0xFF2F2927);
-    final skin = const Color(0xFFF1D9B7);
+    const skins = [
+      Color(0xFFF1D9B7), Color(0xFFD7A77D), Color(0xFFC78C69),
+      Color(0xFF9B654B), Color(0xFFE5C09A), Color(0xFFB97858),
+      Color(0xFFF0CBA8), Color(0xFF8D5A43),
+    ];
+    const coats = [
+      Color(0xFF6F4050), Color(0xFF3E5870), Color(0xFF7A5A3A),
+      Color(0xFF3F6B5B), Color(0xFF7B4E3D), Color(0xFF5C4A73),
+      Color(0xFF596B46), Color(0xFF754B63),
+    ];
+    const hairs = [
+      Color(0xFF4A3027), Color(0xFF2F2927), Color(0xFF6A422D),
+      Color(0xFF211D1B), Color(0xFF8A5A35), Color(0xFF3A2420),
+      Color(0xFF5A3A28), Color(0xFF2B2423),
+    ];
+    final variant = (_avatarVariant + index * 3) % 8;
+    final coat = coats[variant];
+    final hair = hairs[variant];
+    final skin = skins[variant];
+    final taller = variant == 1 || variant == 5;
+    final compact = variant == 2 || variant == 7;
+    final bodyScale = taller ? 1.12 : compact ? .90 : 1.0;
 
     canvas.drawOval(
       Rect.fromCenter(center: feet + Offset(0, 2 * s), width: 58 * s, height: 15 * s),
@@ -423,23 +453,23 @@ class _LocalStoryPainter extends CustomPainter {
 
     final dress = Path()
       ..moveTo(body.dx - 22 * s, body.dy)
-      ..lineTo(body.dx - 42 * s, feet.dy - 3 * s)
-      ..lineTo(body.dx + 42 * s, feet.dy - 3 * s)
+      ..lineTo(body.dx - 42 * s * bodyScale, feet.dy - 3 * s)
+      ..lineTo(body.dx + 42 * s * bodyScale, feet.dy - 3 * s)
       ..lineTo(body.dx + 22 * s, body.dy)
       ..close();
     canvas.drawPath(dress, Paint()..color = coat);
 
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: body + Offset(0, -24 * s), width: 36 * s, height: 48 * s),
+        Rect.fromCenter(center: body + Offset(0, -24 * s * bodyScale), width: 36 * s * bodyScale, height: 48 * s * bodyScale),
         Radius.circular(12 * s),
       ),
       Paint()..color = coat,
     );
 
-    canvas.drawCircle(head, 21 * s, Paint()..color = skin);
+    canvas.drawCircle(head, (20 + (variant % 3) * 2) * s, Paint()..color = skin);
     canvas.drawOval(
-      Rect.fromCenter(center: head + Offset(0, -10 * s), width: 43 * s, height: 27 * s),
+      Rect.fromCenter(center: head + Offset(0, -10 * s), width: (43 + variant * 1.5) * s, height: 27 * s),
       Paint()..color = hair,
     );
 
