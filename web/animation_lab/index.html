@@ -21,7 +21,7 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}button{border:1px solid #394252;background:#1c2430;color:#f4f0e8;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}button:hover{background:#263142}.primary{background:#efe4c5;color:#19150f;border-color:#efe4c5}
 .metric{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #242b38}.metric:last-child{border:0}.ok{color:var(--green)}.warn{color:#e8b86b}
 .timeline{display:flex;flex-direction:column;gap:6px;margin-top:10px}.beat{display:grid;grid-template-columns:42px 58px 1fr 54px;gap:8px;align-items:center;background:#0d121b;border:1px solid #202938;border-radius:9px;padding:7px 8px;font-size:11px}.beat.active{border-color:#d9b96e;background:#1a1a17}.beat.done{opacity:.58}.beat .n{color:#788496}.beat .type{font-weight:800;color:var(--gold)}.beat .dur{text-align:right;color:#8490a1}
-.small{font-size:12px;color:var(--muted)}.world-controls{margin-top:6px}.world.active{border-color:#e8c77a;background:#2a251a;color:#f3d88d}code{color:#d9c28a}.accept{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.accept div{padding:8px 10px;border-radius:9px;background:#0d121b;border:1px solid #202938}.accept b{display:block;font-size:11px}.accept span{font-size:11px;color:#9aa5b5}
+.small{font-size:12px;color:var(--muted)}.scene-context{margin-top:10px;padding:10px 12px;border:1px solid #2d3747;border-radius:10px;background:#0d121b;display:flex;gap:8px;align-items:baseline}.scene-context b{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.06em}.scene-context span{font-size:12px;color:#d4dae3}.world-controls{margin-top:6px}.world.active{border-color:#e8c77a;background:#2a251a;color:#f3d88d}code{color:#d9c28a}.accept{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.accept div{padding:8px 10px;border-radius:9px;background:#0d121b;border:1px solid #202938}.accept b{display:block;font-size:11px}.accept span{font-size:11px;color:#9aa5b5}
 @media(max-width:800px){.grid{grid-template-columns:1fr}header{position:relative}.stage{max-height:none}}
 </style>
 </head>
@@ -118,6 +118,10 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
   <path d="M40 230 L102 180 L165 230" fill="#45403c"/>
   <rect x="80" y="290" width="42" height="55" fill="#e1c978"/>
 </g>
+<g id="worldPark" opacity="0"><rect width="450" height="585" fill="#b7cba0"/><path d="M0 515 Q120 445 225 500 Q340 545 450 470 V585 H0Z" fill="#668258"/><path d="M225 585 Q225 515 285 430 Q305 400 325 370" fill="none" stroke="#d3bc8e" stroke-width="48"/><circle cx="75" cy="185" r="52" fill="#55784d"/><circle cx="385" cy="205" r="62" fill="#4f7149"/><path d="M25 410h400" stroke="#8c765b" stroke-width="7"/></g>
+<g id="worldStreet" opacity="0"><rect width="450" height="585" fill="#c4c9bd"/><rect y="430" width="450" height="155" fill="#686b6a"/><path d="M0 475h450M0 535h450" stroke="#d9d2b8" stroke-width="5" stroke-dasharray="26 18"/><rect x="30" y="170" width="110" height="260" fill="#8c7768"/><rect x="310" y="145" width="105" height="285" fill="#765f55"/><rect x="55" y="205" width="55" height="60" fill="#d8ca8d"/><rect x="335" y="180" width="52" height="58" fill="#d8ca8d"/></g>
+<g id="worldCafeteria" opacity="0"><rect width="450" height="585" fill="#d5c0a5"/><rect y="475" width="450" height="110" fill="#6d5849"/><rect x="42" y="185" width="145" height="26" rx="8" fill="#6a4935"/><rect x="55" y="211" width="14" height="145" fill="#49352b"/><rect x="160" y="211" width="14" height="145" fill="#49352b"/><circle cx="105" cy="155" r="34" fill="#e6d5a8"/><circle cx="345" cy="170" r="48" fill="#7c5c46"/><rect x="265" y="225" width="130" height="18" rx="7" fill="#754f38"/></g>
+<g id="worldAirplane" opacity="0"><rect width="450" height="585" fill="#cfd9df"/><rect x="38" y="145" width="374" height="290" rx="28" fill="#e9ecee" stroke="#9aa5ad" stroke-width="6"/><path d="M70 205h310M70 385h310" stroke="#b1bbc1" stroke-width="5"/><g fill="#87a9bd"><rect x="92" y="235" width="62" height="55" rx="10"/><rect x="194" y="235" width="62" height="55" rx="10"/><rect x="296" y="235" width="62" height="55" rx="10"/></g><path d="M80 330h290" stroke="#a5adb2" stroke-width="12"/></g>
 <g id="carriageClip" clip-path="url(#windowClip)">
 <g id="carriage" opacity="0" transform="translate(470 365) scale(1.18)">
   <rect x="-70" y="-34" width="110" height="50" rx="13" fill="#4e3029"/>
@@ -169,13 +173,13 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 <div id="caption" class="caption"><div class="card"><div id="captionKind" class="kind"></div><div id="captionText"></div></div></div>
 <div class="hud"><span id="actionHud">INITIALIZING</span><span id="clockHud">0.0s</span></div>
 </div>
-<div class="controls"><button class="primary" id="play">▶ Play scene</button><button id="pause">Ⅱ Pause</button><button id="restart">↺ Restart</button></div><div class="controls world-controls">
+<div class="controls"><button class="primary" id="play">▶ Play scene</button><button id="pause">Ⅱ Pause</button><button id="restart">↺ Restart</button></div><div class="scene-context" id="sceneContext"><b>Scene resolver</b><span id="sceneContextText">Detecting setting…</span></div><div class="controls world-controls">
 <button class="world active" data-world="room">🏠 Room</button>
 <button class="world" data-world="garden">🌳 Garden</button>
 <button class="world" data-world="house">🏡 House</button>
 <button class="world" data-world="road">🛣️ Road</button>
 </div>
-<p class="small">Animation is tested separately from AI imagery. World objects are semantic assets the story can request: house, garden, trees, window, furniture, carriage, road and other props.</p>
+<p class="small">Animation is tested separately from AI imagery. The scene resolver reads narrative semantics and chooses a setting plus interior/exterior zones: house, garden, park, road, street, cafeteria, airplane and more.</p>
 </section>
 
 <aside class="panel">
@@ -227,12 +231,42 @@ const beats=[
 
 let current=0,playing=false,start=0,elapsed=0,raf=0;
 const worldButtons=[...document.querySelectorAll(".world")];
+const WORLD_IDS=["worldGarden","worldHouse","worldRoad","worldPark","worldStreet","worldCafeteria","worldAirplane"];
 function setWorld(world){
-  ["worldGarden","worldHouse","worldRoad"].forEach(id=>$(id).setAttribute("opacity",id==="world"+world.charAt(0).toUpperCase()+world.slice(1)? "1":"0"));
-  worldButtons.forEach(b=>b.classList.toggle("active",b.dataset.world===world));
+ WORLD_IDS.forEach(id=>$(id).setAttribute("opacity",id.replace("world","").toLowerCase()===world?"1":"0"));
+ worldButtons.forEach(b=>b.classList.toggle("active",b.dataset.world===world));
 }
 worldButtons.forEach(b=>b.addEventListener("click",()=>setWorld(b.dataset.world)));
-setWorld("room");
+
+const ENVIRONMENTS={
+ house:{label:"House",interior:"room",exterior:"road",props:["window","furniture","carriage"]},
+ garden:{label:"Garden",interior:"garden",exterior:"garden",props:["trees","path","flowers"]},
+ park:{label:"Park",interior:"park",exterior:"park",props:["trees","path","benches"]},
+ road:{label:"Road",interior:"road",exterior:"road",props:["road","carriage"]},
+ street:{label:"Street",interior:"street",exterior:"street",props:["buildings","road"]},
+ cafeteria:{label:"Cafeteria",interior:"cafeteria",exterior:"street",props:["tables","chairs","counter"]},
+ airplane:{label:"Airplane",interior:"airplane",exterior:"airplane",props:["seats","windows"]},
+ room:{label:"Room",interior:"room",exterior:"garden",props:["furniture","window"]}
+};
+function resolveEnvironment(text){
+ const rules=[
+  ["airplane",/\b(airplane|aeroplane|plane|flight|cockpit|cabin|boarding|pilot|airport)\b/],
+  ["cafeteria",/\b(cafeteria|cafe|coffee shop|restaurant|dining hall|counter|waiter|waitress|menu)\b/],
+  ["park",/\b(park|playground|picnic|bench|fountain)\b/],
+  ["garden",/\b(garden|yard|orchard|lawn|flowers|hedge)\b/],
+  ["street",/\b(street|avenue|sidewalk|town|shopfront|crosswalk)\b/],
+  ["road",/\b(road|highway|carriage|coach|wagon|horse-drawn)\b/],
+  ["house",/\b(house|home|dining-room|dining room|bedroom|parlor|parlour|window|chair|family sat|room)\b/]
+ ];
+ for(const [kind,re] of rules) if(re.test(text.toLowerCase())) return ENVIRONMENTS[kind];
+ return ENVIRONMENTS.room;
+}
+const sceneEnvironment=resolveEnvironment(beats.map(b=>b.text).join(" "));
+function applyResolvedEnvironment(){
+ setWorld(sceneEnvironment.interior);
+ $("sceneContextText").textContent=sceneEnvironment.label+" · interior: "+sceneEnvironment.interior+" · exterior: "+sceneEnvironment.exterior+" · props: "+sceneEnvironment.props.join(", ");
+}
+applyResolvedEnvironment();
 
 const initial={
  eliz:{x:188,ground:581,hipY:-55,lean:0,head:0,pose:"sit"},
@@ -378,8 +412,7 @@ function setCaption(b){
 }
 function enterBeat(i){
  current=i;
- if(i===0)setWorld("room");
- else if(i===6||i===7)setWorld("room");
+ applyResolvedEnvironment();
  setCaption(beats[i]);
  beats.forEach((_,n)=>{const el=$("beat"+n);el.classList.toggle("active",n===i);el.classList.toggle("done",n<i);});
  $("actionHud").textContent=beats[i].label+" · "+(beats[i].type==="read"?"NARRATIVE":"ACTING");
