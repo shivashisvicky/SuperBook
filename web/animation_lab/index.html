@@ -38,6 +38,7 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
   <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d8d0bf"/><stop offset="1" stop-color="#b9ad99"/></linearGradient>
   <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#725e4e"/><stop offset="1" stop-color="#46382f"/></linearGradient>
   <linearGradient id="window" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#9fb9c4"/><stop offset="1" stop-color="#d5d6c8"/></linearGradient>
+  <clipPath id="windowClip"><rect x="293" y="126" width="103" height="318" rx="3"/></clipPath>
   <filter id="soft"><feGaussianBlur stdDeviation="3"/></filter>
 </defs>
 <rect width="450" height="800" fill="url(#wall)"/>
@@ -45,6 +46,14 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 <path d="M0 585h450" stroke="#3b3029" stroke-width="5"/>
 <rect x="282" y="115" width="125" height="340" rx="5" fill="#5c4436"/>
 <rect x="293" y="126" width="103" height="318" rx="3" fill="url(#window)"/>
+<g id="windowExterior" clip-path="url(#windowClip)">
+  <rect x="293" y="126" width="103" height="318" fill="#9fb9c4"/>
+  <circle cx="365" cy="175" r="26" fill="#eee5c9" opacity=".75"/>
+  <path d="M293 370 Q330 330 360 365 Q380 345 396 365 V444 H293Z" fill="#6e7f5e"/>
+  <path d="M293 412 Q340 382 396 405 V444 H293Z" fill="#554e47"/>
+  <circle cx="310" cy="305" r="34" fill="#526b4d" opacity=".85"/>
+  <circle cx="390" cy="290" r="40" fill="#5a7250" opacity=".8"/>
+</g>
 <path d="M344.5 126v318M293 285h103" stroke="#5c4436" stroke-width="6"/>
 <path d="M305 420q42-25 81 0" stroke="#e6ded0" stroke-width="9" fill="none"/>
 <rect x="55" y="468" width="175" height="24" rx="8" fill="#5b3e2f"/>
@@ -82,7 +91,7 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
   <path d="M40 230 L102 180 L165 230" fill="#45403c"/>
   <rect x="80" y="290" width="42" height="55" fill="#e1c978"/>
 </g>
-<g id="carriage" opacity="0" transform="translate(500 420)">
+<g id="carriage" opacity="0" clip-path="url(#windowClip)" transform="translate(500 330)">
   <rect x="-95" y="-34" width="90" height="43" rx="12" fill="#4e3029"/>
   <path d="M-82-34v-26h62v26" fill="#6b4739"/>
   <circle id="wheelA" cx="-70" cy="16" r="13" fill="#252326"/><circle id="wheelB" cx="-23" cy="16" r="13" fill="#252326"/>
@@ -183,7 +192,7 @@ setWorld("room");
 const initial={
  eliz:{x:188,ground:581,hipY:-55,lean:0,head:0,pose:"sit"},
  jane:{x:108,ground:581,hipY:-55,lean:0,head:0,pose:"sit"},
- carriage:{x:500,opacity:0}
+ carriage:{x:500,y:330,opacity:0,wheelTurn:0}
 };
 let state=JSON.parse(JSON.stringify(initial));
 
@@ -268,7 +277,7 @@ function drawActor(prefix,a){
 }
 function render(){
  drawActor("eliz",state.eliz);drawActor("jane",state.jane);
- $("carriage").setAttribute("transform","translate("+state.carriage.x+" 420)");
+ $("carriage").setAttribute("transform","translate("+state.carriage.x+" "+state.carriage.y+")");
  $("carriage").setAttribute("opacity",state.carriage.opacity);
  $("wheelA").setAttribute("transform","rotate("+state.carriage.wheelTurn+" -70 16)");
  $("wheelB").setAttribute("transform","rotate("+state.carriage.wheelTurn+" -23 16)");
@@ -306,13 +315,13 @@ function sample(index,q){
    A.pose="look";A.ground=581;A.hipY=-78;A.x=283;A.head=lerp(-8,-38,e);A.lean=lerp(2,7,e);A.reach=e;
    J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=lerp(-8,-28,e);
  }else if(index===6){
-   A.pose="look";A.ground=581;A.hipY=-78;A.x=283;A.head=-38;A.lean=7;A.reach=1;
-   J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=-28;
-   o.carriage={x:lerp(455,395,e),opacity:lerp(0,1,e),wheelTurn:e*720};
+   A.pose="look";A.ground=581;A.hipY=-78;A.x=283;A.head=-38;A.lean=7;A.reach=0;
+   J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=lerp(-28,-42,e);
+   o.carriage={x:lerp(470,345,e),y:330,opacity:lerp(0,1,e),wheelTurn:e*720};
  }else{
-   A.pose="look";A.ground=581;A.hipY=-78;A.x=283;A.head=-38;A.lean=7;A.reach=1;
-   J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=-28;
-   o.carriage={x:395,opacity:1,wheelTurn:720};
+   A.pose="look";A.ground=581;A.hipY=-78;A.x=283;A.head=-38;A.lean=7;A.reach=0;
+   J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=-42;
+   o.carriage={x:345,y:330,opacity:1,wheelTurn:720};
  }
  return o;
 }
@@ -325,7 +334,7 @@ function setCaption(b){
 function enterBeat(i){
  current=i;
  if(i===0)setWorld("room");
- else if(i===6||i===7)setWorld("road");
+ else if(i===6||i===7)setWorld("room");
  setCaption(beats[i]);
  beats.forEach((_,n)=>{const el=$("beat"+n);el.classList.toggle("active",n===i);el.classList.toggle("done",n<i);});
  $("actionHud").textContent=beats[i].label+" · "+(beats[i].type==="read"?"NARRATIVE":"ACTING");
