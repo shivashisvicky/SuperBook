@@ -127,7 +127,7 @@ class _LocalStoryPainter extends CustomPainter {
         canvas,
         Offset(x, size.height * .69),
         scale,
-        (progress + i * .18) % 1,
+        phaseProgress,
         i,
         action,
         actionProgress: phaseProgress,
@@ -383,8 +383,9 @@ class _LocalStoryPainter extends CustomPainter {
     final walk = action == 'walk';
     final reach = action == 'reach';
     final bob = math.sin(phase * math.pi * 4) * (walk ? 5 : 1.5) * s;
-    final body = feet + Offset(0, -88 * s + bob);
-    final head = body + Offset((action == 'look' ? math.sin(act * math.pi) * 8 : 0) * s, -65 * s);
+    final bodyLean = action == 'look' ? math.sin(act * math.pi) * 10 * s : 0;
+    final body = feet + Offset(bodyLean, -88 * s + bob);
+    final head = body + Offset((action == 'look' ? math.sin(act * math.pi) * 22 : 0) * s, -65 * s);
 
     final coat = index == 0 ? const Color(0xFF6F4050) : const Color(0xFF4B596D);
     final hair = index == 0 ? const Color(0xFF4A3027) : const Color(0xFF2F2927);
@@ -426,8 +427,16 @@ class _LocalStoryPainter extends CustomPainter {
       ..strokeWidth = 11 * s
       ..strokeCap = StrokeCap.round;
 
-    final leftAngle = reach ? -1.15 - .55 * act : -.35 + swing * .25;
-    final rightAngle = reach ? .35 + .85 * act : .35 - swing * .25;
+    final leftAngle = reach
+        ? -1.15 - .55 * act
+        : action == 'talk'
+            ? -.85 + swing * .65
+            : -.35 + swing * .25;
+    final rightAngle = reach
+        ? .35 + .85 * act
+        : action == 'talk'
+            ? .85 - swing * .65
+            : .35 - swing * .25;
     _arm(canvas, body + Offset(-16 * s, -18 * s), leftAngle, 40 * s, armPaint);
     _arm(canvas, body + Offset(16 * s, -18 * s), rightAngle, 40 * s, armPaint);
 
