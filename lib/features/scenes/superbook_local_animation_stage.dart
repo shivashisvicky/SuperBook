@@ -162,6 +162,10 @@ class _LocalStoryPainter extends CustomPainter {
       _paintCharacter(canvas, Offset(x, size.height * .69), scale, phaseProgress, i, action, actionProgress: phaseProgress);
     }
 
+    if (currentAction == 'carriage' && !narrativePhase) {
+      _paintCarriage(canvas, size, phaseProgress);
+    }
+
     if (_rain) _paintRain(canvas, size);
     if (_warmLight) _paintWarmLight(canvas, size, t);
     if (narrativePhase) {
@@ -214,6 +218,7 @@ class _LocalStoryPainter extends CustomPainter {
         t.contains('speak') || t.contains('tell') || t.contains('asked') ||
         t.contains('replied') || t.contains('answer') || t.contains('conversation') ||
         t.contains('love') || t.contains('danger') || t.contains('objection')) { return 'talk'; }
+    if (t.contains('carriage') || t.contains('horse') || t.contains('coach')) { return 'carriage'; }
     if (t.contains('left') || t.contains('leave') || t.contains('leaving') ||
         t.contains('depart') || t.contains('departed') || t.contains('went') ||
         t.contains('walk') || t.contains('approach') || t.contains('cross') ||
@@ -226,7 +231,7 @@ class _LocalStoryPainter extends CustomPainter {
     if (t.contains('walk') || t.contains('approach') || t.contains('cross') ||
         t.contains('enter') || t.contains('step') || t.contains('move') ||
         t.contains('leave') || t.contains('arrive') || t.contains('go ')) { return 'walk'; }
-    if (t.contains('carriage') || t.contains('horse') || t.contains('door') || t.contains('window')) { return 'look'; }
+    if (t.contains('door') || t.contains('window')) { return 'look'; }
     if (t.contains('reach') || t.contains('open') || t.contains('lift') ||
         t.contains('take') || t.contains('pick') || t.contains('hold') ||
         t.contains('door')) { return 'reach'; }
@@ -248,6 +253,44 @@ class _LocalStoryPainter extends CustomPainter {
     return 'listen';
   }
 
+
+  void _paintCarriage(Canvas canvas, Size size, double progress) {
+    final e = Curves.easeOutCubic.transform(progress.clamp(0.0, 1.0));
+    final x = math.lerp(size.width * 1.08, size.width * .72, e);
+    final y = size.height * .49;
+    final body = Paint()..color = const Color(0xFF5B3425);
+    final trim = Paint()..color = const Color(0xFFD1A45B)..style = PaintingStyle.stroke..strokeWidth = 4;
+    final wheel = Paint()..color = const Color(0xFF242124);
+    canvas.save();
+    canvas.translate(x, y);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(-72, -30, 118, 52),
+        const Radius.circular(10),
+      ),
+      body,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(-63, -22, 100, 31),
+        const Radius.circular(6),
+      ),
+      trim,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(-54, -14, 20, 18),
+      Paint()..color = const Color(0xFF9AB0B8),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(-5, -14, 20, 18),
+      Paint()..color = const Color(0xFF9AB0B8),
+    );
+    canvas.drawCircle(const Offset(-45, 25), 14, wheel);
+    canvas.drawCircle(const Offset(23, 25), 14, wheel);
+    canvas.drawLine(const Offset(-86, -2), const Offset(-72, -2), trim);
+    canvas.drawLine(const Offset(46, -2), const Offset(60, -2), trim);
+    canvas.restore();
+  }
 
   void _paintNarrativeCloud(Canvas canvas, Size size, String narrative) {
     final text = TextPainter(
