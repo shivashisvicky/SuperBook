@@ -237,7 +237,7 @@ class _AnimationLabPainter extends CustomPainter {
     bool walk = false, double look = 0, double reach = 0, double point = 0,
     double liftKey = 0, required double phase,
   }) {
-    final s = math.min(c.getLocalClipBounds()?.width ?? 400, 500) / 430;
+    final s = math.min(c.getLocalClipBounds().width, 500) / 430;
     final swing = math.sin(phase);
     final bob = walk ? math.sin(phase * 2) * 5 * s : 0;
     final body = feet + Offset(0, -92 * s + bob);
