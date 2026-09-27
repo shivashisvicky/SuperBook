@@ -522,10 +522,10 @@ class _LocalStoryPainter extends CustomPainter {
     final act = Curves.easeInOut.transform(actionProgress.clamp(0.0, 1.0));
     final walk = action == 'walk';
     final stand = action == 'stand';
-    final seatedTalk = talk && _indoors;
     final reach = action == 'reach';
     final listen = action == 'listen' || action == 'look';
     final talk = action == 'talk';
+    final seatedTalk = talk && _indoors;
     final bob = math.sin(phase * math.pi * 4) * (walk ? 3.5 : (talk ? 2.2 : 1.0)) * s;
     final lean = stand ? -10 * (1 - act) : action == 'look' ? 4 * act : talk ? math.sin(phase * math.pi * 2) * 2.5 : walk ? 2 : 0;
     const skins = [Color(0xFFF1D9B7),Color(0xFFD7A77D),Color(0xFFC78C69),Color(0xFF9B654B),Color(0xFFE5C09A),Color(0xFFB97858),Color(0xFFF0CBA8),Color(0xFF8D5A43)];
