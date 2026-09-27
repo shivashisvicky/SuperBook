@@ -416,16 +416,6 @@ class _LocalStoryPainter extends CustomPainter {
     final reach = action == 'reach';
     final bob = math.sin(phase * math.pi * 4) * (walk ? 5 : 1.5) * s;
     final double bodyLean = action == 'look' ? math.sin(act * math.pi) * 18 * s : action == 'walk' ? math.sin(act * math.pi) * 5 * s : 0.0;
-    final body = feet + Offset(bodyLean, -88 * s * bodyScale + bob);
-    final head = body + Offset((action == 'look' ? math.sin(act * math.pi) * 30 : 0) * s, -65 * s * bodyScale);
-
-    final dress = Path()
-      ..moveTo(body.dx - 22 * s * bodyScale, body.dy)
-      ..lineTo(body.dx - 42 * s * bodyScale, feet.dy - 3 * s)
-      ..lineTo(body.dx + 42 * s * bodyScale, feet.dy - 3 * s)
-      ..lineTo(body.dx + 22 * s * bodyScale, body.dy)
-      ..close();
-
     const skins = [
       Color(0xFFF1D9B7), Color(0xFFD7A77D), Color(0xFFC78C69),
       Color(0xFF9B654B), Color(0xFFE5C09A), Color(0xFFB97858),
@@ -448,6 +438,15 @@ class _LocalStoryPainter extends CustomPainter {
     final taller = variant == 1 || variant == 5;
     final compact = variant == 2 || variant == 7;
     final bodyScale = taller ? 1.12 : compact ? .90 : 1.0;
+    final body = feet + Offset(bodyLean, -88 * s * bodyScale + bob);
+    final head = body + Offset((action == 'look' ? math.sin(act * math.pi) * 30 : 0) * s, -65 * s * bodyScale);
+
+    final dress = Path()
+      ..moveTo(body.dx - 22 * s * bodyScale, body.dy)
+      ..lineTo(body.dx - 42 * s * bodyScale, feet.dy - 3 * s)
+      ..lineTo(body.dx + 42 * s * bodyScale, feet.dy - 3 * s)
+      ..lineTo(body.dx + 22 * s * bodyScale, body.dy)
+      ..close();
 
     canvas.drawOval(
       Rect.fromCenter(center: feet + Offset(0, 2 * s), width: 58 * s, height: 15 * s),
