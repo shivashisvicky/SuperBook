@@ -38,15 +38,14 @@ class _SuperBookLocalAnimationStageState
   }
 
   int _cycleSeconds() {
-    final words = widget.passage
+    final raw = widget.passage
         .join(' ')
         .replaceFirst(RegExp(r'^\s*\[Illustration\]\s*', caseSensitive: false), '')
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((w) => w.isNotEmpty)
-        .length;
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    final words = raw.isEmpty ? 0 : raw.split(' ').length;
     final beats = math.max(1, (words / 22).ceil());
-    return (beats * 10).clamp(20, 240);
+    return (beats * 15).clamp(30, 300);
   }
 
   @override
@@ -164,11 +163,11 @@ class _LocalStoryPainter extends CustomPainter {
 
   double get _beatProgress => progress * _beats.length;
   int get _beatIndex => math.min(_beats.length - 1, _beatProgress.floor());
-  bool get _isNarrativePhase => (_beatProgress % 1.0) < .60;
+  bool get _isNarrativePhase => (_beatProgress % 1.0) < .67;
 
   double get _phaseProgress {
     final phase = _beatProgress % 1.0;
-    return _isNarrativePhase ? phase / .60 : (phase - .60) / .40;
+    return _isNarrativePhase ? phase / .67 : (phase - .67) / .33;
   }
 
   String get _currentBeat {
@@ -405,9 +404,9 @@ class _LocalStoryPainter extends CustomPainter {
     final walk = action == 'walk';
     final reach = action == 'reach';
     final bob = math.sin(phase * math.pi * 4) * (walk ? 5 : 1.5) * s;
-    final double bodyLean = action == 'look' ? math.sin(act * math.pi) * 10 * s : 0.0;
+    final double bodyLean = action == 'look' ? math.sin(act * math.pi) * 18 * s : action == 'walk' ? math.sin(act * math.pi) * 5 * s : 0.0;
     final body = feet + Offset(bodyLean, -88 * s + bob);
-    final head = body + Offset((action == 'look' ? math.sin(act * math.pi) * 22 : 0) * s, -65 * s);
+    final head = body + Offset((action == 'look' ? math.sin(act * math.pi) * 30 : 0) * s, -65 * s);
 
     final coat = index == 0 ? const Color(0xFF6F4050) : const Color(0xFF4B596D);
     final hair = index == 0 ? const Color(0xFF4A3027) : const Color(0xFF2F2927);
@@ -417,6 +416,10 @@ class _LocalStoryPainter extends CustomPainter {
       Rect.fromCenter(center: feet + Offset(0, 2 * s), width: 58 * s, height: 15 * s),
       Paint()..color = Colors.black.withValues(alpha: .28),
     );
+
+    if (action == 'sit') {
+      feet = feet + Offset(0, 16 * s);
+    }
 
     final dress = Path()
       ..moveTo(body.dx - 22 * s, body.dy)
@@ -449,8 +452,8 @@ class _LocalStoryPainter extends CustomPainter {
       ..strokeWidth = 11 * s
       ..strokeCap = StrokeCap.round;
 
-    final leftAngle = reach ? -1.15 - .55 * act : action == 'talk' ? -.85 + swing * .65 : -.35 + swing * .25;
-    final rightAngle = reach ? .35 + .85 * act : action == 'talk' ? .85 - swing * .65 : .35 - swing * .25;
+    final leftAngle = reach ? -1.15 - .75 * act : action == 'talk' ? -.95 + swing * .85 : -.35 + swing * .25;
+    final rightAngle = reach ? .35 + 1.05 * act : action == 'talk' ? .95 - swing * .85 : .35 - swing * .25;
     _arm(canvas, body + Offset(-16 * s, -18 * s), leftAngle, 40 * s, armPaint);
     _arm(canvas, body + Offset(16 * s, -18 * s), rightAngle, 40 * s, armPaint);
 
