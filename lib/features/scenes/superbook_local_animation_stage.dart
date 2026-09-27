@@ -457,12 +457,6 @@ class _LocalStoryPainter extends CustomPainter {
       feet = feet + Offset(0, 16 * s);
     }
 
-    final dress = Path()
-      ..moveTo(body.dx - 22 * s, body.dy)
-      ..lineTo(body.dx - 42 * s * bodyScale, feet.dy - 3 * s)
-      ..lineTo(body.dx + 42 * s * bodyScale, feet.dy - 3 * s)
-      ..lineTo(body.dx + 22 * s, body.dy)
-      ..close();
     canvas.drawPath(dress, Paint()..color = coat);
 
     canvas.drawRRect(
