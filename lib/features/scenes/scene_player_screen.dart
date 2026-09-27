@@ -159,7 +159,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         scene: widget.scene,
         passage: _chapter.passage,
         characters: widget.book.characters,
-        actionHint: _generated?.plan.actions.join(' ') ?? '',
+        actionHint: '${_generated?.plan.sceneSummary ?? ''} ${_generated?.plan.motion ?? ''} ${_generated?.plan.actions.join(' ') ?? ''} ${_generated?.plan.characters.map((c) => c.action).join(' ') ?? ''}',
       );
 
   Widget _visual(GeneratedScene generated) {
@@ -168,7 +168,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         scene: widget.scene,
         passage: _chapter.passage,
         characters: widget.book.characters,
-        actionHint: generated.plan.actions.join(' '),
+        actionHint: '${generated.plan.sceneSummary} ${generated.plan.motion} ${generated.plan.actions.join(' ')} ${generated.plan.characters.map((c) => c.action).join(' ')}',
       );
     }
 
@@ -215,6 +215,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       if (!mounted) return;
       setState(() {
         _motionLoading = false;
+        _useLocalAnimation = true;
       });
     }
   }
