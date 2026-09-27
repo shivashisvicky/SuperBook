@@ -158,7 +158,7 @@ class _LocalStoryPainter extends CustomPainter {
           ? baseX + (i == 0 ? size.width * .25 : -size.width * .18) * travel
           : baseX;
       final scale = math.min(size.width, size.height) / 430;
-      final action = narrativePhase ? 'idle' : (i == 0 ? currentAction : _secondaryAction(beat));
+      final action = i == 0 ? currentAction : _secondaryAction(beat);
       _paintCharacter(canvas, Offset(x, size.height * .69), scale, phaseProgress, i, action, actionProgress: phaseProgress);
     }
 
@@ -522,10 +522,12 @@ class _LocalStoryPainter extends CustomPainter {
     final act = Curves.easeInOut.transform(actionProgress.clamp(0.0, 1.0));
     final walk = action == 'walk';
     final stand = action == 'stand';
+    final seatedTalk = talk && _indoors;
     final reach = action == 'reach';
     final listen = action == 'listen' || action == 'look';
-    final bob = math.sin(phase * math.pi * 4) * (walk ? 3.5 : 1.0) * s;
-    final lean = stand ? -10 * (1 - act) : action == 'look' ? 4 * act : walk ? 2 : 0;
+    final talk = action == 'talk';
+    final bob = math.sin(phase * math.pi * 4) * (walk ? 3.5 : (talk ? 2.2 : 1.0)) * s;
+    final lean = stand ? -10 * (1 - act) : action == 'look' ? 4 * act : talk ? math.sin(phase * math.pi * 2) * 2.5 : walk ? 2 : 0;
     const skins = [Color(0xFFF1D9B7),Color(0xFFD7A77D),Color(0xFFC78C69),Color(0xFF9B654B),Color(0xFFE5C09A),Color(0xFFB97858),Color(0xFFF0CBA8),Color(0xFF8D5A43)];
     const coats = [Color(0xFF6F4050),Color(0xFF3E5870),Color(0xFF7A5A3A),Color(0xFF3F6B5B),Color(0xFF7B4E3D),Color(0xFF5C4A73),Color(0xFF596B46),Color(0xFF754B63)];
     const hairs = [Color(0xFF4A3027),Color(0xFF2F2927),Color(0xFF6A422D),Color(0xFF211D1B),Color(0xFF8A5A35),Color(0xFF3A2420),Color(0xFF5A3A28),Color(0xFF2B2423)];
@@ -546,7 +548,7 @@ class _LocalStoryPainter extends CustomPainter {
     final rightKnee = rightHip + Offset(3 * s - stride * .35, 34 * s - liftR);
     final leftFoot = Offset(feet.dx - 13 * s + stride, feet.dy - liftL);
     final rightFoot = Offset(feet.dx + 13 * s - stride, feet.dy - liftR);
-    if (action == 'sit') {
+    if (action == 'sit' || seatedTalk) {
       final seatedY = feet.dy - 4 * s;
       canvas.drawLine(hip + Offset(-10 * s, 0), Offset(feet.dx - 31 * s, seatedY - 34 * s), leg);
       canvas.drawLine(Offset(feet.dx - 31 * s, seatedY - 34 * s), Offset(feet.dx - 31 * s, seatedY), leg);
@@ -568,6 +570,17 @@ class _LocalStoryPainter extends CustomPainter {
     final eyeShift = listen ? 3 * s : 0.0;
     canvas.drawCircle(head + Offset(-7 * s + eyeShift, 1 * s), 1.5 * s, eye);
     canvas.drawCircle(head + Offset(7 * s + eyeShift, 1 * s), 1.5 * s, eye);
+    if (talk) {
+      final mouthOpen = .8 + .8 * ((math.sin(phase * math.pi * 6) + 1) / 2);
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: head + Offset(0, 9 * s),
+          width: 7 * s,
+          height: mouthOpen * 5 * s,
+        ),
+        Paint()..color = const Color(0xFF6B3E3B),
+      );
+    }
     final armPaint = Paint()..color = skin..strokeWidth = 10 * s..strokeCap = StrokeCap.round;
     Offset leftHand, rightHand;
     if (reach) {
@@ -576,6 +589,13 @@ class _LocalStoryPainter extends CustomPainter {
     } else if (stand) {
       leftHand = shoulder + Offset(-28 * s, 68 * s + 8 * s * (1 - act));
       rightHand = shoulder + Offset(28 * s, 68 * s + 8 * s * (1 - act));
+    } else if (talk) {
+      final gesture = math.sin(phase * math.pi * 2);
+      leftHand = shoulder + Offset(-30 * s - gesture * 7 * s, 53 * s - math.max(0, gesture) * 12 * s);
+      rightHand = shoulder + Offset(30 * s + gesture * 9 * s, 50 * s - math.max(0, -gesture) * 12 * s);
+    } else if (listen) {
+      leftHand = shoulder + Offset(-28 * s, 60 * s);
+      rightHand = shoulder + Offset(28 * s, 55 * s - math.sin(phase * math.pi * 2) * 4 * s);
     } else {
       leftHand = shoulder + Offset(-30 * s - swing * 10 * s, 58 * s);
       rightHand = shoulder + Offset(30 * s + swing * 10 * s, 58 * s);
