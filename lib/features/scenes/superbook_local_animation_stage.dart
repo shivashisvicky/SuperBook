@@ -16,6 +16,7 @@ class SuperBookLocalAnimationStage extends StatefulWidget {
   final Scene scene;
   final List<String> passage;
   final List<BookCharacter> characters;
+  final String actionHint;
 
   @override
   State<SuperBookLocalAnimationStage> createState() =>
