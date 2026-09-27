@@ -31,7 +31,7 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 <div class="grid">
 <section class="panel">
 <h1>One complete story moment</h1>
-<p>This is no longer a generic animation loop. It is a tiny offline scene engine: narrative beat → authored action clip → weight shift → prop interaction → next beat.</p>
+<p>This is a self-contained story scene engine: narrative beat → character reaction → full-body action → environmental interaction → visible prop movement → next beat.</p>
 <div class="stage" id="stage">
 <svg id="scene" viewBox="0 0 450 800" aria-label="Animated literary scene">
 <defs>
@@ -79,6 +79,9 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
   <circle cx="397" cy="401" r="5" fill="#c88b73"/>
 </g>
 <path d="M330 126v318M250 285h160" stroke="#5c4436" stroke-width="6"/>
+<path d="M250 444h160" stroke="#2f2925" stroke-width="13"/>
+<path d="M250 126h160" stroke="#765845" stroke-width="13"/>
+<path d="M250 126v318M410 126v318" stroke="#765845" stroke-width="13"/>
 <path d="M262 420q74-25 136 0" stroke="#e6ded0" stroke-width="9" fill="none"/>
 <rect x="55" y="468" width="175" height="24" rx="8" fill="#5b3e2f"/>
 <rect x="95" y="492" width="9" height="75" fill="#483229"/><rect x="181" y="492" width="9" height="75" fill="#483229"/>
@@ -116,16 +119,19 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
   <rect x="80" y="290" width="42" height="55" fill="#e1c978"/>
 </g>
 <g id="carriageClip" clip-path="url(#windowClip)">
-<g id="carriage" opacity="0" transform="translate(500 365) scale(1.18)">
-  <rect x="-120" y="-34" width="112" height="50" rx="13" fill="#4e3029"/>
-  <path d="M-108-34v-31h78v31" fill="#6b4739"/>
-  <path d="M-101-31h62" stroke="#a77b56" stroke-width="4"/>
-  <circle id="wheelA" cx="-91" cy="20" r="16" fill="#252326"/><circle id="wheelB" cx="-28" cy="20" r="16" fill="#252326"/>
-  <circle cx="-91" cy="20" r="6" fill="#9b8565"/><circle cx="-28" cy="20" r="6" fill="#9b8565"/>
-  <path d="M-124 12h-34" stroke="#252326" stroke-width="6"/>
-  <path d="M-158 12q-12-21-27-5q-9 11 2 25h25" fill="#6d4b39"/>
-  <circle cx="-187" cy="21" r="10" fill="#4b342b"/>
-  <path d="M-201 11l-12-8M-201 31l-12 8" stroke="#4b342b" stroke-width="6" stroke-linecap="round"/>
+<g id="carriage" opacity="0" transform="translate(470 365) scale(1.18)">
+  <rect x="-70" y="-34" width="110" height="50" rx="13" fill="#4e3029"/>
+  <path d="M-62-34v-31h72v31" fill="#6b4739"/>
+  <path d="M-56-31h57" stroke="#b88a5d" stroke-width="4"/>
+  <rect x="-51" y="-25" width="35" height="22" rx="4" fill="#2e3940" opacity=".9"/>
+  <path d="M-69-15h108" stroke="#3a2521" stroke-width="5"/>
+  <circle id="wheelA" cx="-48" cy="20" r="17" fill="#252326"/><circle id="wheelB" cx="15" cy="20" r="17" fill="#252326"/>
+  <circle cx="-48" cy="20" r="6" fill="#b09262"/><circle cx="15" cy="20" r="6" fill="#b09262"/>
+  <path d="M-68 10h-45" stroke="#252326" stroke-width="6" stroke-linecap="round"/>
+  <path d="M-112 11q-12-23-30-7q-10 10 1 27h29" fill="#6d4b39"/>
+  <circle cx="-144" cy="22" r="11" fill="#4b342b"/>
+  <path d="M-159 12l-13-8M-159 32l-13 9" stroke="#4b342b" stroke-width="6" stroke-linecap="round"/>
+  <path d="M-131 3q18-9 36 3" fill="none" stroke="#9c6f4d" stroke-width="4"/>
 </g>
 </g>
 <g opacity=".8">
@@ -198,7 +204,7 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 <div><b>05 · Timing</b><span>Read time ≠ action time</span></div>
 <div><b>06 · Props</b><span>Actions have visible targets</span></div>
 </div>
-<p class="small" style="margin-top:12px">This build uses explicit key poses, a weight-shift stand, two-segment legs, planted feet, spatial blocking, gait cycles, target-based reach and an independently animated carriage. Reader integration remains separate until this scene earns the test.</p>
+<p class="small" style="margin-top:12px">This build uses explicit key poses, a weight-shift stand, planted feet, alternating gait, target-based reach, window blocking and an independently animated carriage with visible wheels, body and horse. Reader integration remains separate until this scene earns the test.</p>
 </aside>
 </div>
 </main>
@@ -318,8 +324,8 @@ function render(){
  drawActor("eliz",state.eliz);drawActor("jane",state.jane);
  $("carriage").setAttribute("transform","translate("+state.carriage.x+" "+state.carriage.y+") scale(1.18)");
  $("carriage").setAttribute("opacity",state.carriage.opacity);
- $("wheelA").setAttribute("transform","rotate("+state.carriage.wheelTurn+" -70 16)");
- $("wheelB").setAttribute("transform","rotate("+state.carriage.wheelTurn+" -23 16)");
+ $("wheelA").setAttribute("transform","rotate("+state.carriage.wheelTurn+" -48 20)");
+ $("wheelB").setAttribute("transform","rotate("+state.carriage.wheelTurn+" 15 20)");
 }
 function baseActors(){
  return {
@@ -356,11 +362,11 @@ function sample(index,q){
  }else if(index===6){
    A.pose="look";A.ground=581;A.hipY=-78;A.x=283;A.head=-38;A.lean=7;A.reach=0;
    J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=lerp(-28,-42,e);
-   o.carriage={x:lerp(555,485,e),y:365,opacity:lerp(0,1,e),wheelTurn:e*900};
+   o.carriage={x:lerp(470,360,e),y:365,opacity:lerp(0,1,e),wheelTurn:e*1080};
  }else{
    A.pose="look";A.ground=581;A.hipY=-78;A.x=283;A.head=-38;A.lean=7;A.reach=0;
    J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=-42;
-   o.carriage={x:485,y:365,opacity:1,wheelTurn:900};
+   o.carriage={x:360,y:365,opacity:1,wheelTurn:1080};
  }
  return o;
 }
