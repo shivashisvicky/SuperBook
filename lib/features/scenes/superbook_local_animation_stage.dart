@@ -129,7 +129,8 @@ class _LocalStoryPainter extends CustomPainter {
     final narrativePhase = _isNarrativePhase;
     final phaseProgress = _phaseProgress;
     final currentAction = _action(beat);
-    final count = math.min(2, math.max(1, characters.length));
+    final groupScene = _text.contains(' they ') || _text.contains('gentlemen') || _text.contains('family') || _text.contains('women') || _text.contains('girls') || _text.contains('people');
+    final count = groupScene ? 2 : math.min(2, math.max(1, characters.length));
     for (var i = 0; i < count; i++) {
       final baseX = size.width * (i == 0 ? .30 : .70);
       final travel = narrativePhase ? 0.0 : Curves.easeInOut.transform(phaseProgress);
@@ -189,6 +190,15 @@ class _LocalStoryPainter extends CustomPainter {
 
   String _action(String beat) {
     final t = '$beat $actionHint'.toLowerCase();
+    if (t.contains('say') || t.contains('said') || t.contains('says') || t.contains('spoke') ||
+        t.contains('speak') || t.contains('tell') || t.contains('asked') ||
+        t.contains('replied') || t.contains('answer') || t.contains('conversation') ||
+        t.contains('love') || t.contains('danger') || t.contains('objection')) { return 'talk'; }
+    if (t.contains('left') || t.contains('leave') || t.contains('leaving') ||
+        t.contains('depart') || t.contains('departed') || t.contains('went') ||
+        t.contains('walk') || t.contains('approach') || t.contains('cross') ||
+        t.contains('enter') || t.contains('step') || t.contains('move') ||
+        t.contains('arrive') || t.contains('go ') || t.contains('did not see')) { return 'walk'; }
     if (t.contains('attention') || t.contains('drawn to') || t.contains('look') ||
         t.contains('notice') || t.contains('see') || t.contains('watch') ||
         t.contains('window') || t.contains('sound') || t.contains('hear') ||
@@ -196,12 +206,13 @@ class _LocalStoryPainter extends CustomPainter {
     if (t.contains('walk') || t.contains('approach') || t.contains('cross') ||
         t.contains('enter') || t.contains('step') || t.contains('move') ||
         t.contains('leave') || t.contains('arrive') || t.contains('go ')) { return 'walk'; }
+    if (t.contains('carriage') || t.contains('horse') || t.contains('door') || t.contains('window')) { return 'look'; }
     if (t.contains('reach') || t.contains('open') || t.contains('lift') ||
         t.contains('take') || t.contains('pick') || t.contains('hold') ||
         t.contains('door')) { return 'reach'; }
     if (t.contains('sit') || t.contains('sitting')) { return 'sit'; }
     if (t.contains('stand') || t.contains('rise')) { return 'stand'; }
-    if (t.contains('say') || t.contains('speak') || t.contains('tell') ||
+    if (t.contains('said') || t.contains('says') || t.contains('speak') || t.contains('tell') ||
         t.contains('ask') || t.contains('reply') || t.contains('answer') ||
         t.contains('conversation')) { return 'talk'; }
     return 'look';
@@ -273,6 +284,12 @@ class _LocalStoryPainter extends CustomPainter {
   }
 
   void _paintRoom(Canvas canvas, Size size, double t) {
+    final text = _text;
+    final drawingRoom = text.contains('drawing room') || text.contains('drawing-room') || text.contains('parlor');
+    final diningRoom = text.contains('dining room') || text.contains('dining-room') || text.contains('dinner');
+    final windowScene = text.contains('window') || text.contains('garden');
+    final hallScene = text.contains('hall') || text.contains('corridor') || text.contains('stairs');
+
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height * .68),
       Paint()..color = const Color(0xFFE6DDCC),
@@ -283,7 +300,7 @@ class _LocalStoryPainter extends CustomPainter {
     );
 
     final door = Rect.fromCenter(
-      center: Offset(size.width * .5, size.height * .43),
+      center: Offset(size.width * (hallScene ? .52 : .5), size.height * .43),
       width: size.width * .34,
       height: size.height * .55,
     );
@@ -306,6 +323,39 @@ class _LocalStoryPainter extends CustomPainter {
       RRect.fromRectAndRadius(table, const Radius.circular(5)),
       Paint()..color = const Color(0xFF6D4D39),
     );
+
+    if (drawingRoom || diningRoom) {
+      final chairPaint = Paint()..color = const Color(0xFF7B5A43);
+      for (final x in [size.width * .18, size.width * .82]) {
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(center: Offset(x, size.height * .61), width: size.width * .14, height: size.height * .13),
+            const Radius.circular(6),
+          ),
+          chairPaint,
+        );
+        canvas.drawRect(
+          Rect.fromLTWH(x - size.width * .05, size.height * .65, size.width * .025, size.height * .12),
+          chairPaint,
+        );
+        canvas.drawRect(
+          Rect.fromLTWH(x + size.width * .025, size.height * .65, size.width * .025, size.height * .12),
+          chairPaint,
+        );
+      }
+    }
+
+    if (windowScene) {
+      final window = Rect.fromCenter(
+        center: Offset(size.width * .76, size.height * .31),
+        width: size.width * .22,
+        height: size.height * .23,
+      );
+      canvas.drawRect(window, Paint()..color = const Color(0xFF6E7E72));
+      canvas.drawRect(window.deflate(size.width * .012), Paint()..color = const Color(0xFFD7C39A));
+      canvas.drawLine(window.centerLeft, window.centerRight, Paint()..color = const Color(0xFF76563E)..strokeWidth = 4);
+      canvas.drawLine(window.topCenter, window.bottomCenter, Paint()..color = const Color(0xFF76563E)..strokeWidth = 4);
+    }
 
     if (_warmLight) {
       final pulse = .5 + .5 * math.sin(t * 2);
