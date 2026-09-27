@@ -419,6 +419,13 @@ class _LocalStoryPainter extends CustomPainter {
     final body = feet + Offset(bodyLean, -88 * s * bodyScale + bob);
     final head = body + Offset((action == 'look' ? math.sin(act * math.pi) * 30 : 0) * s, -65 * s * bodyScale);
 
+    final dress = Path()
+      ..moveTo(body.dx - 22 * s * bodyScale, body.dy)
+      ..lineTo(body.dx - 42 * s * bodyScale, feet.dy - 3 * s)
+      ..lineTo(body.dx + 42 * s * bodyScale, feet.dy - 3 * s)
+      ..lineTo(body.dx + 22 * s * bodyScale, body.dy)
+      ..close();
+
     const skins = [
       Color(0xFFF1D9B7), Color(0xFFD7A77D), Color(0xFFC78C69),
       Color(0xFF9B654B), Color(0xFFE5C09A), Color(0xFFB97858),
