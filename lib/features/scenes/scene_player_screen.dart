@@ -251,8 +251,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
                 ],
               ),
             ),
-          if (generated != null && _motionLoading)
-            const SizedBox.shrink(),
           if (generated == null && !_loading && _generationError != null && !_useLocalAnimation)
             Positioned(
               left: 24,
