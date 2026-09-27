@@ -71,8 +71,7 @@ class _LocalStoryPainter extends CustomPainter {
   final List<String> passage;
   final List<BookCharacter> characters;
 
-  String get _text =>
-      (scene.atmosphere + ' ' + scene.moment + ' ' + passage.join(' ')).toLowerCase();
+  String get _text => '${scene.atmosphere} ${scene.moment} ${passage.join(' ')}'.toLowerCase();
 
   bool get _rain =>
       _text.contains('rain') || _text.contains('storm') || _text.contains('wet');
@@ -81,7 +80,7 @@ class _LocalStoryPainter extends CustomPainter {
       _text.contains('night') || _text.contains('dark') || _text.contains('moon');
 
   bool get _indoors {
-    final t = (scene.title + ' ' + scene.moment + ' ' + scene.atmosphere).toLowerCase();
+    final t = '${scene.title} ${scene.moment} ${scene.atmosphere}'.toLowerCase();
     return t.contains('room') ||
         t.contains('hall') ||
         t.contains('inside') ||
