@@ -58,7 +58,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       unawaited(_loadVideo(cached!.videoUrl!));
     }
     if (cached != null) {
-      unawaited(_generateMotion(cached));
     } else {
       unawaited(_generate());
     }
@@ -117,11 +116,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       final cached = _sceneCache.get(_cacheKey);
       if (cached != null && !force) {
         setState(() => _generated = cached);
-        if (cached.hasVideo) {
-          await _loadVideo(cached.videoUrl!);
-        } else {
-          await _generateMotion(cached);
-        }
         return;
       }
 
@@ -140,7 +134,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         _loading = false;
         _generationError = null;
       });
-      unawaited(_generateMotion(generated));
+
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -172,23 +166,17 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       );
     }
 
-    final video = _video;
-    if (video != null && video.value.isInitialized) {
-      return FittedBox(
-        fit: BoxFit.cover,
-        clipBehavior: Clip.hardEdge,
-        child: SizedBox(
-          width: video.value.size.width,
-          height: video.value.size.height,
-          child: VideoPlayer(video),
-        ),
-      );
-    }
-
-    return SuperBookCinematicStage(
-      imageBase64: generated.imageBase64,
-      plan: generated.plan,
-      motionFrames: _motionFrames,
+    return SuperBookLocalAnimationStage(
+      scene: widget.scene,
+      passage: _chapter.passage,
+      characters: widget.book.characters,
+      actionHint: [
+        generated.plan.sceneSummary,
+        generated.plan.motion,
+        ...generated.plan.actions,
+        ...generated.plan.characters.map((c) => c.action),
+      ].join(' '),
+      backgroundImageBase64: generated.imageBase64,
     );
   }
 
@@ -297,26 +285,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
               ),
             ),
           if (generated != null && _motionLoading)
-            const Positioned(
-              left: 16,
-              top: 16,
-              child: SafeArea(
-                bottom: false,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Color(0x99000000),
-                    borderRadius: BorderRadius.all(Radius.circular(999)),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    child: Text(
-                      'Animating the story moment…',
-                      style: TextStyle(fontSize: 11, color: Colors.white70),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox.shrink(),
           if (generated == null && !_loading && _generationError != null && !_useLocalAnimation)
             Positioned(
               left: 24,
