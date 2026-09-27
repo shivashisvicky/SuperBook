@@ -227,12 +227,11 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // Render the local scene immediately while AI generation runs.
           if (generated != null)
             _visual(generated)
-          else if (_useLocalAnimation)
-            _visualLocal()
           else
-            const ColoredBox(color: Color(0xFF05070B)),
+            _visualLocal(),
           if (generated == null && _loading)
             const Center(
               child: Column(
