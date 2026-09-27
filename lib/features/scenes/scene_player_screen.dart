@@ -8,6 +8,7 @@ import '../../services/scene_generation/cloudflare_scene_provider.dart';
 import '../../services/scene_generation/scene_generation_cache.dart';
 import '../../services/scene_generation/scene_generation_provider.dart';
 import 'superbook_cinematic_stage.dart';
+import 'superbook_local_animation_stage.dart';
 
 const _sceneEndpoint = String.fromEnvironment('SUPERBOOK_AI_SCENE_ENDPOINT');
 final _sceneCache = SceneGenerationCache();
@@ -36,6 +37,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   String? _generationError;
   List<GeneratedMotionFrame> _motionFrames = const [];
   bool _motionLoading = false;
+  bool _useLocalAnimation = false;
 
   Chapter get _chapter => widget.book.chapters.firstWhere(
         (chapter) => chapter.id == widget.beat.chapterId,
@@ -91,12 +93,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
     if (_loading) return;
 
     if (_sceneEndpoint.isEmpty) {
-      if (mounted) {
-        setState(() {
-          _generationError =
-              'AI scene endpoint is not configured for this build.';
-        });
-      }
+      if (mounted) setState(() => _useLocalAnimation = true);
       return;
     }
 
@@ -148,7 +145,8 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _generationError = error.toString().replaceFirst('Bad state: ', '');
+        _useLocalAnimation = true;
+        _generationError = null;
       });
     } finally {
       if (mounted && _loading) {
@@ -157,7 +155,21 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
     }
   }
 
+  Widget _visualLocal() => SuperBookLocalAnimationStage(
+        scene: widget.scene,
+        passage: _chapter.passage,
+        characters: widget.book.characters,
+      );
+
   Widget _visual(GeneratedScene generated) {
+    if (_useLocalAnimation) {
+      return SuperBookLocalAnimationStage(
+        scene: widget.scene,
+        passage: _chapter.passage,
+        characters: widget.book.characters,
+      );
+    }
+
     final video = _video;
     if (video != null && video.value.isInitialized) {
       return FittedBox(
@@ -259,6 +271,8 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         children: [
           if (generated != null)
             _visual(generated)
+          else if (_useLocalAnimation)
+            _visualLocal()
           else
             const ColoredBox(color: Color(0xFF05070B)),
           if (generated == null && _loading)
@@ -300,7 +314,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
                 ),
               ),
             ),
-          if (generated == null && !_loading && _generationError != null)
+          if (generated == null && !_loading && _generationError != null && !_useLocalAnimation)
             Positioned(
               left: 24,
               right: 24,
