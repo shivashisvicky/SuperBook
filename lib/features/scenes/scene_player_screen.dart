@@ -36,7 +36,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   String? _generationError;
   List<GeneratedMotionFrame> _motionFrames = const [];
   bool _motionLoading = false;
-  String? _motionError;
 
   Chapter get _chapter => widget.book.chapters.firstWhere(
         (chapter) => chapter.id == widget.beat.chapterId,
@@ -108,7 +107,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       if (mounted) {
         setState(() {
           _motionFrames = const [];
-          _motionError = null;
         });
       }
     }
@@ -186,7 +184,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
 
     setState(() {
       _motionLoading = true;
-      _motionError = null;
     });
 
     try {
@@ -199,13 +196,11 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       setState(() {
         _motionFrames = frames;
         _motionLoading = false;
-        _motionError = frames.isEmpty ? 'No motion frames were returned.' : null;
       });
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _motionLoading = false;
-        _motionError = error.toString().replaceFirst('Bad state: ', '');
       });
     }
   }
