@@ -159,6 +159,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         scene: widget.scene,
         passage: _chapter.passage,
         characters: widget.book.characters,
+        actionHint: _generated?.plan.actions.join(' ') ?? '',
       );
 
   Widget _visual(GeneratedScene generated) {
@@ -167,6 +168,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         scene: widget.scene,
         passage: _chapter.passage,
         characters: widget.book.characters,
+        actionHint: generated.plan.actions.join(' '),
       );
     }
 
