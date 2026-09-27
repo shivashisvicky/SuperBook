@@ -47,7 +47,7 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 <rect x="293" y="126" width="103" height="318" rx="3" fill="url(#window)"/>
 <path d="M344.5 126v318M293 285h103" stroke="#5c4436" stroke-width="6"/>
 <path d="M305 420q42-25 81 0" stroke="#e6ded0" stroke-width="9" fill="none"/>
-<rect x="28" y="468" width="175" height="24" rx="8" fill="#5b3e2f"/>
+<rect x="78" y="475" width="92" height="16" rx="7" fill="#4d3529"/><rect x="28" y="468" width="175" height="24" rx="8" fill="#5b3e2f"/>\n<rect x="74" y="492" width="8" height="72" fill="#483229"/><rect x="166" y="492" width="8" height="72" fill="#483229"/>
 <rect x="48" y="492" width="14" height="94" fill="#483229"/><rect x="168" y="492" width="14" height="94" fill="#483229"/>
 <path d="M22 468q92-32 187 0" fill="#72513c"/>
 <g id="carriage" opacity="0" transform="translate(350 420)">
@@ -67,8 +67,8 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
     <path d="M-20-156 Q0-143 20-156" fill="none" stroke="#8b668d" stroke-width="4"/>
     <g id="elizLeftArm" transform="rotate(-12 -17 -145)"><path d="M-17-145L-67-91" stroke="#e4b990" stroke-width="15" stroke-linecap="round"/><circle cx="-67" cy="-91" r="7" fill="#e4b990"/></g>
     <g id="elizRightArm" transform="rotate(18 17 -145)"><path d="M17-145L64-92" stroke="#e4b990" stroke-width="15" stroke-linecap="round"/><circle cx="64" cy="-92" r="7" fill="#e4b990"/></g>
-    <g id="elizLeftLeg" transform="rotate(0 -14 0)"><path d="M-14-2L-20 55" stroke="#342d31" stroke-width="13" stroke-linecap="round"/><path d="M-20 54l-18 0" stroke="#29252a" stroke-width="8" stroke-linecap="round"/></g>
-    <g id="elizRightLeg" transform="rotate(0 14 0)"><path d="M14-2L20 55" stroke="#342d31" stroke-width="13" stroke-linecap="round"/><path d="M20 54l18 0" stroke="#29252a" stroke-width="8" stroke-linecap="round"/></g>
+    <g id="elizLeftLeg" transform="rotate(0 -14 0)"><path d="M-14-2L-18 28" stroke="#342d31" stroke-width="13" stroke-linecap="round"/><path d="M-18 28L-39 48" stroke="#29252a" stroke-width="8" stroke-linecap="round"/></g>
+    <g id="elizRightLeg" transform="rotate(0 14 0)"><path d="M14-2L18 28" stroke="#342d31" stroke-width="13" stroke-linecap="round"/><path d="M18 28L39 48" stroke="#29252a" stroke-width="8" stroke-linecap="round"/></g>
   </g>
   <g id="elizHead" transform="rotate(0 0 -205)">
     <circle cy="-205" r="30" fill="#e4b990"/>
@@ -84,8 +84,8 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
     <path d="M-21-154Q0-140 21-154" fill="none" stroke="#668b92" stroke-width="4"/>
     <g id="janeLeftArm" transform="rotate(-8 -16 -142)"><path d="M-16-142L-57-88" stroke="#d8a77e" stroke-width="15" stroke-linecap="round"/></g>
     <g id="janeRightArm" transform="rotate(10 16 -142)"><path d="M16-142L59-88" stroke="#d8a77e" stroke-width="15" stroke-linecap="round"/></g>
-    <g id="janeLeftLeg" transform="rotate(0 -13 0)"><path d="M-13-2L-19 55" stroke="#292d35" stroke-width="13" stroke-linecap="round"/><path d="M-19 54l-17 0" stroke="#25252a" stroke-width="8" stroke-linecap="round"/></g>
-    <g id="janeRightLeg" transform="rotate(0 13 0)"><path d="M13-2L19 55" stroke="#292d35" stroke-width="13" stroke-linecap="round"/><path d="M19 54l17 0" stroke="#25252a" stroke-width="8" stroke-linecap="round"/></g>
+    <g id="janeLeftLeg" transform="rotate(0 -13 0)"><path d="M-13-2L-17 28" stroke="#292d35" stroke-width="13" stroke-linecap="round"/><path d="M-17 28L-37 48" stroke="#25252a" stroke-width="8" stroke-linecap="round"/></g>
+    <g id="janeRightLeg" transform="rotate(0 13 0)"><path d="M13-2L17 28" stroke="#292d35" stroke-width="13" stroke-linecap="round"/><path d="M17 28L37 48" stroke="#25252a" stroke-width="8" stroke-linecap="round"/></g>
   </g>
   <g id="janeHead" transform="rotate(0 0 -202)">
     <circle cy="-202" r="29" fill="#d8a77e"/>
@@ -167,8 +167,8 @@ const beats=[
 let current=0,playing=false,start=0,elapsed=0,raf=0,lastTs=0;
 
 const initial={
-  eliz:{x:128,y:584,torso:0,head:0,la:-12,ra:18,ll:0,rl:0,scale:1},
-  jane:{x:238,y:584,torso:0,head:0,la:-8,ra:10,ll:0,rl:0,scale:1},
+  eliz:{x:128,y:530,torso:0,head:0,la:-12,ra:18,ll:0,rl:0,scale:1},
+  jane:{x:238,y:530,torso:0,head:0,la:-8,ra:10,ll:0,rl:0,scale:1},
   carriage:{x:500,opacity:0}
 };
 let state=JSON.parse(JSON.stringify(initial));
@@ -189,11 +189,11 @@ function sampleBeat(index,q){
   let carriage={x:500,opacity:0};
 
   if(index===0){
-    A.x=128; A.y=584; A.la=-12; A.ra=18; A.head=0;
-    J.x=238; J.y=584;
+    A.x=128; A.y=530; A.la=-12; A.ra=18; A.head=0; A.ll=72; A.rl=-72;
+    J.x=238; J.y=530; J.ll=72; J.rl=-72;
   }
   if(index===1){
-    A.y=584-7*Math.sin(Math.PI*e); A.head=lerp(0,-8,e); A.torso=lerp(0,-3,e);
+    A.y=530-5*Math.sin(Math.PI*e); A.head=lerp(0,-8,e); A.torso=lerp(0,-3,e);
     A.la=lerp(-12,-28,e); A.ra=lerp(18,7,e);
     J.head=lerp(0,-4,e);
   }
@@ -202,13 +202,13 @@ function sampleBeat(index,q){
     J.head=lerp(-4,-22,e);
   }
   if(index===3){
-    A.y=lerp(584,542,e); A.torso=lerp(-12,0,e);
+    A.y=lerp(530,530,e); A.torso=lerp(-12,0,e);
     A.head=-38; A.la=lerp(-48,-10,e); A.ra=lerp(-20,16,e);
-    A.ll=lerp(0,-5,e); A.rl=lerp(0,7,e);
+    A.ll=lerp(72,0,e); A.rl=lerp(-72,0,e);
   }
   if(index===4){
     const walk=lerp(0,1,e);
-    A.x=lerp(128,265,e); A.y=542+Math.sin(e*Math.PI*6)*3;
+    A.x=lerp(128,265,e); A.y=530+Math.sin(e*Math.PI*6)*2;
     A.torso=lerp(0,2,e); A.head=lerp(-38,-8,e);
     A.la=-8+Math.sin(e*Math.PI*6)*18; A.ra=10-Math.sin(e*Math.PI*6)*18;
     A.ll=Math.sin(e*Math.PI*6)*24; A.rl=-Math.sin(e*Math.PI*6)*24;
@@ -216,7 +216,7 @@ function sampleBeat(index,q){
     J.head=lerp(-22,-8,e);
   }
   if(index===5){
-    A.x=265; A.y=542; A.torso=lerp(2,9,e); A.head=lerp(-8,-48,e);
+    A.x=265; A.y=530; A.torso=lerp(2,9,e); A.head=lerp(-8,-48,e);
     A.la=lerp(-8,-28,e); A.ra=lerp(10,48,e); A.ll=0; A.rl=0;
     J.head=lerp(-8,-18,e);
   }
