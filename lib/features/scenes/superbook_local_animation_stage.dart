@@ -1,10 +1,9 @@
-import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../domain/book.dart';
 
-/// Network-free animated storybook fallback. No AI, sprites, tokens, or cloud
-/// services are required once the reader has the book content.
+/// Network-free animated storybook experience. AI scene imagery may inform the
+/// scene plan, but it is never composited underneath the live animation.
 class SuperBookLocalAnimationStage extends StatefulWidget {
   const SuperBookLocalAnimationStage({
     super.key,
@@ -64,13 +63,9 @@ class _SuperBookLocalAnimationStageState
           builder: (context, _) => Stack(
             fit: StackFit.expand,
             children: [
-              if (widget.backgroundImageBase64 != null &&
-                  widget.backgroundImageBase64!.isNotEmpty)
-                Image.memory(
-                  base64Decode(widget.backgroundImageBase64!),
-                  fit: BoxFit.cover,
-                  gaplessPlayback: true,
-                ),
+              // The generated AI still is a scene-reference asset, not a
+              // permanent layer underneath the animation. The experience
+              // renderer owns the complete scene canvas.
               CustomPaint(
                 painter: _LocalStoryPainter(
                   progress: _controller.value,
@@ -80,8 +75,7 @@ class _SuperBookLocalAnimationStageState
                   actionHint: widget.actionHint,
                   avatarSeed:
                       '${widget.scene.title}|${widget.scene.moment}|${widget.passage.join(' ')}',
-                  drawBackground: widget.backgroundImageBase64 == null ||
-                      widget.backgroundImageBase64!.isEmpty,
+                  drawBackground: true,
                 ),
                 child: const SizedBox.expand(),
               ),
