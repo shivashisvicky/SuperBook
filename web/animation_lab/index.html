@@ -47,7 +47,7 @@ p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-heig
 <rect x="293" y="126" width="103" height="318" rx="3" fill="url(#window)"/>
 <path d="M344.5 126v318M293 285h103" stroke="#5c4436" stroke-width="6"/>
 <path d="M305 420q42-25 81 0" stroke="#e6ded0" stroke-width="9" fill="none"/>
-<rect x="78" y="475" width="92" height="16" rx="7" fill="#4d3529"/><rect x="28" y="468" width="175" height="24" rx="8" fill="#5b3e2f"/>\n<rect x="74" y="492" width="8" height="72" fill="#483229"/><rect x="166" y="492" width="8" height="72" fill="#483229"/>
+<rect x="78" y="475" width="92" height="16" rx="7" fill="#4d3529"/><rect x="28" y="468" width="175" height="24" rx="8" fill="#5b3e2f"/><rect x="74" y="492" width="8" height="72" fill="#483229"/><rect x="166" y="492" width="8" height="72" fill="#483229"/>
 <rect x="48" y="492" width="14" height="94" fill="#483229"/><rect x="168" y="492" width="14" height="94" fill="#483229"/>
 <path d="M22 468q92-32 187 0" fill="#72513c"/>
 <g id="carriage" opacity="0" transform="translate(350 420)">
@@ -167,7 +167,7 @@ const beats=[
 let current=0,playing=false,start=0,elapsed=0,raf=0,lastTs=0;
 
 const initial={
-  eliz:{x:128,y:530,torso:0,head:0,la:-12,ra:18,ll:0,rl:0,scale:1},
+  eliz:{x:128,y:530,torso:0,head:0,la:-12,ra:18,ll:72,rl:-72,scale:1},
   jane:{x:238,y:530,torso:0,head:0,la:-8,ra:10,ll:0,rl:0,scale:1},
   carriage:{x:500,opacity:0}
 };
@@ -221,7 +221,7 @@ function sampleBeat(index,q){
     J.head=lerp(-8,-18,e);
   }
   if(index===6){
-    A.x=265; A.y=542; A.torso=9; A.head=-48;
+    A.x=265; A.y=530; A.torso=9; A.head=-48;
     A.ra=48; A.la=-28;
     carriage={x:lerp(500,350,e),opacity:lerp(0,1,e)};
     J.head=lerp(-18,-35,e); J.torso=lerp(0,-5,e);
