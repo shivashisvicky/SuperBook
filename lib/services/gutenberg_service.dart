@@ -532,9 +532,6 @@ class GutenbergService {
 
   String _normalizeLiteraryParagraph(String value) {
     var text = value.trim();
-    // Gutenberg frequently places image markers inline with the real prose.
-    // They are source metadata, not narrative events. Never expose them as
-    // the chapter's first beat or scene moment.
     text = text
         .replaceFirst(
           RegExp(r'^\[\s*illustration\s*\]\s*', caseSensitive: false),
@@ -545,7 +542,12 @@ class GutenbergService {
           '',
         )
         .trim();
-    if (RegExp(r'^\[\s*illustration[^\]]*\]
+    if (RegExp(r'^\[\s*illustration[^\]]*\]$', caseSensitive: false)
+        .hasMatch(text)) {
+      return '';
+    }
+    return text;
+  }
 
   int? _romanToInt(String value) {
     const values = <String, int>{
