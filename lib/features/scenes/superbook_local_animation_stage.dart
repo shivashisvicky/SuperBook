@@ -206,7 +206,7 @@ class _LocalStoryPainter extends CustomPainter {
     return [
       'room', 'hall', 'inside', 'house', 'library', 'parlor', 'interior',
       'bedroom', 'fireplace', 'hearth',
-    ].any((term) => normalized.contains(' ${term} '));
+    ].any((term) => normalized.contains(' $term '));
   }
 
   bool get _warmLight =>
@@ -292,7 +292,7 @@ class _LocalStoryPainter extends CustomPainter {
         .replaceFirst(RegExp(r'^\s*\[Illustration\]\s*', caseSensitive: false), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
-    if (raw.isEmpty) return const [];
+    if (raw.isEmpty) { return const []; }
 
     final clauses = raw
         .split(RegExp(r'(?<=[.!?;])\s+|(?<=,)\s+(?=[A-Z])'))
@@ -311,18 +311,18 @@ class _LocalStoryPainter extends CustomPainter {
   }
 
   int get _timelineTotalMs {
-    if (sceneGraph == null || sceneGraph!.timeline.isEmpty) return _beats.length * 1800;
+    if (sceneGraph == null || sceneGraph!.timeline.isEmpty) { return _beats.length * 1800; }
     return sceneGraph!.timeline.fold<int>(0, (sum, beat) => sum + beat.duration.inMilliseconds);
   }
 
   int get _beatIndex {
     final count = _beats.length;
-    if (count == 0) return 0;
+    if (count == 0) { return 0; }
     final target = (progress * _timelineTotalMs).floor();
     var elapsed = 0;
     for (var i = 0; i < count; i++) {
       final duration = sceneGraph == null ? 1800 : sceneGraph!.timeline[i].duration.inMilliseconds;
-      if (target < elapsed + duration) return i;
+      if (target < elapsed + duration) { return i; }
       elapsed += duration;
     }
     return count - 1;
@@ -332,12 +332,12 @@ class _LocalStoryPainter extends CustomPainter {
 
   double get _phaseProgress {
     final count = _beats.length;
-    if (count == 0) return 0;
+    if (count == 0) { return 0; }
     final target = (progress * _timelineTotalMs).floor();
     var elapsed = 0;
     for (var i = 0; i < count; i++) {
       final duration = sceneGraph == null ? 1800 : sceneGraph!.timeline[i].duration.inMilliseconds;
-      if (target < elapsed + duration) return ((target - elapsed) / duration).clamp(0.0, 1.0);
+      if (target < elapsed + duration) { return ((target - elapsed) / duration).clamp(0.0, 1.0); }
       elapsed += duration;
     }
     return 1.0;
@@ -345,7 +345,7 @@ class _LocalStoryPainter extends CustomPainter {
 
   String get _currentBeat {
     final beats = _beats;
-    if (beats.isEmpty) return scene.moment;
+    if (beats.isEmpty) { return scene.moment; }
     return beats[_beatIndex];
   }
 
@@ -360,7 +360,7 @@ class _LocalStoryPainter extends CustomPainter {
       'say', 'said', 'says', 'spoke', 'speak', 'tell', 'asked', 'replied',
       'answer', 'conversation', 'love', 'danger', 'objection',
     ])) return 'talk';
-    if (_hasAnyWord(t, ['carriage', 'horse', 'coach'])) return 'carriage';
+    if (_hasAnyWord(t, ['carriage', 'horse', 'coach'])) { return 'carriage'; }
     if (_hasAnyWord(t, [
       'walk', 'walked', 'walking', 'leave', 'leaving', 'depart', 'departed',
       'went', 'go', 'approach', 'approached', 'cross', 'crossed', 'enter',
@@ -370,13 +370,13 @@ class _LocalStoryPainter extends CustomPainter {
       'fight', 'fought', 'fighting', 'strike', 'struck', 'duel', 'attack',
       'attacked',
     ])) return 'fight';
-    if (_hasAnyWord(t, ['sit', 'sits', 'sat', 'sitting', 'seated'])) return 'sit';
-    if (_hasAnyWord(t, ['read', 'reads', 'reading', 'letter', 'book'])) return 'read';
+    if (_hasAnyWord(t, ['sit', 'sits', 'sat', 'sitting', 'seated'])) { return 'sit'; }
+    if (_hasAnyWord(t, ['read', 'reads', 'reading', 'letter', 'book'])) { return 'read'; }
     if (_hasAnyWord(t, [
       'reach', 'reached', 'open', 'opened', 'lift', 'take', 'took', 'pick',
       'picked', 'hold', 'held',
     ])) return 'reach';
-    if (_hasAnyWord(t, ['stand', 'stood', 'rise', 'rose'])) return 'stand';
+    if (_hasAnyWord(t, ['stand', 'stood', 'rise', 'rose'])) { return 'stand'; }
     if (_hasAnyWord(t, [
       'attention', 'drawn to', 'look', 'looked', 'notice', 'noticed', 'see',
       'saw', 'watch', 'watched', 'window', 'sound', 'hear', 'heard', 'listen',
@@ -390,9 +390,9 @@ class _LocalStoryPainter extends CustomPainter {
     if (_hasAnyWord(t, ['say', 'speak', 'tell', 'ask', 'reply', 'conversation'])) {
       return 'talk';
     }
-    if (_hasAnyWord(t, ['sit', 'sat', 'sitting', 'seated'])) return 'sit';
-    if (_hasAnyWord(t, ['read', 'reading', 'letter', 'book'])) return 'read';
-    if (_hasAnyWord(t, ['walk', 'walked', 'walking'])) return 'walk';
+    if (_hasAnyWord(t, ['sit', 'sat', 'sitting', 'seated'])) { return 'sit'; }
+    if (_hasAnyWord(t, ['read', 'reading', 'letter', 'book'])) { return 'read'; }
+    if (_hasAnyWord(t, ['walk', 'walked', 'walking'])) { return 'walk'; }
     return 'listen';
   }
 
@@ -402,7 +402,7 @@ class _LocalStoryPainter extends CustomPainter {
     return terms.any((term) {
       final normalizedTerm =
           term.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
-      return normalized.contains(' ${normalizedTerm} ');
+      return normalized.contains(' $normalizedTerm ');
     });
   }
 
