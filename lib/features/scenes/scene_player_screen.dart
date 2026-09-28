@@ -163,6 +163,8 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         passage: _chapter.passage,
         characters: widget.book.characters,
         actionHint: '${generated.plan.sceneSummary} ${generated.plan.motion} ${generated.plan.actions.join(' ')} ${generated.plan.characters.map((c) => c.action).join(' ')}',
+        scenePlan: generated.plan,
+        narrativeFocus: widget.beat.summary,
       );
     }
 
@@ -180,6 +182,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         ...generated.plan.characters.map((c) => c.action),
       ].join(' '),
       scenePlan: generated.plan,
+      narrativeFocus: widget.beat.summary,
     );
   }
 
