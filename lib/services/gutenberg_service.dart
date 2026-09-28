@@ -532,18 +532,15 @@ class GutenbergService {
 
   String _normalizeLiteraryParagraph(String value) {
     var text = value.trim();
-    text = text
-        .replaceFirst(
-          RegExp(r'^\[\s*illustration\s*\]\s*', caseSensitive: false),
-          '',
-        )
-        .replaceFirst(
-          RegExp(r'^\[\s*illustration\s*:[^\]]*\]\s*', caseSensitive: false),
-          '',
-        )
-        .trim();
-    if (RegExp(r'^\[\s*illustration[^\]]*\]
-
+    const marker = '[illustration]';
+    final lower = text.toLowerCase();
+    if (lower == marker || lower.startsWith('[illustration:')) {
+      final close = text.indexOf(']');
+      if (close == text.length - 1) return '';
+      text = text.substring(close + 1).trim();
+    }
+    return text;
+  }
   int? _romanToInt(String value) {
     const values = <String, int>{
       'I': 1,
