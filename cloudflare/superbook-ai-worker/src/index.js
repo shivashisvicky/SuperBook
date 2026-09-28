@@ -567,7 +567,7 @@ export default {
             'Cell 12: right hand, isolated.',
             'Parts must be anatomically complete within their own cells, with enough overlap at joints for smooth articulated rotation.',
             'Use clean readable silhouettes. Preserve the exact same character design across all twelve cells.',
-            'No full character repeated in any cell, no extra people, no props, no scene background, no text, no watermark, no collage, no duplicated limbs.
+            'No full character repeated in any cell, no extra people, no props, no scene background, no text, no watermark, no collage, no duplicated limbs.',
           ].join(' ').slice(0, 2048),
           steps: 4,
         });
