@@ -120,6 +120,8 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         passage: _chapter.passage.join('\n'),
         author: widget.book.author,
         title: widget.book.title,
+        beatTitle: widget.beat.title,
+        beatSummary: widget.beat.summary,
       );
       _sceneCache.put(_cacheKey, generated);
       if (!mounted) return;
