@@ -26,7 +26,7 @@ class BiomeBackdropPainter{
     }
     if(b==EnvironmentBiome.streetStation){for(var i=0;i<5;i++){final x=s.width*(.05+i*.23);c.drawRect(Rect.fromLTWH(x,s.height*.31,s.width*.18,s.height*.28),Paint()..color=const Color(0xFF75665B));c.drawRect(Rect.fromLTWH(x+.02*s.width,s.height*.35,s.width*.14,s.height*.10),Paint()..color=const Color(0xFF9EB4BE));}}
     if(b==EnvironmentBiome.forestWoodland||b==EnvironmentBiome.gardenMeadow||b==EnvironmentBiome.roadCarriage){
-      for(var i=0;i<8;i++){final x=s.width*(.03+i*.135);final far=i.isEven;final y=far?s.height*.38:s.height*.51;final scale=far?.72:1.0;_tree(c,Offset(x,y),scale,t+i*.4,blooming&&i%2==0);}
+      for(var i=0;i<8;i++){final x=s.width*(.03+i*.135);final far=i.isEven;final y=far?s.height*.38:s.height*.51;final scale=far ? .72 : 1.0;_tree(c,Offset(x,y),scale,t+i*.4,blooming&&i%2==0);}
     }
     if(b==EnvironmentBiome.battlefield){for(var i=0;i<6;i++){final x=s.width*(.08+i*.17);c.drawCircle(Offset(x,s.height*.61+(i%2)*9),18,Paint()..color=const Color(0xFF514238));}}
   }
