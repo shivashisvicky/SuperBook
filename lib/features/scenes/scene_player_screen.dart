@@ -165,6 +165,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         actionHint: '${generated.plan.sceneSummary} ${generated.plan.motion} ${generated.plan.actions.join(' ')} ${generated.plan.characters.map((c) => c.action).join(' ')}',
         scenePlan: generated.plan,
         narrativeFocus: widget.beat.summary,
+        backgroundImageBase64: generated.imageBase64,
       );
     }
 
