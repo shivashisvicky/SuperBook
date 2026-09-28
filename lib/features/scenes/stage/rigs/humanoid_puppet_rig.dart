@@ -14,24 +14,133 @@ class CharacterVisualProfile{
     return CharacterVisualProfile(female:['woman','female','girl','lady','mrs','miss','ms','madam','daughter','sister','wife','mother','aunt','niece','queen','princess','duchess','she','her','elizabeth','jane','lydia','mary','kitty','catherine','charlotte','georgiana','alice','emma','elinor','marianne','anne','fanny','lucy','maria'].any(word),child:['child','boy','girl','young','little'].any(word),tall:['tall','large','broad','stout','gentleman'].any(word),hair:Color([0xFF38261F,0xFF211C1A,0xFF6B432B,0xFF8B5A36][h%4]),garment:Color([0xFF4B5D73,0xFF704B4A,0xFF566B50,0xFF6B5948,0xFF5C4B6F][h%5]));
   }
 }
-class HumanoidPose{
-  const HumanoidPose({this.torso=0,this.head=0,this.lArm=-.2,this.rArm=.2,this.lFore=.1,this.rFore=-.1,this.lThigh=0,this.rThigh=0,this.lShin=0,this.rShin=0,this.pelvisY=0});
-  final double torso,head,lArm,rArm,lFore,rFore,lThigh,rThigh,lShin,rShin,pelvisY;
-  static HumanoidPose lerp(HumanoidPose a,HumanoidPose b,double t)=>HumanoidPose(torso:a.torso+(b.torso-a.torso)*t,head:a.head+(b.head-a.head)*t,lArm:a.lArm+(b.lArm-a.lArm)*t,rArm:a.rArm+(b.rArm-a.rArm)*t,lFore:a.lFore+(b.lFore-a.lFore)*t,rFore:a.rFore+(b.rFore-a.rFore)*t,lThigh:a.lThigh+(b.lThigh-a.lThigh)*t,rThigh:a.rThigh+(b.rThigh-a.rThigh)*t,lShin:a.lShin+(b.lShin-a.lShin)*t,rShin:a.rShin+(b.rShin-a.rShin)*t,pelvisY:a.pelvisY+(b.pelvisY-a.pelvisY)*t);
-  static const idle=HumanoidPose();
-  static const walkA=HumanoidPose(torso:-.06,lArm:-.8,rArm:.8,lFore:-.15,rFore:.15,lThigh:-.5,rThigh:.4,lShin:.1,rShin:-.12);
-  static const walkB=HumanoidPose(torso:-.03,lArm:.55,rArm:-.55,lThigh:.3,rThigh:-.25,lShin:-.2,rShin:.25,pelvisY:-.025);
-  static const sit=HumanoidPose(pelvisY:.16,torso:-.02,lArm:-.2,rArm:.2,lThigh:1.28,rThigh:1.28,lShin:-.35,rShin:-.35);
-  static const talkA=HumanoidPose(head:-.04,lArm:-.9,lFore:-.9,rArm:.3,rFore:-.3);
-  static const talkB=HumanoidPose(head:.04,lArm:-.25,lFore:.45,rArm:.9,rFore:.1);
-  static const listen=HumanoidPose(head:.04);
-  static const reach=HumanoidPose(torso:-.1,head:-.06,lArm:-1,lFore:-.2,rArm:.95,rFore:-.1);
-  static const fightA=HumanoidPose(torso:-.12,lArm:-1.5,lFore:-.4,rArm:1.25,rFore:-.8,lThigh:-.2,rThigh:.2);
-  static const fightB=HumanoidPose(torso:.08,lArm:-.8,lFore:-1.2,rArm:1.5,rFore:-.2,lThigh:.15,rThigh:-.15);
+class HumanoidPose {
+  const HumanoidPose({
+    this.torso = 0,
+    this.head = 0,
+    this.lArm = .18,
+    this.rArm = -.18,
+    this.lFore = -.25,
+    this.rFore = -.25,
+    this.lThigh = .06,
+    this.rThigh = -.06,
+    this.lShin = 0,
+    this.rShin = 0,
+    this.pelvisY = 0,
+  });
+
+  final double torso, head, lArm, rArm, lFore, rFore, lThigh, rThigh,
+      lShin, rShin, pelvisY;
+
+  static HumanoidPose lerp(HumanoidPose a, HumanoidPose b, double t) =>
+      HumanoidPose(
+        torso: a.torso + (b.torso - a.torso) * t,
+        head: a.head + (b.head - a.head) * t,
+        lArm: a.lArm + (b.lArm - a.lArm) * t,
+        rArm: a.rArm + (b.rArm - a.rArm) * t,
+        lFore: a.lFore + (b.lFore - a.lFore) * t,
+        rFore: a.rFore + (b.rFore - a.rFore) * t,
+        lThigh: a.lThigh + (b.lThigh - a.lThigh) * t,
+        rThigh: a.rThigh + (b.rThigh - a.rThigh) * t,
+        lShin: a.lShin + (b.lShin - a.lShin) * t,
+        rShin: a.rShin + (b.rShin - a.rShin) * t,
+        pelvisY: a.pelvisY + (b.pelvisY - a.pelvisY) * t,
+      );
+
+  static const idle = HumanoidPose();
+  static const walkA = HumanoidPose(
+    torso: .05,
+    lArm: -.45,
+    rArm: .45,
+    lFore: -.35,
+    rFore: -.20,
+    lThigh: .42,
+    rThigh: -.42,
+    lShin: .35,
+    rShin: .10,
+    pelvisY: -2,
+  );
+  static const walkB = HumanoidPose(
+    torso: .08,
+    lArm: .45,
+    rArm: -.45,
+    lFore: -.20,
+    rFore: -.35,
+    lThigh: -.42,
+    rThigh: .42,
+    lShin: .10,
+    rShin: .35,
+    pelvisY: 2,
+  );
+  static const sit = HumanoidPose(
+    pelvisY: 16,
+    torso: -.03,
+    head: .08,
+    lArm: -.25,
+    rArm: -.35,
+    lFore: -.65,
+    rFore: -.75,
+    lThigh: -1.35,
+    rThigh: -1.35,
+    lShin: 1.35,
+    rShin: 1.35,
+  );
+  static const talkA = HumanoidPose(
+    head: -.04,
+    lArm: .20,
+    lFore: -.35,
+    rArm: -.45,
+    rFore: -.85,
+  );
+  static const talkB = HumanoidPose(
+    head: .05,
+    lArm: -.30,
+    lFore: -.70,
+    rArm: -.20,
+    rFore: -.40,
+  );
+  static const listen = HumanoidPose(
+    head: .04,
+    lArm: .15,
+    rArm: -.15,
+    lFore: -.30,
+    rFore: -.30,
+  );
+  static const reach = HumanoidPose(
+    torso: .10,
+    head: -.04,
+    lArm: .20,
+    lFore: -.25,
+    rArm: -.85,
+    rFore: -.25,
+  );
+  static const fightA = HumanoidPose(
+    torso: .14,
+    lArm: .45,
+    lFore: -.40,
+    rArm: -1.15,
+    rFore: -.35,
+    lThigh: .35,
+    rThigh: -.35,
+    lShin: .20,
+    rShin: .15,
+  );
+  static const fightB = HumanoidPose(
+    torso: -.06,
+    lArm: -.35,
+    lFore: -.60,
+    rArm: -.45,
+    rFore: -.15,
+    lThigh: -.20,
+    rThigh: .25,
+    lShin: .15,
+    rShin: .25,
+  );
 }
+
 class HumanoidPuppetRig{
   HumanoidPuppetRig(this.profile);final CharacterVisualProfile profile;
-  HumanoidPose pose(ActorPose a,double p){switch(a){case ActorPose.walk:case ActorPose.run:return HumanoidPose.lerp(HumanoidPose.walkA,HumanoidPose.walkB,(math.sin(p*math.pi*2)+1)/2);case ActorPose.sitIdle:case ActorPose.sitRead:case ActorPose.sitWrite:return HumanoidPose.sit;case ActorPose.talkGesture:return HumanoidPose.lerp(HumanoidPose.talkA,HumanoidPose.talkB,(math.sin(p*math.pi*2)+1)/2);case ActorPose.listenAttentive:case ActorPose.lookWindow:return HumanoidPose.listen;case ActorPose.reachObject:return HumanoidPose.reach;case ActorPose.combatSlash:return HumanoidPose.lerp(HumanoidPose.fightA,HumanoidPose.fightB,(math.sin(p*math.pi*2)+1)/2);default:return HumanoidPose.idle;}}
+  HumanoidPose pose(ActorPose a,double p){switch(a){case ActorPose.walk:case ActorPose.run:case ActorPose.boardCarriage:return HumanoidPose.lerp(HumanoidPose.walkA,HumanoidPose.walkB,(math.sin(p*math.pi*2)+1)/2);case ActorPose.sitIdle:case ActorPose.sitRead:case ActorPose.sitWrite:return HumanoidPose.sit;case ActorPose.talkGesture:return HumanoidPose.lerp(HumanoidPose.talkA,HumanoidPose.talkB,(math.sin(p*math.pi*2)+1)/2);case ActorPose.listenAttentive:case ActorPose.lookWindow:return HumanoidPose.listen;case ActorPose.reachObject:return HumanoidPose.reach;case ActorPose.combatSlash:return HumanoidPose.lerp(HumanoidPose.fightA,HumanoidPose.fightB,(math.sin(p*math.pi*2)+1)/2);default:return HumanoidPose.idle;}}
   void paint(Canvas c, Offset o, double u, double p, ActorPose a, double facing) {
     final q = pose(a, p);
     final s = u * (profile.child ? .78 : profile.tall ? 1.08 : 1.0);
