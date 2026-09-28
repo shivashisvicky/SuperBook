@@ -7,8 +7,8 @@ class CharacterVisualProfile{
   const CharacterVisualProfile({required this.female,required this.child,required this.tall,required this.hair,required this.garment});
   final bool female,child,tall; final Color hair,garment;
   factory CharacterVisualProfile.from(BookCharacter c,String extra){
-    final t='\${c.name} \${c.role} \${c.description} $extra'.toLowerCase();
-    final word=(String x)=>' \${t.replaceAll(RegExp(r'[^a-z0-9]+'),' ')} '.contains(' $x ');
+    final t='${c.name} ${c.role} ${c.description} $extra'.toLowerCase();
+    final word=(String x)=>' ${t.replaceAll(RegExp(r'[^a-z0-9]+'),' ')} '.contains(' $x ');
     var h=17;for(final x in t.codeUnits)h=(h*31+x)&0x7fffffff;
     return CharacterVisualProfile(female:['woman','female','girl','lady','mrs','miss','daughter','wife','mother','she','her'].any(word),child:['child','boy','girl','young'].any(word),tall:['tall','large','broad','stout'].any(word),hair:Color([0xFF38261F,0xFF211C1A,0xFF6B432B,0xFF8B5A36][h%4]),garment:Color([0xFF4B5D73,0xFF704B4A,0xFF566B50,0xFF6B5948,0xFF5C4B6F][h%5]));
   }
