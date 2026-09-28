@@ -90,4 +90,56 @@ void main() {
     expect(graph.timeline[2].duration.inMilliseconds, greaterThanOrEqualTo(4000));
     expect(graph.timeline[4].duration.inMilliseconds, greaterThanOrEqualTo(4000));
   });
+
+  test('AI cannot replace the book passage with a generic environment', () {
+    const plan = AiScenePlan(
+      schemaVersion: '1',
+      sceneSummary: 'A woman walks alone beneath the trees.',
+      visualStyle: 'cinematic literary realism',
+      characters: [
+        AiSceneCharacter(
+          id: 'woman',
+          description: 'A woman walking alone.',
+          action: 'walks along the path',
+          emotion: 'alert',
+          position: 'center',
+        ),
+      ],
+      environment: AiSceneEnvironment(
+        location: 'Warm drawing room',
+        time: 'evening',
+        description: 'A comfortable interior with furniture.',
+      ),
+      props: ['sofa', 'lamp'],
+      actions: ['walks along the path'],
+      camera: AiSceneCamera(
+        shot: 'wide',
+        angle: 'eye level',
+        movement: 'slow tracking',
+      ),
+      lighting: 'soft light',
+      motion: 'The woman walks beneath the trees.',
+      imagePrompt: 'A woman walking in a forest.',
+    );
+
+    final graph = SuperBookSceneGraph.from(
+      plan: plan,
+      scene: const Scene(
+        title: 'The Walk',
+        moment: 'She follows the narrow path beneath the trees.',
+        atmosphere: 'The current woodland moment described in this passage.',
+        caption: 'She follows the path.',
+      ),
+      bookCharacters: const [],
+      passage: const [
+        'She followed a narrow path beneath tall trees.',
+        'Leaves moved in the wind around her.',
+      ],
+      narrativeFocus: 'She walks alone through the woods.',
+    );
+
+    expect(graph.environment, 'Forest or woodland');
+    expect(graph.anchors.containsKey('window'), isFalse);
+  });
+
 }
