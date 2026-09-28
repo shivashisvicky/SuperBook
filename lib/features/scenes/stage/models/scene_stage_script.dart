@@ -104,7 +104,7 @@ class SceneStageScript {
     return EnvironmentBiome.neutral;
   }
   static LightingMood _lighting(Scene s,List<String> p){
-    final t=s.atmosphere+' '+s.moment+' '+p.join(' ');
+    final t='${s.atmosphere} ${s.moment} ${p.join(' ')}';
     if(_has(t,['rain','storm','wet']))return LightingMood.overcastRain;
     if(_has(t,['night','moon','midnight']))return LightingMood.nightMoon;
     if(_has(t,['fireplace','hearth','fire']))return LightingMood.warmHearth;
@@ -114,7 +114,7 @@ class SceneStageScript {
     return LightingMood.daylight;
   }
   static bool _has(String t,List<String> terms){
-    final n=' '+t.replaceAll(RegExp(r'[^a-z0-9]+'),' ')+' ';
-    return terms.any((x)=>n.contains(' '+x+' '));
+    final n=' ${t.replaceAll(RegExp(r'[^a-z0-9]+'), ' ')} ';
+    return terms.any((x)=>n.contains(' $x '));
   }
 }
