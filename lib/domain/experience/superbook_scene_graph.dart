@@ -84,9 +84,9 @@ class SuperBookSceneGraph {
       'harbour', 'harbor', 'outdoors', 'outside', 'courtyard', 'path',
       'station', 'battlefield', 'battle', 'ship', 'deck',
     ]);
-    final physicalSource = literaryHasSetting
-        ? literarySource
-        : '$literarySource $aiSource';
+    // The book passage is authoritative. AI may describe how to stage a
+    // moment, but it must never manufacture the physical location.
+    final physicalSource = literarySource;
 
     final explicitIndoor = _hasAny(physicalSource, [
       'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
