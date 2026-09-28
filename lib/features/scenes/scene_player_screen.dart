@@ -232,24 +232,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
             _visual(generated)
           else
             _visualLocal(),
-          if (generated == null && _loading)
-            const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(strokeWidth: 2.5),
-                  ),
-                  SizedBox(height: 14),
-                  Text(
-                    'Creating your story moment…',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
           if (generated == null && !_loading && _generationError != null && !_useLocalAnimation)
             Positioned(
               left: 24,
