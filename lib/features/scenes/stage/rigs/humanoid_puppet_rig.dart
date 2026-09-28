@@ -309,5 +309,21 @@ class HumanoidPuppetRig{
   }
 
   void _leg(Canvas c,Offset r,double l1,double a1,double l2,double a2,Paint p){final k=r+Offset(math.cos(a1)*l1,math.sin(a1)*l1),f=k+Offset(math.cos(a1+a2)*l2,math.sin(a1+a2)*l2);c.drawLine(r,k,p);c.drawLine(k,f,p);}
-  void _arm(Canvas c,Offset r,double l1,double a1,double l2,double a2,Paint p){final e=r+Offset(math.cos(a1)*l1,math.sin(a1)*l1),h=e+Offset(math.cos(a1+a2)*l2,math.sin(a1+a2)*l2);c.drawLine(r,e,p);c.drawLine(e,h,p);c.drawCircle(h,p.strokeWidth*.55,p);}
+  Offset _arm(
+    Canvas c,
+    Offset r,
+    double l1,
+    double a1,
+    double l2,
+    double a2,
+    Paint sleevePaint,
+    Paint handPaint,
+  ) {
+    final e = r + Offset(math.cos(a1) * l1, math.sin(a1) * l1);
+    final h = e + Offset(math.cos(a1 + a2) * l2, math.sin(a1 + a2) * l2);
+    c.drawLine(r, e, sleevePaint);
+    c.drawLine(e, h, sleevePaint);
+    c.drawCircle(h, sleevePaint.strokeWidth * .55, handPaint);
+    return h;
+  }
 }
