@@ -359,29 +359,29 @@ class _LocalStoryPainter extends CustomPainter {
     if (_hasAnyWord(t, [
       'say', 'said', 'says', 'spoke', 'speak', 'tell', 'asked', 'replied',
       'answer', 'conversation', 'love', 'danger', 'objection',
-    ])) return 'talk';
+    ])) { return 'talk'; }
     if (_hasAnyWord(t, ['carriage', 'horse', 'coach'])) { return 'carriage'; }
     if (_hasAnyWord(t, [
       'walk', 'walked', 'walking', 'leave', 'leaving', 'depart', 'departed',
       'went', 'go', 'approach', 'approached', 'cross', 'crossed', 'enter',
       'entered', 'step', 'stepped', 'move', 'moved', 'arrive', 'arrived',
-    ])) return 'walk';
+    ])) { return 'walk'; }
     if (_hasAnyWord(t, [
       'fight', 'fought', 'fighting', 'strike', 'struck', 'duel', 'attack',
       'attacked',
-    ])) return 'fight';
+    ])) { return 'fight'; }
     if (_hasAnyWord(t, ['sit', 'sits', 'sat', 'sitting', 'seated'])) { return 'sit'; }
     if (_hasAnyWord(t, ['read', 'reads', 'reading', 'letter', 'book'])) { return 'read'; }
     if (_hasAnyWord(t, [
       'reach', 'reached', 'open', 'opened', 'lift', 'take', 'took', 'pick',
       'picked', 'hold', 'held',
-    ])) return 'reach';
+    ])) { return 'reach'; }
     if (_hasAnyWord(t, ['stand', 'stood', 'rise', 'rose'])) { return 'stand'; }
     if (_hasAnyWord(t, [
       'attention', 'drawn to', 'look', 'looked', 'notice', 'noticed', 'see',
       'saw', 'watch', 'watched', 'window', 'sound', 'hear', 'heard', 'listen',
       'listened', 'turn', 'turned',
-    ])) return 'look';
+    ])) { return 'look'; }
     return 'look';
   }
 
