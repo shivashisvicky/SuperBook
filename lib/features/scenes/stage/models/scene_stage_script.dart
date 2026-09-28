@@ -43,13 +43,13 @@ class SceneStageScript {
         final active=a.id==b.actorId;
         final target=b.targetAnchor==null?null:graph.anchors[b.targetAnchor!];
         final pose=_pose(b.action,b.text,active);
-        final defaultWalkX=a.x<.5?.72:.28;
+        final defaultWalkX=a.x<.5 ? .72 : .28;
         final targetX=active?(target?.x??(pose==ActorPose.walk?defaultWalkX:null)):null;
         tracks.add(ActorTrack(
           actorId:a.id,
           pose:pose,
           targetX:targetX,
-          targetY:active?.78:null,
+          targetY:active ? .78 : null,
           facing:active&&targetX!=null?(targetX>a.x?1:-1):a.facing,
         ));
       }
