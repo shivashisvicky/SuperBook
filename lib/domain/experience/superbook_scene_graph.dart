@@ -158,9 +158,7 @@ class SuperBookSceneGraph {
     }
 
     return SuperBookSceneGraph(
-      environment: plan.environment.location.trim().isNotEmpty
-          ? plan.environment.location.trim()
-          : (indoors ? 'Interior' : 'Exterior'),
+      environment: _environmentLabel(source, indoors),
       anchors: anchors,
       actors: actors,
       props: plan.props.isNotEmpty
@@ -172,6 +170,21 @@ class SuperBookSceneGraph {
 
   static bool _hasAny(String text, List<String> terms) =>
       terms.any((term) => text.contains(term));
+
+  static String _environmentLabel(String source, bool indoors) {
+    if (_hasAny(source, ['forest', 'woods', 'woodland'])) return 'Forest or woodland';
+    if (_hasAny(source, ['garden', 'meadow', 'field', 'park'])) return 'Garden or open grounds';
+    if (_hasAny(source, ['sea', 'ocean', 'ship', 'harbour', 'harbor', 'deck'])) return 'At sea';
+    if (_hasAny(source, ['street', 'road', 'market', 'town', 'city', 'station'])) return 'Street or public place';
+    if (_hasAny(source, ['battle', 'army', 'soldier', 'enemy', 'cannon'])) return 'Battlefield';
+    if (_hasAny(source, ['carriage', 'coach', 'wagon', 'horse'])) return 'Road or carriage setting';
+    if (_hasAny(source, ['library', 'study'])) return 'Library or study';
+    if (_hasAny(source, ['bedroom', 'bed'])) return 'Bedroom';
+    if (_hasAny(source, ['dining', 'dinner'])) return 'Dining room';
+    if (_hasAny(source, ['drawing room', 'drawing-room', 'parlor', 'parlour'])) return 'Drawing room';
+    if (indoors) return 'Interior';
+    return 'Outdoor setting';
+  }
 
   static String _slug(String value) => value
       .toLowerCase()
