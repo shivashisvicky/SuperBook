@@ -276,8 +276,8 @@ void main() {
         caption: 'She walked alone.',
       ),
       bookCharacters: const [
-        BookCharacter(name: 'Woman', description: 'A woman.'),
-        BookCharacter(name: 'Man', description: 'A man.'),
+        BookCharacter(name: 'Woman', role: 'protagonist', description: 'A woman.'),
+        BookCharacter(name: 'Man', role: 'supporting character', description: 'A man.'),
       ],
       passage: const [
         'She walked alone through the forest.',
