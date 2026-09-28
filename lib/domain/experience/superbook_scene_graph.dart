@@ -343,30 +343,43 @@ class SuperBookSceneGraph {
     final source = passage
         .where((line) => line.trim().isNotEmpty)
         .join(' ')
-        .replaceAll(RegExp(r'\\s+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     if (source.isEmpty) return const [];
 
     final sentences = source
-        .split(RegExp(r'(?<=[.!?])\\s+'))
+        .split(RegExp(r'(?<=[.!?])\s+'))
         .map((s) => s.trim())
         .where((s) => s.length >= 12)
         .toList();
 
-    final actionSentences = sentences
-        .where((sentence) => _hasAny(sentence.toLowerCase(), [
-              'walk', 'walked', 'walking', 'went', 'go', 'entered', 'enter',
-              'left', 'leaving', 'stood', 'stand', 'sat', 'sit', 'sitting',
-              'read', 'reading', 'wrote', 'write', 'opened', 'open', 'closed',
-              'looked', 'look', 'saw', 'see', 'heard', 'hear', 'said', 'spoke',
-              'asked', 'replied', 'answered', 'ran', 'run', 'fought', 'fight',
-              'took', 'take', 'held', 'hold', 'reached', 'reach', 'turned',
-              'knelt', 'kneel', 'knocked', 'knock',
-            ]))
-        .take(6)
-        .toList();
+    const actionWords = [
+      'walk', 'walked', 'walking', 'went', 'go', 'entered', 'enter',
+      'left', 'leaving', 'stood', 'stand', 'sat', 'sit', 'sitting',
+      'read', 'reading', 'wrote', 'write', 'opened', 'open', 'closed',
+      'looked', 'look', 'saw', 'see', 'heard', 'hear', 'said', 'spoke',
+      'asked', 'replied', 'answered', 'protested', 'argued', 'insisted',
+      'continued', 'ran', 'run', 'fought', 'fight', 'took', 'take',
+      'held', 'hold', 'reached', 'reach', 'turned', 'knelt', 'kneel',
+      'knocked', 'knock',
+    ];
 
-    if (actionSentences.isNotEmpty) return actionSentences;
+    final beats = <String>[];
+    for (final sentence in sentences) {
+      // Split coordinated actions so "sat ... and read ..." becomes two
+      // distinct acting beats instead of one static frame.
+      final clauses = sentence
+          .split(RegExp(r'\s+(?:and|then)\s+', caseSensitive: false))
+          .map((s) => s.trim())
+          .where((s) => s.length >= 8);
+      for (final clause in clauses) {
+        if (_hasAny(clause.toLowerCase(), actionWords)) {
+          beats.add(clause);
+        }
+      }
+    }
+
+    if (beats.isNotEmpty) return beats.take(8).toList();
     if (sceneMoment.trim().isNotEmpty && sceneMoment != '[Illustration]') {
       return [sceneMoment.trim()];
     }
@@ -395,7 +408,8 @@ class SuperBookSceneGraph {
     ])) { return 'look'; }
     if (_hasAny(t, [
       'say', 'said', 'speak', 'spoke', 'talk', 'talked', 'ask', 'asked',
-      'reply', 'replied', 'answer', 'answered',
+      'reply', 'replied', 'answer', 'answered', 'protest', 'protested',
+      'argue', 'argued', 'insist', 'insisted', 'continue', 'continued',
     ])) { return 'talk'; }
     return 'look';
   }
