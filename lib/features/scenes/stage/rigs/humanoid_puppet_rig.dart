@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/scene_stage_script.dart';
-import '../../../domain/book.dart';
+import '../../../../domain/book.dart';
 
 class CharacterVisualProfile{
   const CharacterVisualProfile({required this.female,required this.child,required this.tall,required this.hair,required this.garment});
