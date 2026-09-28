@@ -207,7 +207,7 @@ class SuperBookSceneGraph {
     }
 
     return SuperBookSceneGraph(
-      environment: _environmentLabel(source, indoors),
+      environment: _environmentLabel(physicalSource, indoors),
       anchors: anchors,
       actors: actors,
       props: groundedProps.isNotEmpty
