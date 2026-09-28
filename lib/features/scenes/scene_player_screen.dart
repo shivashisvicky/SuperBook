@@ -44,6 +44,8 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         bookId: widget.book.id,
         chapterId: widget.beat.chapterId,
         passage: _chapter.passage.join('\n'),
+        beatTitle: widget.beat.title,
+        beatSummary: widget.beat.summary,
       );
 
   @override
@@ -151,6 +153,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         characters: widget.book.characters,
         actionHint: '${_generated?.plan.sceneSummary ?? ''} ${_generated?.plan.motion ?? ''} ${_generated?.plan.actions.join(' ') ?? ''} ${_generated?.plan.characters.map((c) => c.action).join(' ') ?? ''}',
         scenePlan: _generated?.plan,
+        narrativeFocus: widget.beat.summary,
       );
 
   Widget _visual(GeneratedScene generated) {
