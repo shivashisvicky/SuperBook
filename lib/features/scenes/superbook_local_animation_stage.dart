@@ -158,7 +158,6 @@ class _LocalStoryPainter extends CustomPainter {
         ...passage.take(2),
         sceneGraph!.environment,
         ...sceneGraph!.props,
-        ...sceneGraph!.timeline.map((b) => b.text),
       ].join(' ').toLowerCase();
     }
     return [scene.title, scene.moment, passage.join(' ')]
