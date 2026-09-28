@@ -20,7 +20,7 @@ class SceneGenerationCache {
     required String chapterId,
     required String passage,
   }) {
-    return '$bookId:$chapterId:${_stableHash(passage)}';
+    return 'scene-v3:$bookId:$chapterId:${_stableHash(passage)}';
   }
 
   static int _stableHash(String value) {
