@@ -59,7 +59,7 @@ void main() {
     final graph = SuperBookSceneGraph.from(
       plan: plan,
       scene: scene,
-      bookCharacters: const [],
+      bookCharacters: [],
       passage: const [
         'The family sat in the dining room.',
         'A carriage was heard outside.',
@@ -130,7 +130,7 @@ void main() {
         atmosphere: 'The current woodland moment described in this passage.',
         caption: 'She follows the path.',
       ),
-      bookCharacters: const [],
+      bookCharacters: [],
       passage: const [
         'She followed a narrow path beneath tall trees.',
         'Leaves moved in the wind around her.',
@@ -182,7 +182,7 @@ void main() {
         atmosphere: 'A quiet interior moment.',
         caption: 'He read the letter.',
       ),
-      bookCharacters: const [],
+      bookCharacters: [],
       passage: const [
         'He sat beside the fireplace and read the letter.',
       ],
@@ -214,7 +214,7 @@ void main() {
         time: 'day',
         description: 'Trees and open ground.',
       ),
-      props: const [],
+      props: [],
       actions: ['walked outside'],
       camera: AiSceneCamera(
         shot: 'wide',
@@ -234,7 +234,7 @@ void main() {
         atmosphere: 'Open air.',
         caption: 'She walked outside.',
       ),
-      bookCharacters: const [],
+      bookCharacters: [],
       passage: const ['She walked outside beneath the trees.'],
     );
 
@@ -255,7 +255,7 @@ void main() {
         time: 'day',
         description: 'Trees and a narrow path.',
       ),
-      props: const [],
+      props: [],
       actions: ['walked alone'],
       camera: AiSceneCamera(
         shot: 'wide',
