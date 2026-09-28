@@ -169,9 +169,9 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       );
     }
 
-    // The generated still remains an AI visual artifact, but it is not
-    // composited under unrelated runtime actors. The reader Experience is
-    // driven by the same structured plan through the local scene graph.
+    // Keep the generated still as the cinematic establishing frame. The
+    // live local actors, gestures and grounded story elements are composited
+    // over that frame and remain fully network-free after generation.
     return SuperBookLocalAnimationStage(
       scene: widget.scene,
       passage: _chapter.passage,
@@ -184,6 +184,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       ].join(' '),
       scenePlan: generated.plan,
       narrativeFocus: widget.beat.summary,
+      backgroundImageBase64: generated.imageBase64,
     );
   }
 
