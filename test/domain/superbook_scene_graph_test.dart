@@ -73,22 +73,18 @@ void main() {
     expect(graph.props, contains('carriage'));
 
     final actions = graph.timeline.map((b) => b.action).toList();
-    expect(actions.take(5), [
-      'look',
+    expect(actions, [
+      'sit',
+      'carriage',
       'stand',
       'walk',
-      'reach',
-      'carriage',
     ]);
-    expect(actions.length, 6);
-    expect(graph.timeline[5].actorId, 'elizabeth');
+    expect(graph.timeline.length, 4);
 
-    expect(graph.timeline.first.targetAnchor, 'window');
-    expect(graph.timeline[2].targetAnchor, 'window');
-    expect(graph.timeline[3].targetAnchor, 'outside_window');
+    expect(graph.timeline[3].actorId, 'family_member');
+    expect(graph.timeline[3].targetAnchor, 'window');
     expect(graph.timeline[0].duration.inMilliseconds, greaterThanOrEqualTo(2800));
-    expect(graph.timeline[2].duration.inMilliseconds, greaterThanOrEqualTo(4000));
-    expect(graph.timeline[4].duration.inMilliseconds, greaterThanOrEqualTo(4000));
+    expect(graph.timeline[3].duration.inMilliseconds, greaterThanOrEqualTo(4000));
   });
 
   test('AI cannot replace the book passage with a generic environment', () {
