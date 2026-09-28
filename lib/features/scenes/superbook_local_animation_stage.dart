@@ -76,38 +76,41 @@ class _SuperBookLocalAnimationStageState
   }
 
   @override
-  Widget build(BuildContext context) => RepaintBoundary(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) => Stack(
-            fit: StackFit.expand,
-            children: [
-              if (widget.backgroundImageBase64 != null &&
-                  widget.backgroundImageBase64!.isNotEmpty)
-                Image.memory(
-                  base64Decode(widget.backgroundImageBase64!),
-                  fit: BoxFit.cover,
-                  gaplessPlayback: true,
-                ),
-              CustomPaint(
-                painter: _LocalStoryPainter(
-                  progress: _controller.value,
-                  scene: widget.scene,
-                  passage: widget.passage,
-                  characters: widget.characters,
-                  actionHint: widget.actionHint,
-                  sceneGraph: _sceneGraph,
-                  avatarSeed:
-                      '${widget.scene.title}|${widget.scene.moment}|${widget.passage.join(' ')}',
-                  drawBackground: widget.backgroundImageBase64 == null ||
-                      widget.backgroundImageBase64!.isEmpty,
-                ),
-                child: const SizedBox.expand(),
+  Widget build(BuildContext context) {
+    final graph = _sceneGraph;
+    final hasImage = widget.backgroundImageBase64 != null &&
+        widget.backgroundImageBase64!.isNotEmpty;
+    return RepaintBoundary(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (hasImage)
+            Image.memory(
+              base64Decode(widget.backgroundImageBase64!),
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) => CustomPaint(
+              painter: _LocalStoryPainter(
+                progress: _controller.value,
+                scene: widget.scene,
+                passage: widget.passage,
+                characters: widget.characters,
+                actionHint: widget.actionHint,
+                sceneGraph: graph,
+                avatarSeed:
+                    '${widget.scene.title}|${widget.scene.moment}|${widget.passage.join(' ')}',
+                drawBackground: !hasImage,
               ),
-            ],
+              child: const SizedBox.expand(),
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+    );
+  }
 }
 
 class _LocalStoryPainter extends CustomPainter {
