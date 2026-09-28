@@ -588,14 +588,17 @@ class GutenbergService {
     final text = passage.join(' ').toLowerCase();
     final theme = _visualThemeFor(text);
     final atmospheres = <String, String>{
-      'estate': 'Warm drawing rooms, a garden beyond the windows, and the quiet after a family turning point.',
-      'sea': 'Open water, wind, shifting clouds, and a vessel moving through a wide horizon.',
-      'forest': 'Deep trees, filtered light, a narrow path, and the sense that something lies beyond it.',
-      'city': 'A living street, distant windows, moving silhouettes, and the pulse of a crowded city.',
-      'interior': 'A quiet interior shaped by lamplight, furniture, and the people gathered inside.',
-      'night': 'A dark landscape under moving clouds, with a small source of light holding the eye.',
-      'journey': 'A road leads forward through a changing landscape, keeping the next destination just out of sight.',
-      'battle': 'Smoke, movement, scattered light, and opposing forces turn the landscape into a place of action.',
+      // Atmosphere is reader context, not a reusable illustration template.
+      // Keep it tied to the actual current chapter instead of injecting a
+      // stock "drawing room" or other generic setting into every scene.
+      'estate': 'The current family and social moment described in this passage.',
+      'sea': 'The current maritime moment described in this passage.',
+      'forest': 'The current woodland moment described in this passage.',
+      'city': 'The current public-place moment described in this passage.',
+      'interior': 'The current interior moment described in this passage.',
+      'night': 'The current night-time moment described in this passage.',
+      'journey': 'The current journey moment described in this passage.',
+      'battle': 'The current action moment described in this passage.',
       'neutral': 'The visual world follows the place, people, and action described in this passage.',
     };
     return Scene(
