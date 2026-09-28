@@ -818,8 +818,9 @@ class _LocalStoryPainter extends CustomPainter {
     String text,
   ) {
     final maxWidth = size.width * .48;
-    final displayText =
-        text.length > 130 ? text.substring(0, 127) + '…' : text;
+    final displayText = text.length > 130
+        ? '${text.substring(0, 127)}…'
+        : text;
     final tp = TextPainter(
       text: TextSpan(
         text: displayText,
