@@ -542,12 +542,7 @@ class GutenbergService {
           '',
         )
         .trim();
-    if (RegExp(r'^\[\s*illustration[^\]]*\]$', caseSensitive: false)
-        .hasMatch(text)) {
-      return '';
-    }
-    return text;
-  }
+    if (RegExp(r'^\[\s*illustration[^\]]*\]
 
   int? _romanToInt(String value) {
     const values = <String, int>{
