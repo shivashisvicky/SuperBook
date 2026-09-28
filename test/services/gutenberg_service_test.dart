@@ -7,8 +7,8 @@ import 'package:superbook/services/gutenberg_service.dart';
 
 void main() {
   test('Gutenberg parser removes illustration placeholders from narrative beats', () {
-    const service = GutenbergService();
-    const book = service.parseText(
+    final service = GutenbergService();
+    final book = service.parseText(
       const GutenbergBookSummary(
         id: 1342,
         title: 'Pride and Prejudice',
