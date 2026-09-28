@@ -23,6 +23,8 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
     required String passage,
     String? author,
     String? title,
+    String? beatTitle,
+    String? beatSummary,
   }) async {
     if (endpoint.trim().isEmpty) {
       throw StateError('SuperBook AI scene endpoint is not configured.');
@@ -43,6 +45,8 @@ class CloudflareSceneProvider implements SceneGenerationProvider {
         'title': title,
         'author': author,
         'passage': passage,
+        'beatTitle': beatTitle,
+        'beatSummary': beatSummary,
       }),
     ).timeout(const Duration(seconds: 90));
 
