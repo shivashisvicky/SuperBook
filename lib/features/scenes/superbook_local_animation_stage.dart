@@ -453,18 +453,21 @@ class _LocalStoryPainter extends CustomPainter {
       Paint()..color = const Color(0xFFD8B982),
     );
 
+    final tableScene = text.contains('table') || text.contains('desk');
     final table = Rect.fromLTWH(
       size.width * .10,
       size.height * .56,
       size.width * .80,
       size.height * .06,
     );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(table, const Radius.circular(5)),
-      Paint()..color = const Color(0xFF6D4D39),
-    );
+    if (tableScene) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(table, const Radius.circular(5)),
+        Paint()..color = const Color(0xFF6D4D39),
+      );
+    }
 
-    if (drawingRoom || diningRoom) {
+    if (drawingRoom || diningRoom || tableScene) {
       final chairPaint = Paint()..color = const Color(0xFF7B5A43);
       for (final x in [size.width * .18, size.width * .82]) {
         canvas.drawRRect(
