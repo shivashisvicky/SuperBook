@@ -16,7 +16,7 @@ class SuperBookLocalAnimationStage extends StatelessWidget {
       return SceneStageScript.fromGraph(graph:graph,bookCharacters:characters,scene:scene,passage:passage);
     }
     final cast=<CharacterPuppetSpec>[];
-    for(var i=0;i<characters.length&&i<2;i++){cast.add(CharacterPuppetSpec(id:'character_$i',name:characters[i].name,description:characters[i].description,x:i==0?.34:.66,y:.68,facing:i==0?1:-1));}
+    for(var i=0;i<characters.length&&i<2;i++){cast.add(CharacterPuppetSpec(id:'character_$i',name:characters[i].name,description:characters[i].description,x:(i==0?.34:.66),y:.68,facing:i==0?1:-1));}
     if(cast.isEmpty)cast.add(const CharacterPuppetSpec(id:'protagonist',name:'Protagonist',description:'',x:.5,y:.68,facing:1));
     final text='\${scene.moment} $actionHint'.toLowerCase();var pose=ActorPose.idleStand;
     if(text.contains('walk')||text.contains('enter')||text.contains('cross'))pose=ActorPose.walk;
