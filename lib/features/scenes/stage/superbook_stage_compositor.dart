@@ -32,7 +32,9 @@ class _StagePainter extends CustomPainter{
     final t=progress*math.pi*2;
     c.save();
     final zoom=1+.025*math.sin(t);c.translate(s.width/2,s.height/2);c.scale(zoom);c.translate(-s.width/2,-s.height/2);
-    backdrop.paint(c,s,script.biome,script.lighting,t);
+    final storyText=passage.join(' ').toLowerCase();
+    final blooming=storyText.contains('bloom')||storyText.contains('blossom')||storyText.contains('flower');
+    backdrop.paint(c,s,script.biome,script.lighting,t,blooming:blooming);
     final pieces=[...script.setPieces]..sort((a,b)=>a.depth.compareTo(b.depth));
     for(final p in pieces)setPieces.paint(c,s,p,t);
     if(script.beats.isNotEmpty){
