@@ -198,7 +198,10 @@ class SuperBookSceneGraph {
     for (final key in ['outside_window', 'window', 'table', 'door', 'outside']) {
       if (anchors.containsKey(key) && t.contains(key.replaceAll('_', ' '))) return key;
     }
-    if (anchors.containsKey('outside_window') &&\n        t.contains('outside') &&\n        _hasAny(t, ['look', 'turn', 'reach'])) return 'outside_window';\n    if (anchors.containsKey('window') && _hasAny(t, ['look', 'turn', 'reach'])) return 'window';
+    if (anchors.containsKey('outside_window') &&
+        t.contains('outside') &&
+        _hasAny(t, ['look', 'turn', 'reach'])) return 'outside_window';
+    if (anchors.containsKey('window') && _hasAny(t, ['look', 'turn', 'reach'])) return 'window';
     return null;
   }
 
