@@ -6,10 +6,11 @@ import '../models/scene_stage_script.dart';
 
 class StageSetPiecePainter {
   void paint(Canvas c, Size s, StageSetPiece p, double t) {
+    final id = p.id.toLowerCase();
+    if (id == 'outside_window' || id == 'outside') return;
     final x = s.width * p.x;
     final y = s.height * p.y;
-    final k = math.min(s.width, s.height) * .01 * p.scale;
-    final id = p.id.toLowerCase();
+    final k = math.min(s.width, s.height) * .0055 * p.scale;
     final shadow = Paint()..color = Colors.black.withValues(alpha: .14);
 
     if (id.contains('door')) {
