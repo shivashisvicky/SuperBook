@@ -52,6 +52,8 @@ abstract interface class SceneGenerationProvider {
     required String passage,
     String? author,
     String? title,
+    String? beatTitle,
+    String? beatSummary,
   });
 
   Future<GeneratedVideo> generateVideo({
