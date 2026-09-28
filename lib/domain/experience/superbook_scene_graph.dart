@@ -200,8 +200,12 @@ class SuperBookSceneGraph {
     }
     if (anchors.containsKey('outside_window') &&
         t.contains('outside') &&
-        _hasAny(t, ['look', 'turn', 'reach'])) return 'outside_window';
-    if (anchors.containsKey('window') && _hasAny(t, ['look', 'turn', 'reach'])) return 'window';
+        _hasAny(t, ['look', 'turn', 'reach'])) {
+      return 'outside_window';
+    }
+    if (anchors.containsKey('window') && _hasAny(t, ['look', 'turn', 'reach'])) {
+      return 'window';
+    }
     return null;
   }
 
