@@ -8,8 +8,8 @@
 **TEST Pages:** https://shivashisvicky.github.io/SuperBook/test/?v=f6b1baa8  
 **AI Worker:** \`superbook-ai-scene\`  
 **Worker URL:** https://superbook-ai-scene.shivashisvicky112.workers.dev  
-**Current HEAD:** \`f6b1baa8e031b6848b3e574d1bbfe74ae2c12fec\`  
-**Latest commit:** \`Keep local animation unobstructed during AI generation\`
+**Current HEAD:** \`d795b4db31693768c1e6b1b80593574d3bf38e01\`  
+**Latest commit:** \`docs: align AI scene generation handoff with current reader architecture\`
 
 This document supersedes older handoff sections that describe a different reader renderer, older T2V-first architecture, old demo-book/source state, or older commit hashes. Read this entire document before modifying the branch.
 
@@ -94,9 +94,9 @@ The user explicitly accepts simple animation. They do **not** accept:
 Current branch HEAD:
 
 \`\`\`
-f6b1baa8e031b6848b3e574d1bbfe74ae2c12fec
-Keep local animation unobstructed during AI generation
-2026-09-28 04:59:00Z
+d795b4db31693768c1e6b1b80593574d3bf38e01
+docs: align AI scene generation handoff with current reader architecture
+2026-09-28 06:45:07Z
 \`\`\`
 
 Parent:
@@ -1364,7 +1364,7 @@ https://github.com/shivashisvicky/SuperBook/actions/runs/36379944911
 Latest PR CI:
 https://github.com/shivashisvicky/SuperBook/actions/runs/36379948137
 
-The current branch is CI-green and Pages-deployed, but the visual Experience is NOT finished.
+The parent code commit f6b1baa8 was CI-green and Pages-deployed. This handoff-only commit is now the branch head. New CI/Pages runs are queued for d795b4db and must be checked before calling this exact HEAD deployed or green.
 
 I inspected the latest recording:
 \`/mnt/data/ScreenRecording_09-28-2026 11-42-21_1.mp4\`
