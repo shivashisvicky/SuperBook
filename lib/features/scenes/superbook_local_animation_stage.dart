@@ -104,6 +104,7 @@ class _SuperBookLocalAnimationStageState
                 actionHint: widget.actionHint,
                 sceneGraph: graph,
                 avatarSeed: '${widget.scene.title}|${widget.scene.moment}|${widget.narrativeFocus}',
+                narrativeFocus: widget.narrativeFocus,
                 drawBackground: !hasImage,
               ),
               child: const SizedBox.expand(),
@@ -124,6 +125,7 @@ class _LocalStoryPainter extends CustomPainter {
     required this.actionHint,
     required this.sceneGraph,
     required this.avatarSeed,
+    required this.narrativeFocus,
     required this.drawBackground,
   });
 
@@ -134,6 +136,7 @@ class _LocalStoryPainter extends CustomPainter {
   final String actionHint;
   final SuperBookSceneGraph? sceneGraph;
   final String avatarSeed;
+  final String narrativeFocus;
   final bool drawBackground;
 
   bool get widgetHasImage => !drawBackground;
