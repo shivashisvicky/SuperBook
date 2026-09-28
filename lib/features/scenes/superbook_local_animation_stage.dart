@@ -439,19 +439,22 @@ class _LocalStoryPainter extends CustomPainter {
       Paint()..color = const Color(0xFF5A4C43),
     );
 
-    final door = Rect.fromCenter(
-      center: Offset(size.width * (hallScene ? .52 : .5), size.height * .43),
-      width: size.width * .34,
-      height: size.height * .55,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(door, const Radius.circular(6)),
-      Paint()..color = const Color(0xFF694C39),
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(door.deflate(size.width * .018), const Radius.circular(4)),
-      Paint()..color = const Color(0xFFD8B982),
-    );
+    final doorScene = hallScene || text.contains('door') || text.contains('entrance');
+    if (doorScene) {
+      final door = Rect.fromCenter(
+        center: Offset(size.width * (hallScene ? .52 : .5), size.height * .43),
+        width: size.width * .34,
+        height: size.height * .55,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(door, const Radius.circular(6)),
+        Paint()..color = const Color(0xFF694C39),
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(door.deflate(size.width * .018), const Radius.circular(4)),
+        Paint()..color = const Color(0xFFD8B982),
+      );
+    }
 
     final tableScene = text.contains('table') || text.contains('desk');
     final table = Rect.fromLTWH(
