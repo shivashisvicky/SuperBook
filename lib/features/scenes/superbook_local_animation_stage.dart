@@ -12,19 +12,32 @@ class SuperBookLocalAnimationStage extends StatelessWidget {
   final Scene scene;final List<String> passage;final List<BookCharacter> characters;final String actionHint;final String? backgroundImageBase64;final AiScenePlan? scenePlan;final String narrativeFocus;
 
   SceneStageScript _script(){
-    if(scenePlan!=null){
-      final graph=SuperBookSceneGraph.from(plan:scenePlan!,scene:scene,bookCharacters:characters,passage:passage,narrativeFocus:narrativeFocus);
-      return SceneStageScript.fromGraph(graph:graph,bookCharacters:characters,scene:scene,passage:passage);
-    }
-    final cast=<CharacterPuppetSpec>[];
-    for(var i=0;i<characters.length&&i<2;i++){cast.add(CharacterPuppetSpec(id:'character_$i',name:characters[i].name,description:characters[i].description,x:(i == 0 ? .34 : .66),y:.68,facing:i==0?1:-1));}
-    if(cast.isEmpty)cast.add(const CharacterPuppetSpec(id:'protagonist',name:'Protagonist',description:'',x:.5,y:.68,facing:1));
-    final text='${scene.moment} $actionHint'.toLowerCase();var pose=ActorPose.idleStand;
-    if(text.contains('walk')||text.contains('enter')||text.contains('cross'))pose=ActorPose.walk;
-    else if(text.contains('talk')||text.contains('said')||text.contains('asked'))pose=ActorPose.talkGesture;
-    else if(text.contains('read')||text.contains('book')||text.contains('letter'))pose=ActorPose.sitRead;
-    else if(text.contains('reach')||text.contains('open'))pose=ActorPose.reachObject;
-    return SceneStageScript(biome:EnvironmentBiome.neutral,lighting:LightingMood.daylight,setPieces:const [],cast:cast,beats:[ChoreographedBeat(text:scene.moment,durationMs:4200,tracks:cast.map((a)=>ActorTrack(actorId:a.id,pose:pose)).toList())]);
+    final effectivePlan=scenePlan??const AiScenePlan(
+      schemaVersion:'',
+      sceneSummary:'',
+      visualStyle:'',
+      characters:[],
+      environment:AiSceneEnvironment(location:'',time:'',description:''),
+      props:[],
+      actions:[],
+      camera:AiSceneCamera(shot:'',angle:'',movement:''),
+      lighting:'',
+      motion:'',
+      imagePrompt:'',
+    );
+    final graph=SuperBookSceneGraph.from(
+      plan:effectivePlan,
+      scene:scene,
+      bookCharacters:characters,
+      passage:passage,
+      narrativeFocus:narrativeFocus,
+    );
+    return SceneStageScript.fromGraph(
+      graph:graph,
+      bookCharacters:characters,
+      scene:scene,
+      passage:passage,
+    );
   }
   @override Widget build(BuildContext context)=>SuperBookStageCompositor(script:_script(),characters:characters,passage:passage);
 }
