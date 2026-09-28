@@ -72,40 +72,47 @@ class SuperBookSceneGraph {
     // moment, but it must never manufacture the physical location.
     final physicalSource = literarySource;
 
-    final explicitIndoor = _hasAny(physicalSource, [
+    final indoorTerms = [
       'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
       'bedroom', 'office', 'inside', 'interior', 'chamber', 'kitchen',
       'fireplace', 'hearth',
-    ]);
+    ];
+    final specificOutdoorTerms = [
+      'forest', 'woods', 'woodland', 'trees', 'garden', 'meadow', 'field',
+      'street', 'road', 'sea', 'ocean', 'shore', 'harbour', 'harbor',
+      'beach', 'battlefield', 'station', 'courtyard', 'carriage', 'coach',
+      'wagon', 'ship', 'deck',
+    ];
+    final explicitIndoor = _hasAny(physicalSource, indoorTerms);
     final explicitOutdoor = _hasAny(physicalSource, [
-      'garden', 'forest', 'woods', 'woodland', 'field', 'meadow', 'street',
-      'road', 'sea', 'ocean', 'shore', 'harbour', 'harbor', 'outdoors',
-      'outside', 'courtyard', 'path', 'station', 'battlefield', 'battle',
-      'ship', 'deck',
+      ...specificOutdoorTerms,
+      'outdoors', 'outside', 'path', 'battle',
     ]);
-    final strongIndoor = _hasAny(physicalSource, [
-      'room', 'hall', 'dining', 'library', 'parlor', 'parlour', 'bedroom',
-      'office', 'inside', 'interior', 'chamber', 'kitchen', 'fireplace',
-      'hearth',
-    ]);
-    // Mentioning the exterior from inside a room does not move the scene
-    // outdoors. A strong interior location wins over incidental "outside".
-    final indoors = strongIndoor || (explicitIndoor && !explicitOutdoor);
+    // Resolve the immediate beat before falling back to the wider passage.
+    // Words such as "outside" are incidental unless a concrete outdoor
+    // location is actually named.
+    final immediateSource = scene.title + ' ' + scene.moment;
+    final immediateIndoor = _hasAny(immediateSource, indoorTerms);
+    final immediateOutdoor = _hasAny(immediateSource, specificOutdoorTerms);
+    final indoors = immediateIndoor && !immediateOutdoor
+        ? true
+        : immediateOutdoor && !immediateIndoor
+            ? false
+            : explicitIndoor && !explicitOutdoor;
 
     final hasWindow = _hasAny(physicalSource, ['window']) &&
         _hasAny(physicalSource, [
           'look', 'looked', 'see', 'saw', 'watch', 'outside', 'through',
           'open', 'opened', 'view',
         ]);
-    final hasDoor = _hasAny(physicalSource, [
+    final hasDoor = indoors && _hasAny(physicalSource, [
       'doorway', 'threshold', 'open door', 'opened the door',
-      'through the door', 'at the door', 'enter', 'entered', 'entering',
-      'exit', 'exited', 'door',
+      'through the door', 'at the door', 'door',
     ]);
     final hasTable = _hasAny(physicalSource, ['table', 'desk']) &&
         _hasAny(physicalSource, [
           'sit', 'sat', 'sitting', 'seated', 'dinner', 'eat', 'ate',
-          'write', 'wrote', 'map', 'key', 'desk', 'table',
+          'write', 'wrote', 'map', 'key',
         ]);
     final hasCarriage = _hasAny(physicalSource, [
       'carriage', 'coach', 'wagon', 'horse',
