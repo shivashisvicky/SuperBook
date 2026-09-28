@@ -181,15 +181,17 @@ class SuperBookSceneGraph {
     }
 
     final timeline = <SceneActionBeat>[];
-    final plannedActions = <String>[
-      ...plan.actions,
-      ...plan.characters.map((c) => '${c.id}: ${c.action}'),
-    ].where((a) => a.trim().isNotEmpty).take(6).toList();
 
-    // Production scenes must be driven by the actual AI plan. The old
-    // animation-lab canary was intentionally removed from the reader path:
-    // otherwise any passage mentioning a carriage/window/standing/walking
-    // could collapse into the same five-beat demonstration.
+    // Build acting beats from the actual chapter prose first. The AI plan is
+    // interpretation, not a replacement for what the book says happened.
+    final literaryBeats = _literaryBeats(passage, scene.moment);
+    final plannedActions = literaryBeats.isNotEmpty
+        ? literaryBeats
+        : <String>[
+            ...plan.actions,
+            ...plan.characters.map((c) => '${c.id}: ${c.action}'),
+          ].where((a) => a.trim().isNotEmpty).take(6).toList();
+
     for (var i = 0; i < plannedActions.length; i++) {
       final text = plannedActions[i];
       final action = _normalizeAction(text);
@@ -245,6 +247,16 @@ class SuperBookSceneGraph {
   }
 
   static String _environmentLabel(String source, bool indoors) {
+    final hasPhysicalSetting = _hasAny(source, [
+      'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
+      'bedroom', 'office', 'inside', 'interior', 'chamber', 'kitchen',
+      'fireplace', 'hearth', 'garden', 'forest', 'woods', 'woodland',
+      'trees', 'field', 'meadow', 'street', 'road', 'sea', 'ocean', 'shore',
+      'harbour', 'harbor', 'outdoors', 'outside', 'courtyard', 'path',
+      'station', 'battlefield', 'battle', 'ship', 'deck', 'carriage',
+      'coach', 'wagon', 'horse',
+    ]);
+    if (!hasPhysicalSetting) return 'Narrative setting not specified';
     if (indoors) {
       if (_hasAny(source, ['library', 'study'])) { return 'Library or study'; }
       if (_hasAny(source, ['bedroom'])) { return 'Bedroom'; }
@@ -255,12 +267,24 @@ class SuperBookSceneGraph {
       if (_hasAny(source, ['fireplace', 'hearth'])) { return 'Fireplace interior'; }
       return 'Interior';
     }
-    if (_hasAny(source, ['forest', 'woods', 'woodland', 'trees'])) { return 'Forest or woodland'; }
-    if (_hasAny(source, ['garden', 'meadow', 'field', 'park', 'courtyard'])) { return 'Garden or open grounds'; }
-    if (_hasAny(source, ['sea', 'ocean', 'ship', 'shore', 'harbour', 'harbor', 'deck'])) { return 'At sea'; }
-    if (_hasAny(source, ['street', 'road', 'market', 'town', 'city', 'station'])) { return 'Street or public place'; }
-    if (_hasAny(source, ['battle', 'battlefield', 'army', 'soldier', 'enemy', 'cannon'])) { return 'Battlefield'; }
-    if (_hasAny(source, ['carriage', 'coach', 'wagon', 'horse'])) { return 'Road or carriage setting'; }
+    if (_hasAny(source, ['forest', 'woods', 'woodland', 'trees'])) {
+      return 'Forest or woodland';
+    }
+    if (_hasAny(source, ['garden', 'meadow', 'field', 'park', 'courtyard'])) {
+      return 'Garden or open grounds';
+    }
+    if (_hasAny(source, ['sea', 'ocean', 'ship', 'shore', 'harbour', 'harbor', 'deck'])) {
+      return 'At sea';
+    }
+    if (_hasAny(source, ['street', 'road', 'market', 'town', 'city', 'station'])) {
+      return 'Street or public place';
+    }
+    if (_hasAny(source, ['battle', 'battlefield', 'army', 'soldier', 'enemy', 'cannon'])) {
+      return 'Battlefield';
+    }
+    if (_hasAny(source, ['carriage', 'coach', 'wagon', 'horse'])) {
+      return 'Road or carriage setting';
+    }
     return 'Outdoor setting';
   }
 
@@ -326,6 +350,43 @@ class SuperBookSceneGraph {
       default:
         return const Duration(milliseconds: 3000);
     }
+  }
+
+  static List<String> _literaryBeats(
+    List<String> passage,
+    String sceneMoment,
+  ) {
+    final source = passage
+        .where((line) => line.trim().isNotEmpty)
+        .join(' ')
+        .replaceAll(RegExp(r'\\s+'), ' ')
+        .trim();
+    if (source.isEmpty) return const [];
+
+    final sentences = source
+        .split(RegExp(r'(?<=[.!?])\\s+'))
+        .map((s) => s.trim())
+        .where((s) => s.length >= 12)
+        .toList();
+
+    final actionSentences = sentences
+        .where((sentence) => _hasAny(sentence.toLowerCase(), [
+              'walk', 'walked', 'walking', 'went', 'go', 'entered', 'enter',
+              'left', 'leaving', 'stood', 'stand', 'sat', 'sit', 'sitting',
+              'read', 'reading', 'wrote', 'write', 'opened', 'open', 'closed',
+              'looked', 'look', 'saw', 'see', 'heard', 'hear', 'said', 'spoke',
+              'asked', 'replied', 'answered', 'ran', 'run', 'fought', 'fight',
+              'took', 'take', 'held', 'hold', 'reached', 'reach', 'turned',
+              'knelt', 'kneel', 'knocked', 'knock',
+            ]))
+        .take(6)
+        .toList();
+
+    if (actionSentences.isNotEmpty) return actionSentences;
+    if (sceneMoment.trim().isNotEmpty && sceneMoment != '[Illustration]') {
+      return [sceneMoment.trim()];
+    }
+    return const [];
   }
 
   static String _normalizeAction(String value) {
