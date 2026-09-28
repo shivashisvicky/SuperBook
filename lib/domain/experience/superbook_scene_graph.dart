@@ -91,7 +91,7 @@ class SuperBookSceneGraph {
     // Resolve the immediate beat before falling back to the wider passage.
     // Words such as "outside" are incidental unless a concrete outdoor
     // location is actually named.
-    final immediateSource = scene.title + ' ' + scene.moment;
+    final immediateSource = '${scene.title} ${scene.moment}';
     final immediateIndoor = _hasAny(immediateSource, indoorTerms);
     final immediateOutdoor = _hasAny(immediateSource, specificOutdoorTerms);
     final indoors = immediateIndoor && !immediateOutdoor
