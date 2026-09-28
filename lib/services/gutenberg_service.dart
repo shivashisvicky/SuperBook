@@ -532,134 +532,13 @@ class GutenbergService {
 
   String _normalizeLiteraryParagraph(String value) {
     var text = value.trim();
-    const marker = '[illustration]';
     final lower = text.toLowerCase();
-    if (lower == marker || lower.startsWith('[illustration:')) {
+    if (lower == '[illustration]') return '';
+    if (lower.startsWith('[illustration:')) {
       final close = text.indexOf(']');
-      if (close == text.length - 1) return '';
-      text = text.substring(close + 1).trim();
-    }
-    return text;
-  }
-  int? _romanToInt(String value) {
-    const values = <String, int>{
-      'I': 1,
-      'V': 5,
-      'X': 10,
-      'L': 50,
-      'C': 100,
-      'D': 500,
-      'M': 1000,
-    };
-    var total = 0;
-    var previous = 0;
-    for (final char in value.toUpperCase().split('').reversed) {
-      final current = values[char];
-      if (current == null) return null;
-      if (current < previous) {
-        total -= current;
-      } else {
-        total += current;
-        previous = current;
+      if (close >= 0) {
+        text = text.substring(close + 1).trim();
       }
-    }
-    return total;
-  }
-
-  Chapter _chapterFromParagraphs(String title, List<String> paragraphs, int index) {
-    final passage = paragraphs.isEmpty ? const ['This chapter contains no readable text in the downloaded edition.'] : paragraphs;
-    final first = passage.first;
-    return Chapter(
-      id: 'chapter-${index + 1}', title: title, passage: passage,
-      scene: _sceneForChapter(
-        title: title,
-        passage: passage,
-        caption: first.length > 150 ? '${first.substring(0, 147)}...' : first,
-      ),
-    );
-  }
-
-  int _intensityForTheme(String theme) {
-    switch (theme) {
-      case 'battle':
-        return 3;
-      case 'estate':
-      case 'sea':
-      case 'forest':
-      case 'city':
-        return 2;
-      default:
-        return 1;
-    }
-  }
-  Scene _sceneForChapter({
-    required String title,
-    required List<String> passage,
-    required String caption,
-  }) {
-    final text = passage.join(' ').toLowerCase();
-    final theme = _visualThemeFor(text);
-    final atmospheres = <String, String>{
-      // Atmosphere is reader context, not a reusable illustration template.
-      // Keep it tied to the actual current chapter instead of injecting a
-      // stock "drawing room" or other generic setting into every scene.
-      'estate': 'The current family and social moment described in this passage.',
-      'sea': 'The current maritime moment described in this passage.',
-      'forest': 'The current woodland moment described in this passage.',
-      'city': 'The current public-place moment described in this passage.',
-      'interior': 'The current interior moment described in this passage.',
-      'night': 'The current night-time moment described in this passage.',
-      'journey': 'The current journey moment described in this passage.',
-      'battle': 'The current action moment described in this passage.',
-      'neutral': 'The visual world follows the place, people, and action described in this passage.',
-    };
-    return Scene(
-      title: title,
-      moment: caption,
-      atmosphere: atmospheres[theme]!,
-      caption: caption,
-      visualTheme: theme,
-    );
-  }
-
-  String _visualThemeFor(String text) {
-    if (RegExp(r'\b(?:mrs\.? bennet|bennet|darcy|elizabeth|gardiner|derbyshire|married|marriage|daughter|family|drawing room|garden|parlour|parlor)\b').hasMatch(text)) return 'estate';
-    if (RegExp(r'\b(?:ship|ships|whale|ocean|sea|sailor|sailing|harbour|harbor|captain|mast|deck|wave|waves)\b').hasMatch(text)) return 'sea';
-    if (RegExp(r'\b(?:forest|woods|woodland|tree|trees|grove|wilderness)\b').hasMatch(text)) return 'forest';
-    if (RegExp(r'\b(?:street|city|town|london|paris|market|shop|shops|crowd|carriage|station)\b').hasMatch(text)) return 'city';
-    if (RegExp(r'\b(?:room|house|home|hall|library|study|bedroom|fireplace|table|door|window|lamp|candle)\b').hasMatch(text)) return 'interior';
-    if (RegExp(r'\b(?:night|midnight|moon|moonlight|darkness|stars|starry)\b').hasMatch(text)) return 'night';
-    if (RegExp(r'\b(?:road|journey|travel|traveler|traveller|horse|horses|coach|roadside|departure)\b').hasMatch(text)) return 'journey';
-    if (RegExp(r'\b(?:battle|army|soldier|soldiers|war|weapon|weapons|fight|fought|enemy|cannon)\b').hasMatch(text)) return 'battle';
-    return 'neutral';
-  }
-  String _stripGutenbergWrapper(String text) {
-    final start = RegExp(r'\*\*\* START OF (?:THE )?PROJECT GUTENBERG EBOOK[^\n]*\*\*\*');
-    final end = RegExp(r'\*\*\* END OF (?:THE )?PROJECT GUTENBERG EBOOK[^\n]*\*\*\*');
-    final startMatch = start.firstMatch(text);
-    final endMatch = end.firstMatch(text);
-    return text.substring(startMatch?.end ?? 0, endMatch?.start ?? text.length).trim();
-  }
-}
-
-class _ChapterMarker {
-  const _ChapterMarker({
-    required this.line,
-    required this.number,
-    required this.heading,
-    this.isTitledRomanHeading = false,
-    this.isExplicitChapterHeading = false,
-  });
-
-  final int line;
-  final int? number;
-  final String heading;
-  final bool isTitledRomanHeading;
-  final bool isExplicitChapterHeading;
-}
-, caseSensitive: false)
-        .hasMatch(text)) {
-      return '';
     }
     return text;
   }
