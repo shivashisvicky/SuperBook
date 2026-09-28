@@ -42,8 +42,25 @@ class _SuperBookLocalAnimationStageState
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(seconds: _cycleSeconds()),
+      duration: _cycleDuration(),
     )..forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant SuperBookLocalAnimationStage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final sceneChanged = oldWidget.scene.title != widget.scene.title ||
+        oldWidget.scene.moment != widget.scene.moment ||
+        oldWidget.passage.join('\n') != widget.passage.join('\n') ||
+        oldWidget.narrativeFocus != widget.narrativeFocus ||
+        oldWidget.scenePlan != widget.scenePlan;
+    if (sceneChanged) {
+      _controller
+        ..stop()
+        ..duration = _cycleDuration()
+        ..reset()
+        ..forward();
+    }
   }
 
   SuperBookSceneGraph? get _sceneGraph => widget.scenePlan == null
@@ -56,11 +73,14 @@ class _SuperBookLocalAnimationStageState
           narrativeFocus: widget.narrativeFocus,
         );
 
-  int _cycleSeconds() {
+  Duration _cycleDuration() {
     final graph = _sceneGraph;
     if (graph != null && graph.timeline.isNotEmpty) {
-      final totalMs = graph.timeline.fold<int>(0, (sum, beat) => sum + beat.duration.inMilliseconds);
-      return (totalMs / 1000).ceil().clamp(8, 300);
+      final totalMs = graph.timeline.fold<int>(
+        0,
+        (sum, beat) => sum + beat.duration.inMilliseconds,
+      );
+      return Duration(milliseconds: totalMs.clamp(2800, 300000));
     }
     final raw = widget.passage
         .join(' ')
@@ -69,7 +89,7 @@ class _SuperBookLocalAnimationStageState
         .trim();
     final words = raw.isEmpty ? 0 : raw.split(' ').length;
     final beats = math.max(1, (words / 22).ceil());
-    return (beats * 18).clamp(12, 120);
+    return Duration(seconds: (beats * 18).clamp(12, 120));
   }
 
   @override
@@ -172,14 +192,21 @@ class _LocalStoryPainter extends CustomPainter {
       _text.contains('night') || _text.contains('dark') || _text.contains('moon');
 
   bool get _indoors {
-    final t = _text;
-    return t.contains('room') ||
-        t.contains('hall') ||
-        t.contains('inside') ||
-        t.contains('house') ||
-        t.contains('door') ||
-        t.contains('library') ||
-        t.contains('parlor');
+    if (sceneGraph != null) {
+      final environment = sceneGraph!.environment.toLowerCase();
+      return environment.contains('interior') ||
+          environment.contains('drawing room') ||
+          environment.contains('dining room') ||
+          environment.contains('library') ||
+          environment.contains('bedroom') ||
+          environment.contains('fireplace');
+    }
+    final normalized =
+        ' ${_text.replaceAll(RegExp(r'[^a-z0-9]+'), ' ')} ';
+    return [
+      'room', 'hall', 'inside', 'house', 'library', 'parlor', 'interior',
+      'bedroom', 'fireplace', 'hearth',
+    ].any((term) => normalized.contains(' ${term} '));
   }
 
   bool get _warmLight =>
@@ -203,19 +230,38 @@ class _LocalStoryPainter extends CustomPainter {
         : (groupScene ? 2 : math.min(2, math.max(1, characters.length)));
     for (var i = 0; i < count; i++) {
       final actor = sceneGraph != null ? sceneGraph!.actors[i] : null;
-      final startAnchor = actor == null ? null : sceneGraph!.anchors[actor.startAnchor];
-      final targetAnchor = activeBeat?.targetAnchor == null ? null : sceneGraph?.anchors[activeBeat!.targetAnchor!];
-      final baseX = startAnchor == null ? size.width * (i == 0 ? .30 : .70) : size.width * startAnchor.x;
-      final targetX = targetAnchor == null ? baseX : size.width * targetAnchor.x;
-      final travel = narrativePhase ? 0.0 : Curves.easeInOut.transform(phaseProgress);
-      final x = currentAction == 'walk' ? baseX + (targetX - baseX) * travel : baseX;
+      final startAnchor =
+          actor == null ? null : sceneGraph!.anchors[actor.startAnchor];
+      final isActiveActor = activeBeat == null ||
+          actor == null ||
+          activeBeat.actorId == actor.id;
+      final targetAnchor = isActiveActor && activeBeat?.targetAnchor != null
+          ? sceneGraph?.anchors[activeBeat!.targetAnchor!]
+          : null;
+      final baseX = startAnchor == null
+          ? size.width * (i == 0 ? .30 : .70)
+          : size.width * startAnchor.x;
+      final defaultWalkTargetX =
+          baseX < size.width * .5 ? size.width * .68 : size.width * .32;
+      final action = isActiveActor ? currentAction : _secondaryAction(beat);
+      final targetX = targetAnchor == null
+          ? (action == 'walk' ? defaultWalkTargetX : baseX)
+          : size.width * targetAnchor.x;
+      final travel =
+          narrativePhase ? 0.0 : Curves.easeInOut.transform(phaseProgress);
+      final x = action == 'walk'
+          ? baseX + (targetX - baseX) * travel
+          : baseX;
       final baseY = startAnchor?.y ?? .69;
+      final targetY = targetAnchor?.y ?? baseY;
+      final y = action == 'walk'
+          ? baseY + (targetY - baseY) * travel
+          : baseY;
       final scale = math.min(size.width, size.height) / 430 *
           (widgetHasImage ? .78 : 1.0);
-      final action = i == 0 ? currentAction : _secondaryAction(beat);
       _paintCharacter(
         canvas,
-        Offset(x, size.height * (widgetHasImage ? .665 : baseY)),
+        Offset(x, size.height * (widgetHasImage ? .665 : y)),
         scale,
         phaseProgress,
         i,
@@ -305,46 +351,59 @@ class _LocalStoryPainter extends CustomPainter {
 
   String _action(String beat) {
     if (sceneGraph != null && sceneGraph!.timeline.isNotEmpty) {
-      return sceneGraph!.timeline[_beatIndex.clamp(0, sceneGraph!.timeline.length - 1)].action;
+      return sceneGraph!.timeline[
+        _beatIndex.clamp(0, sceneGraph!.timeline.length - 1)
+      ].action;
     }
     final t = beat.toLowerCase();
-    if (t.contains('say') || t.contains('said') || t.contains('says') || t.contains('spoke') ||
-        t.contains('speak') || t.contains('tell') || t.contains('asked') ||
-        t.contains('replied') || t.contains('answer') || t.contains('conversation') ||
-        t.contains('love') || t.contains('danger') || t.contains('objection')) { return 'talk'; }
-    if (t.contains('carriage') || t.contains('horse') || t.contains('coach')) { return 'carriage'; }
-    if (t.contains('left') || t.contains('leave') || t.contains('leaving') ||
-        t.contains('depart') || t.contains('departed') || t.contains('went') ||
-        t.contains('walk') || t.contains('approach') || t.contains('cross') ||
-        t.contains('enter') || t.contains('step') || t.contains('move') ||
-        t.contains('arrive') || t.contains('go ') || t.contains('did not see')) { return 'walk'; }
-    if (t.contains('attention') || t.contains('drawn to') || t.contains('look') ||
-        t.contains('notice') || t.contains('see') || t.contains('watch') ||
-        t.contains('window') || t.contains('sound') || t.contains('hear') ||
-        t.contains('listen') || t.contains('turn')) { return 'look'; }
-    if (t.contains('walk') || t.contains('approach') || t.contains('cross') ||
-        t.contains('enter') || t.contains('step') || t.contains('move') ||
-        t.contains('leave') || t.contains('arrive') || t.contains('go ')) { return 'walk'; }
-    if (t.contains('door') || t.contains('window')) { return 'look'; }
-    if (t.contains('reach') || t.contains('open') || t.contains('lift') ||
-        t.contains('take') || t.contains('pick') || t.contains('hold') ||
-        t.contains('door')) { return 'reach'; }
-    if (t.contains('sit') || t.contains('sitting')) { return 'sit'; }
-    if (t.contains('stand') || t.contains('rise')) { return 'stand'; }
-    if (t.contains('said') || t.contains('says') || t.contains('speak') || t.contains('tell') ||
-        t.contains('ask') || t.contains('reply') || t.contains('answer') ||
-        t.contains('conversation')) { return 'talk'; }
+    if (_hasAnyWord(t, [
+      'say', 'said', 'says', 'spoke', 'speak', 'tell', 'asked', 'replied',
+      'answer', 'conversation', 'love', 'danger', 'objection',
+    ])) return 'talk';
+    if (_hasAnyWord(t, ['carriage', 'horse', 'coach'])) return 'carriage';
+    if (_hasAnyWord(t, [
+      'walk', 'walked', 'walking', 'leave', 'leaving', 'depart', 'departed',
+      'went', 'go', 'approach', 'approached', 'cross', 'crossed', 'enter',
+      'entered', 'step', 'stepped', 'move', 'moved', 'arrive', 'arrived',
+    ])) return 'walk';
+    if (_hasAnyWord(t, [
+      'fight', 'fought', 'fighting', 'strike', 'struck', 'duel', 'attack',
+      'attacked',
+    ])) return 'fight';
+    if (_hasAnyWord(t, ['sit', 'sits', 'sat', 'sitting', 'seated'])) return 'sit';
+    if (_hasAnyWord(t, ['read', 'reads', 'reading', 'letter', 'book'])) return 'read';
+    if (_hasAnyWord(t, [
+      'reach', 'reached', 'open', 'opened', 'lift', 'take', 'took', 'pick',
+      'picked', 'hold', 'held',
+    ])) return 'reach';
+    if (_hasAnyWord(t, ['stand', 'stood', 'rise', 'rose'])) return 'stand';
+    if (_hasAnyWord(t, [
+      'attention', 'drawn to', 'look', 'looked', 'notice', 'noticed', 'see',
+      'saw', 'watch', 'watched', 'window', 'sound', 'hear', 'heard', 'listen',
+      'listened', 'turn', 'turned',
+    ])) return 'look';
     return 'look';
   }
 
   String _secondaryAction(String beat) {
     final t = beat.toLowerCase();
-    if (t.contains('attention') || t.contains('drawn to') || t.contains('look') ||
-        t.contains('notice') || t.contains('window') || t.contains('sound') ||
-        t.contains('hear') || t.contains('listen')) { return 'look'; }
-    if (t.contains('say') || t.contains('speak') || t.contains('tell') ||
-        t.contains('ask') || t.contains('reply')) { return 'talk'; }
+    if (_hasAnyWord(t, ['say', 'speak', 'tell', 'ask', 'reply', 'conversation'])) {
+      return 'talk';
+    }
+    if (_hasAnyWord(t, ['sit', 'sat', 'sitting', 'seated'])) return 'sit';
+    if (_hasAnyWord(t, ['read', 'reading', 'letter', 'book'])) return 'read';
+    if (_hasAnyWord(t, ['walk', 'walked', 'walking'])) return 'walk';
     return 'listen';
+  }
+
+  bool _hasAnyWord(String text, List<String> terms) {
+    final normalized =
+        ' ${text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ')} ';
+    return terms.any((term) {
+      final normalizedTerm =
+          term.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+      return normalized.contains(' ${normalizedTerm} ');
+    });
   }
 
 
@@ -445,10 +504,16 @@ class _LocalStoryPainter extends CustomPainter {
 
   void _paintRoom(Canvas canvas, Size size, double t) {
     final text = _text;
-    final drawingRoom = text.contains('drawing room') || text.contains('drawing-room') || text.contains('parlor');
-    final diningRoom = text.contains('dining room') || text.contains('dining-room') || text.contains('dinner');
-    final windowScene = text.contains('window');
-    final hallScene = text.contains('hall') || text.contains('corridor') || text.contains('stairs');
+    final environment = sceneGraph?.environment.toLowerCase() ?? text;
+    final drawingRoom =
+        environment.contains('drawing room') || environment.contains('parlor');
+    final diningRoom = environment.contains('dining room');
+    final fireplaceScene =
+        environment.contains('fireplace') || _hasAnyWord(text, ['fireplace', 'hearth']);
+    final windowScene = sceneGraph?.anchors.containsKey('window') ??
+        _hasAnyWord(text, ['window']);
+    final hallScene =
+        environment.contains('hall') || _hasAnyWord(text, ['corridor', 'stairs']);
 
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height * .68),
@@ -459,7 +524,8 @@ class _LocalStoryPainter extends CustomPainter {
       Paint()..color = const Color(0xFF5A4C43),
     );
 
-    final doorScene = hallScene || text.contains('door') || text.contains('entrance');
+    final doorScene = sceneGraph?.anchors.containsKey('door') ??
+        _hasAnyWord(text, ['door', 'entrance']);
     if (doorScene) {
       final door = Rect.fromCenter(
         center: Offset(size.width * (hallScene ? .52 : .5), size.height * .43),
@@ -476,7 +542,8 @@ class _LocalStoryPainter extends CustomPainter {
       );
     }
 
-    final tableScene = text.contains('table') || text.contains('desk');
+    final tableScene = sceneGraph?.anchors.containsKey('table') ??
+        _hasAnyWord(text, ['table', 'desk']);
     final table = Rect.fromLTWH(
       size.width * .10,
       size.height * .56,
@@ -523,6 +590,24 @@ class _LocalStoryPainter extends CustomPainter {
       canvas.drawLine(window.topCenter, window.bottomCenter, Paint()..color = const Color(0xFF76563E)..strokeWidth = 4);
     }
 
+    if (fireplaceScene) {
+      final hearth = Rect.fromLTWH(
+        size.width * .40,
+        size.height * .39,
+        size.width * .20,
+        size.height * .22,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(hearth, const Radius.circular(8)),
+        Paint()..color = const Color(0xFF4A3329),
+      );
+      canvas.drawCircle(
+        Offset(size.width * .50, size.height * .52),
+        size.width * .045,
+        Paint()..color = const Color(0xFFE58C3A),
+      );
+    }
+
     if (_warmLight) {
       final pulse = .5 + .5 * math.sin(t * 2);
       canvas.drawCircle(
@@ -545,10 +630,103 @@ class _LocalStoryPainter extends CustomPainter {
   }
 
   void _paintOutdoors(Canvas canvas, Size size, double t) {
-    canvas.drawOval(
-      Rect.fromLTWH(-size.width * .2, size.height * .57, size.width * 1.4, size.height * .7),
-      Paint()..color = const Color(0xFF435A45),
-    );
+    final environment = sceneGraph?.environment.toLowerCase() ?? _text;
+    final sea = environment.contains('at sea');
+    final forest =
+        environment.contains('forest') || environment.contains('woodland');
+    final garden =
+        environment.contains('garden') || environment.contains('open grounds');
+    final publicPlace =
+        environment.contains('street') || environment.contains('public place');
+    final battlefield = environment.contains('battlefield');
+    final carriageSetting = environment.contains('carriage');
+
+    if (sea) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, size.height * .42, size.width, size.height * .58),
+        Paint()..color = const Color(0xFF4C7183),
+      );
+      for (var i = 0; i < 6; i++) {
+        final y = size.height * (.49 + i * .065);
+        final wave = Paint()
+          ..color = Colors.white.withValues(alpha: .20)
+          ..strokeWidth = 2.5;
+        canvas.drawLine(
+          Offset(0, y),
+          Offset(size.width, y + math.sin(t + i) * 5),
+          wave,
+        );
+      }
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(size.width * .52, size.height * .39),
+          width: size.width * .46,
+          height: size.height * .18,
+        ),
+        Paint()..color = const Color(0xFF5D493B),
+      );
+    } else if (battlefield) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, size.height * .55, size.width, size.height * .45),
+        Paint()..color = const Color(0xFF66513F),
+      );
+      for (var i = 0; i < 7; i++) {
+        final x = size.width * (.08 + i * .14);
+        canvas.drawLine(
+          Offset(x, size.height * .58),
+          Offset(x + 14, size.height * .48),
+          Paint()
+            ..color = const Color(0xFF44362E)
+            ..strokeWidth = 5,
+        );
+      }
+    } else if (publicPlace || carriageSetting) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, size.height * .55, size.width, size.height * .45),
+        Paint()..color = const Color(0xFF7B7468),
+      );
+      for (var i = 0; i < 4; i++) {
+        final x = size.width * (.12 + i * .25);
+        canvas.drawRect(
+          Rect.fromLTWH(
+            x,
+            size.height * .30,
+            size.width * .16,
+            size.height * .25,
+          ),
+          Paint()..color = const Color(0xFF7F6D5A),
+        );
+      }
+      canvas.drawLine(
+        Offset(0, size.height * .75),
+        Offset(size.width, size.height * .75),
+        Paint()
+          ..color = const Color(0xFFD0C4A7)
+          ..strokeWidth = 3,
+      );
+    } else {
+      canvas.drawOval(
+        Rect.fromLTWH(
+          -size.width * .2,
+          size.height * .57,
+          size.width * 1.4,
+          size.height * .7,
+        ),
+        Paint()
+          ..color = garden ? const Color(0xFF4F6A4A) : const Color(0xFF435A45),
+      );
+      final treeCount = forest ? 9 : 5;
+      for (var i = 0; i < treeCount; i++) {
+        _paintTree(
+          canvas,
+          Offset(
+            size.width * (.05 + i * (forest ? .115 : .20)),
+            size.height * (.24 + (i % 3) * .06),
+          ),
+          size.width * (forest ? (.075 + (i % 2) * .02) : .07),
+        );
+      }
+    }
 
     if (_night) {
       canvas.drawCircle(
@@ -566,39 +744,6 @@ class _LocalStoryPainter extends CustomPainter {
           stars,
         );
       }
-    }
-
-    final house = Path()
-      ..moveTo(size.width * .16, size.height * .58)
-      ..lineTo(size.width * .16, size.height * .30)
-      ..lineTo(size.width * .50, size.height * .17)
-      ..lineTo(size.width * .84, size.height * .30)
-      ..lineTo(size.width * .84, size.height * .58)
-      ..close();
-    canvas.drawPath(house, Paint()..color = const Color(0xFF8D765F));
-
-    final roof = Path()
-      ..moveTo(size.width * .10, size.height * .32)
-      ..lineTo(size.width * .50, size.height * .10)
-      ..lineTo(size.width * .90, size.height * .32)
-      ..close();
-    canvas.drawPath(roof, Paint()..color = const Color(0xFF403B39));
-
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width * .50, size.height * .36),
-        width: size.width * .11,
-        height: size.height * .14,
-      ),
-      Paint()..color = const Color(0xFFFFD98A),
-    );
-
-    for (var i = 0; i < 7; i++) {
-      _paintTree(
-        canvas,
-        Offset(size.width * (.08 + i * .14), size.height * (.28 + (i % 3) * .055)),
-        size.width * .10,
-      );
     }
   }
 
@@ -628,11 +773,21 @@ class _LocalStoryPainter extends CustomPainter {
     final walk = action == 'walk';
     final stand = action == 'stand';
     final reach = action == 'reach';
+    final read = action == 'read';
+    final fight = action == 'fight';
     final listen = action == 'listen' || action == 'look';
     final talk = action == 'talk';
     final seatedTalk = talk && _indoors;
     final bob = walk ? math.sin(phase * math.pi * 2) * 3.0 * s : talk ? math.sin(phase * math.pi * 2) * 1.2 * s : 0.0;
-    final lean = stand ? -10 * (1 - act) : walk ? 2 : 0;
+    final lean = stand
+        ? -10 * (1 - act)
+        : walk
+            ? 2
+            : fight
+                ? -5
+                : read
+                    ? -4
+                    : 0;
     const skins = [Color(0xFFF1D9B7),Color(0xFFD7A77D),Color(0xFFC78C69),Color(0xFF9B654B),Color(0xFFE5C09A),Color(0xFFB97858),Color(0xFFF0CBA8),Color(0xFF8D5A43)];
     const coats = [Color(0xFF6F4050),Color(0xFF3E5870),Color(0xFF7A5A3A),Color(0xFF3F6B5B),Color(0xFF7B4E3D),Color(0xFF5C4A73),Color(0xFF596B46),Color(0xFF754B63)];
     const hairs = [Color(0xFF4A3027),Color(0xFF2F2927),Color(0xFF6A422D),Color(0xFF211D1B),Color(0xFF8A5A35),Color(0xFF3A2420),Color(0xFF5A3A28),Color(0xFF2B2423)];
@@ -653,7 +808,7 @@ class _LocalStoryPainter extends CustomPainter {
     final head = shoulder + Offset(lean * .18 * s, -49 * s * bodyScale);
     final leg = Paint()..color = const Color(0xFF29282C)..strokeWidth = 11 * s..strokeCap = StrokeCap.round;
     final footPaint = Paint()..color = const Color(0xFF1E1D20)..strokeWidth = 7 * s..strokeCap = StrokeCap.round;
-    final stride = walk ? swing * 12 * s : 0.0;
+    final stride = walk ? swing * 12 * s : fight ? swing * 5 * s : 0.0;
     final liftL = walk ? math.max(0, math.cos(phase * math.pi * 2)) * 6 * s : 0.0;
     final liftR = walk ? math.max(0, -math.cos(phase * math.pi * 2)) * 6 * s : 0.0;
     final leftHip = hip + Offset(-11 * s, 0), rightHip = hip + Offset(11 * s, 0);
@@ -661,7 +816,7 @@ class _LocalStoryPainter extends CustomPainter {
     final rightKnee = rightHip + Offset(3 * s - stride * .35, 34 * s - liftR);
     final leftFoot = Offset(feet.dx - 13 * s + stride, feet.dy - liftL);
     final rightFoot = Offset(feet.dx + 13 * s - stride, feet.dy - liftR);
-    if (action == 'sit' || seatedTalk || (stand && act < .55)) {
+    if (action == 'sit' || read || seatedTalk || (stand && act < .55)) {
       final seatedY = feet.dy - 4 * s;
       canvas.drawLine(hip + Offset(-10 * s, 0), Offset(feet.dx - 31 * s, seatedY - 34 * s), leg);
       canvas.drawLine(Offset(feet.dx - 31 * s, seatedY - 34 * s), Offset(feet.dx - 31 * s, seatedY), leg);
@@ -762,6 +917,12 @@ class _LocalStoryPainter extends CustomPainter {
     if (reach) {
       leftHand = shoulder + Offset(28 * s + 38 * s * act, 56 * s - 16 * s * act);
       rightHand = shoulder + Offset(42 * s + 52 * s * act, 42 * s - 10 * s * act);
+    } else if (read) {
+      leftHand = shoulder + Offset(-18 * s, 58 * s - 8 * s * act);
+      rightHand = shoulder + Offset(18 * s, 58 * s - 8 * s * act);
+    } else if (fight) {
+      leftHand = shoulder + Offset(-58 * s, 38 * s - swing * 10 * s);
+      rightHand = shoulder + Offset(58 * s, 38 * s + swing * 10 * s);
     } else if (stand) {
       leftHand = shoulder + Offset(-28 * s, 68 * s + 8 * s * (1 - act));
       rightHand = shoulder + Offset(28 * s, 68 * s + 8 * s * (1 - act));
@@ -779,6 +940,20 @@ class _LocalStoryPainter extends CustomPainter {
     final leftShoulder = shoulder + Offset(-17 * s, 7 * s), rightShoulder = shoulder + Offset(17 * s, 7 * s);
     _drawLimb(canvas, leftShoulder, leftHand, armPaint, bend: -7 * s);
     _drawLimb(canvas, rightShoulder, rightHand, armPaint, bend: 7 * s);
+    if (read) {
+      final bookPaint = Paint()..color = const Color(0xFF5C3B2E);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: shoulder + Offset(0, 62 * s - 8 * s * act),
+            width: 34 * s,
+            height: 22 * s,
+          ),
+          Radius.circular(2 * s),
+        ),
+        bookPaint,
+      );
+    }
     if (talk) {
       final gesture = .5 + .5 * math.sin(phase * math.pi * 2);
       final accent = Paint()
@@ -841,5 +1016,9 @@ class _LocalStoryPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LocalStoryPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+      oldDelegate.progress != progress ||
+      oldDelegate.scene != scene ||
+      oldDelegate.sceneGraph != sceneGraph ||
+      oldDelegate.narrativeFocus != narrativeFocus ||
+      oldDelegate.drawBackground != drawBackground;
 }
