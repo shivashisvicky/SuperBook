@@ -19,8 +19,11 @@ class SceneGenerationCache {
     required String bookId,
     required String chapterId,
     required String passage,
+    String? beatTitle,
+    String? beatSummary,
   }) {
-    return 'scene-v3:$bookId:$chapterId:${_stableHash(passage)}';
+    final focus = '${beatTitle ?? ''}|${beatSummary ?? ''}';
+    return 'scene-v4:$bookId:$chapterId:${_stableHash('$passage|$focus')}';
   }
 
   static int _stableHash(String value) {
