@@ -337,4 +337,56 @@ void main() {
     expect(graph.environment, 'Dining room');
   });
 
+  test('AI drawing-room fallback cannot override prose with no location', () {
+    const plan = AiScenePlan(
+      schemaVersion: '1',
+      sceneSummary: 'People discuss a matter.',
+      visualStyle: 'cinematic literary realism',
+      characters: [
+        AiSceneCharacter(
+          id: 'woman',
+          description: 'A woman.',
+          action: 'stands and listens',
+          emotion: 'thoughtful',
+          position: 'left',
+        ),
+      ],
+      environment: AiSceneEnvironment(
+        location: 'Warm drawing room',
+        time: 'evening',
+        description: 'A comfortable interior.',
+      ),
+      props: [],
+      actions: ['stands and listens'],
+      camera: AiSceneCamera(
+        shot: 'medium',
+        angle: 'eye level',
+        movement: 'static',
+      ),
+      lighting: 'soft',
+      motion: 'She listens.',
+      imagePrompt: 'A woman.',
+    );
+
+    final graph = SuperBookSceneGraph.from(
+      plan: plan,
+      scene: const Scene(
+        title: 'Chapter V',
+        moment: '[Illustration]',
+        atmosphere: 'The current family and social moment described in this passage.',
+        caption: '[Illustration]',
+      ),
+      bookCharacters: const [],
+      passage: const [
+        'Then you would drink a great deal more than you ought, said Mrs. Bennet.',
+        'The boy protested that she should not.',
+      ],
+      narrativeFocus: 'A conversation continues.',
+    );
+
+    expect(graph.environment, 'Narrative setting not specified');
+    expect(graph.timeline.first.text, contains('drink a great deal more'));
+    expect(graph.timeline.length, greaterThanOrEqualTo(2));
+  });
+
 }
