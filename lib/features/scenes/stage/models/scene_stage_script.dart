@@ -1,5 +1,5 @@
-import '../../../domain/book.dart';
-import '../../../domain/experience/superbook_scene_graph.dart';
+import '../../../../domain/book.dart';
+import '../../../../domain/experience/superbook_scene_graph.dart';
 
 enum EnvironmentBiome { forestWoodland, gardenMeadow, streetStation, seaHarbor, battlefield, roadCarriage, drawingParlor, libraryStudy, hearthStudy, diningHall, bedchamber, corridorHall, neutral }
 enum LightingMood { dawn, daylight, overcastRain, dusk, nightMoon, warmHearth, candlelight }
