@@ -195,13 +195,17 @@ class SuperBookSceneGraph {
 
   static String? _targetFor(String text, Map<String, SceneAnchor> anchors) {
     final t = text.toLowerCase();
-    for (final key in ['outside_window', 'window', 'table', 'door', 'outside']) {
-      if (anchors.containsKey(key) && t.contains(key.replaceAll('_', ' '))) return key;
-    }
+
+    // "reach and look outside" means the character is interacting with the
+    // exterior through the window, not walking to the generic outside anchor.
     if (anchors.containsKey('outside_window') &&
         t.contains('outside') &&
         _hasAny(t, ['look', 'turn', 'reach'])) {
       return 'outside_window';
+    }
+
+    for (final key in ['outside_window', 'window', 'table', 'door', 'outside']) {
+      if (anchors.containsKey(key) && t.contains(key.replaceAll('_', ' '))) return key;
     }
     if (anchors.containsKey('window') && _hasAny(t, ['look', 'turn', 'reach'])) {
       return 'window';
