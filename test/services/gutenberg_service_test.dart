@@ -6,6 +6,43 @@ import 'package:http/testing.dart';
 import 'package:superbook/services/gutenberg_service.dart';
 
 void main() {
+  test('Gutenberg parser removes illustration placeholders from narrative beats', () {
+    const service = GutenbergService();
+    const book = service.parseText(
+      const GutenbergBookSummary(
+        id: 1342,
+        title: 'Pride and Prejudice',
+        author: 'Jane Austen',
+        downloadCount: 1,
+        coverUrl: null,
+      ),
+      '''
+*** START OF THE PROJECT GUTENBERG EBOOK TEST ***
+CHAPTER I
+
+[Illustration]
+
+Then you would drink a great deal more than you ought, said Mrs. Bennet.
+She continued the conversation with her daughters.
+
+CHAPTER II
+
+[Illustration: A family scene]
+
+The next morning they went to the garden.
+*** END OF THE PROJECT GUTENBERG EBOOK TEST ***
+''',
+    );
+
+    expect(book.chapters, hasLength(2));
+    expect(book.chapters[0].passage.first, contains('Then you would drink'));
+    expect(book.chapters[0].scene.moment, contains('Then you would drink'));
+    expect(book.beats.first.summary, contains('Then you would drink'));
+    expect(book.beats.first.summary, isNot('[Illustration]'));
+    expect(book.chapters[1].passage.first, contains('The next morning'));
+  });
+
+
   test('Gutenberg parser ignores table-of-contents chapter markers', () async {
     const text = '''
 *** START OF THE PROJECT GUTENBERG EBOOK TEST ***
