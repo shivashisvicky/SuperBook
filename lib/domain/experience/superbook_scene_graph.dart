@@ -59,43 +59,71 @@ class SuperBookSceneGraph {
     required List<String> passage,
     String narrativeFocus = '',
   }) {
-    final source = [
-      plan.environment.location,
-      plan.environment.description,
+    // Literary prose is authoritative for physical setting. AI supplies a
+    // fallback only when the supplied prose contains no usable setting evidence.
+    final literarySource = [
+      ...passage,
       scene.title,
       scene.moment,
-      scene.atmosphere,
       narrativeFocus,
-      plan.sceneSummary,
-      plan.environment.description,
-      ...plan.actions,
-      ...plan.characters.map((c) => '${c.id} ${c.action} ${c.position}'),
-      ...plan.props,
     ].join(' ').toLowerCase();
 
-    final explicitIndoor = _hasAny(source, [
+    final aiSource = [
+      plan.environment.location,
+      plan.environment.description,
+      plan.sceneSummary,
+      ...plan.actions,
+      ...plan.characters.map((c) => '${c.id} ${c.action} ${c.position}'),
+    ].join(' ').toLowerCase();
+
+    final literaryHasSetting = _hasAny(literarySource, [
       'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
-      'bedroom', 'office', 'inside', 'interior',
+      'bedroom', 'office', 'inside', 'interior', 'chamber', 'kitchen',
+      'fireplace', 'hearth', 'garden', 'forest', 'woods', 'woodland',
+      'field', 'meadow', 'street', 'road', 'sea', 'ocean', 'shore',
+      'harbour', 'harbor', 'outdoors', 'outside', 'courtyard', 'path',
+      'station', 'battlefield', 'battle', 'ship', 'deck',
     ]);
-    final explicitOutdoor = _hasAny(source, [
+    final physicalSource = literaryHasSetting
+        ? literarySource
+        : '${literarySource} ${aiSource}';
+
+    final explicitIndoor = _hasAny(physicalSource, [
+      'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
+      'bedroom', 'office', 'inside', 'interior', 'chamber', 'kitchen',
+      'fireplace', 'hearth',
+    ]);
+    final explicitOutdoor = _hasAny(physicalSource, [
       'garden', 'forest', 'woods', 'woodland', 'field', 'meadow', 'street',
       'road', 'sea', 'ocean', 'shore', 'harbour', 'harbor', 'outdoors',
+      'outside', 'courtyard', 'path', 'station', 'battlefield', 'battle',
+      'ship', 'deck',
     ]);
-    final indoors = explicitIndoor || !explicitOutdoor;
-    final hasWindow = source.contains('window') &&
-        _hasAny(source, ['look', 'looked', 'see', 'saw', 'watch', 'outside', 'through']);
-    final hasDoor = _hasAny(source, [
-      'doorway', 'threshold', 'open door', 'opened the door', 'through the door',
-      'at the door', 'enter', 'entered', 'entering', 'exit',
-    ]);
-    final hasTable = source.contains('table') &&
-        _hasAny(source, [
-          'sit', 'sat', 'sitting', 'dinner', 'eat', 'ate', 'write', 'wrote',
-          'map', 'key', 'desk', 'at the table',
+    final indoors = explicitIndoor && !explicitOutdoor;
+
+    final hasWindow = _hasAny(physicalSource, ['window']) &&
+        _hasAny(physicalSource, [
+          'look', 'looked', 'see', 'saw', 'watch', 'outside', 'through',
+          'open', 'opened', 'view',
         ]);
-    final hasCarriage = _hasAny(source, ['carriage', 'coach', 'wagon', 'horse']);
+    final hasDoor = _hasAny(physicalSource, [
+      'doorway', 'threshold', 'open door', 'opened the door',
+      'through the door', 'at the door', 'enter', 'entered', 'entering',
+      'exit', 'exited', 'door',
+    ]);
+    final hasTable = _hasAny(physicalSource, ['table', 'desk']) &&
+        _hasAny(physicalSource, [
+          'sit', 'sat', 'sitting', 'seated', 'dinner', 'eat', 'ate',
+          'write', 'wrote', 'map', 'key', 'desk', 'table',
+        ]);
+    final hasCarriage = _hasAny(physicalSource, [
+      'carriage', 'coach', 'wagon', 'horse',
+    ]);
+
+    // A prop only becomes renderable when the literary source actually
+    // establishes it. The AI prop list cannot ground itself.
     final groundedProps = plan.props
-        .where((prop) => _isGroundedProp(prop, source))
+        .where((prop) => _isGroundedProp(prop, literarySource))
         .take(3)
         .toList();
 
@@ -111,9 +139,13 @@ class SuperBookSceneGraph {
     };
 
     final actors = <SceneActor>[];
-    final planned = plan.characters.take(2).toList();
+    final explicitSolo = _hasAny(literarySource, [
+      'alone', 'by himself', 'by herself', 'on his own', 'on her own',
+      'single figure', 'solitary',
+    ]);
+    final planned = plan.characters.take(explicitSolo ? 1 : 2).toList();
     if (planned.isEmpty) {
-      for (final c in bookCharacters.take(2)) {
+      for (final c in bookCharacters.take(explicitSolo ? 1 : 2)) {
         actors.add(SceneActor(
           id: _slug(c.name),
           name: c.name,
@@ -185,31 +217,43 @@ class SuperBookSceneGraph {
     );
   }
 
-  static bool _hasAny(String text, List<String> terms) =>
-      terms.any((term) => text.contains(term));
+  static bool _hasAny(String text, List<String> terms) {
+    final normalized = ' ${text
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')} ';
+    return terms.any((term) {
+      final normalizedTerm =
+          term.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+      return normalized.contains(' ${normalizedTerm} ');
+    });
+  }
 
   static bool _isGroundedProp(String prop, String source) {
     final words = prop
         .toLowerCase()
         .split(RegExp(r'[^a-z0-9]+'))
-        .where((word) => word.length >= 4);
-    final meaningful = words.toList();
-    return meaningful.isEmpty ||
-        meaningful.any((word) => source.contains(word));
+        .where((word) => word.length >= 4)
+        .toList();
+    return words.isNotEmpty && words.every((word) => _hasAny(source, [word]));
   }
 
   static String _environmentLabel(String source, bool indoors) {
-    if (_hasAny(source, ['forest', 'woods', 'woodland'])) return 'Forest or woodland';
-    if (_hasAny(source, ['garden', 'meadow', 'field', 'park'])) return 'Garden or open grounds';
-    if (_hasAny(source, ['sea', 'ocean', 'ship', 'harbour', 'harbor', 'deck'])) return 'At sea';
+    if (indoors) {
+      if (_hasAny(source, ['library', 'study'])) return 'Library or study';
+      if (_hasAny(source, ['bedroom'])) return 'Bedroom';
+      if (_hasAny(source, ['dining', 'dinner'])) return 'Dining room';
+      if (_hasAny(source, ['drawing room', 'drawing-room', 'parlor', 'parlour'])) {
+        return 'Drawing room';
+      }
+      if (_hasAny(source, ['fireplace', 'hearth'])) return 'Fireplace interior';
+      return 'Interior';
+    }
+    if (_hasAny(source, ['forest', 'woods', 'woodland', 'trees'])) return 'Forest or woodland';
+    if (_hasAny(source, ['garden', 'meadow', 'field', 'park', 'courtyard'])) return 'Garden or open grounds';
+    if (_hasAny(source, ['sea', 'ocean', 'ship', 'shore', 'harbour', 'harbor', 'deck'])) return 'At sea';
     if (_hasAny(source, ['street', 'road', 'market', 'town', 'city', 'station'])) return 'Street or public place';
-    if (_hasAny(source, ['battle', 'army', 'soldier', 'enemy', 'cannon'])) return 'Battlefield';
+    if (_hasAny(source, ['battle', 'battlefield', 'army', 'soldier', 'enemy', 'cannon'])) return 'Battlefield';
     if (_hasAny(source, ['carriage', 'coach', 'wagon', 'horse'])) return 'Road or carriage setting';
-    if (_hasAny(source, ['library', 'study'])) return 'Library or study';
-    if (_hasAny(source, ['bedroom', 'bed'])) return 'Bedroom';
-    if (_hasAny(source, ['dining', 'dinner'])) return 'Dining room';
-    if (_hasAny(source, ['drawing room', 'drawing-room', 'parlor', 'parlour'])) return 'Drawing room';
-    if (indoors) return 'Interior';
     return 'Outdoor setting';
   }
 
@@ -220,18 +264,18 @@ class SuperBookSceneGraph {
 
   static String _anchorFor(String value, int index) {
     final t = value.toLowerCase();
-    if (t.contains('window')) return 'window';
-    if (t.contains('table') || t.contains('desk') || t.contains('chair')) return 'table';
-    if (t.contains('door')) return 'door';
-    if (t.contains('right')) return 'right';
-    if (t.contains('left')) return 'left';
+    if (_hasAny(t, ['window'])) return 'window';
+    if (_hasAny(t, ['table', 'desk', 'chair'])) return 'table';
+    if (_hasAny(t, ['door', 'doorway', 'threshold'])) return 'door';
+    if (_hasAny(t, ['right'])) return 'right';
+    if (_hasAny(t, ['left'])) return 'left';
     return index == 0 ? 'left' : 'right';
   }
 
   static SceneActor _actorFor(String text, List<SceneActor> actors, int index) {
     final t = text.toLowerCase();
     for (final actor in actors) {
-      if (t.contains(actor.id.replaceAll('_', ' ')) || t.contains(actor.name.toLowerCase())) return actor;
+      if (_hasAny(t, [actor.id.replaceAll('_', ' '), actor.name])) return actor;
     }
     return actors[index % actors.length];
   }
@@ -280,12 +324,27 @@ class SuperBookSceneGraph {
   static String _normalizeAction(String value) {
     final t = value.toLowerCase();
     if (_hasAny(t, ['carriage', 'coach', 'wagon', 'horse arrives'])) return 'carriage';
-    if (_hasAny(t, ['walk', 'approach', 'enter', 'leave', 'move to', 'go to', 'cross'])) return 'walk';
-    if (_hasAny(t, ['stand', 'rise', 'get up'])) return 'stand';
-    if (_hasAny(t, ['reach', 'open', 'take', 'pick up', 'hold'])) return 'reach';
-    if (_hasAny(t, ['turn', 'look', 'watch', 'notice', 'see', 'hear', 'listen'])) return 'look';
-    if (_hasAny(t, ['sit', 'sitting'])) return 'sit';
-    if (_hasAny(t, ['say', 'speak', 'talk', 'ask', 'reply'])) return 'talk';
+    if (_hasAny(t, [
+      'walk', 'walked', 'walking', 'approach', 'approached', 'enter', 'entered',
+      'leave', 'left', 'leaving', 'move', 'moved', 'go', 'went', 'cross', 'crossed',
+      'run', 'ran', 'running', 'rush', 'rushed', 'flee', 'fled',
+    ])) return 'walk';
+    if (_hasAny(t, ['stand', 'stood', 'rise', 'rose', 'get up', 'got up'])) return 'stand';
+    if (_hasAny(t, [
+      'reach', 'reached', 'open', 'opened', 'take', 'took', 'pick up', 'picked up',
+      'hold', 'held', 'write', 'wrote',
+    ])) return 'reach';
+    if (_hasAny(t, ['fight', 'fought', 'fighting', 'strike', 'struck', 'duel', 'attack', 'attacked'])) return 'fight';
+    if (_hasAny(t, ['sit', 'sits', 'sat', 'sitting', 'seated'])) return 'sit';
+    if (_hasAny(t, ['read', 'reads', 'reading', 'letter', 'book'])) return 'read';
+    if (_hasAny(t, [
+      'turn', 'turned', 'look', 'looked', 'watch', 'watched', 'notice', 'noticed',
+      'see', 'saw', 'hear', 'heard', 'listen', 'listened',
+    ])) return 'look';
+    if (_hasAny(t, [
+      'say', 'said', 'speak', 'spoke', 'talk', 'talked', 'ask', 'asked',
+      'reply', 'replied', 'answer', 'answered',
+    ])) return 'talk';
     return 'look';
   }
 }
