@@ -86,7 +86,7 @@ class SuperBookSceneGraph {
     ]);
     final physicalSource = literaryHasSetting
         ? literarySource
-        : '${literarySource} ${aiSource}';
+        : '$literarySource $aiSource';
 
     final explicitIndoor = _hasAny(physicalSource, [
       'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
@@ -224,7 +224,7 @@ class SuperBookSceneGraph {
     return terms.any((term) {
       final normalizedTerm =
           term.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
-      return normalized.contains(' ${normalizedTerm} ');
+      return normalized.contains(' $normalizedTerm ');
     });
   }
 
@@ -239,21 +239,21 @@ class SuperBookSceneGraph {
 
   static String _environmentLabel(String source, bool indoors) {
     if (indoors) {
-      if (_hasAny(source, ['library', 'study'])) return 'Library or study';
-      if (_hasAny(source, ['bedroom'])) return 'Bedroom';
-      if (_hasAny(source, ['dining', 'dinner'])) return 'Dining room';
+      if (_hasAny(source, ['library', 'study'])) { return 'Library or study'; }
+      if (_hasAny(source, ['bedroom'])) { return 'Bedroom'; }
+      if (_hasAny(source, ['dining', 'dinner'])) { return 'Dining room'; }
       if (_hasAny(source, ['drawing room', 'drawing-room', 'parlor', 'parlour'])) {
         return 'Drawing room';
       }
-      if (_hasAny(source, ['fireplace', 'hearth'])) return 'Fireplace interior';
+      if (_hasAny(source, ['fireplace', 'hearth'])) { return 'Fireplace interior'; }
       return 'Interior';
     }
-    if (_hasAny(source, ['forest', 'woods', 'woodland', 'trees'])) return 'Forest or woodland';
-    if (_hasAny(source, ['garden', 'meadow', 'field', 'park', 'courtyard'])) return 'Garden or open grounds';
-    if (_hasAny(source, ['sea', 'ocean', 'ship', 'shore', 'harbour', 'harbor', 'deck'])) return 'At sea';
-    if (_hasAny(source, ['street', 'road', 'market', 'town', 'city', 'station'])) return 'Street or public place';
-    if (_hasAny(source, ['battle', 'battlefield', 'army', 'soldier', 'enemy', 'cannon'])) return 'Battlefield';
-    if (_hasAny(source, ['carriage', 'coach', 'wagon', 'horse'])) return 'Road or carriage setting';
+    if (_hasAny(source, ['forest', 'woods', 'woodland', 'trees'])) { return 'Forest or woodland'; }
+    if (_hasAny(source, ['garden', 'meadow', 'field', 'park', 'courtyard'])) { return 'Garden or open grounds'; }
+    if (_hasAny(source, ['sea', 'ocean', 'ship', 'shore', 'harbour', 'harbor', 'deck'])) { return 'At sea'; }
+    if (_hasAny(source, ['street', 'road', 'market', 'town', 'city', 'station'])) { return 'Street or public place'; }
+    if (_hasAny(source, ['battle', 'battlefield', 'army', 'soldier', 'enemy', 'cannon'])) { return 'Battlefield'; }
+    if (_hasAny(source, ['carriage', 'coach', 'wagon', 'horse'])) { return 'Road or carriage setting'; }
     return 'Outdoor setting';
   }
 
@@ -264,18 +264,18 @@ class SuperBookSceneGraph {
 
   static String _anchorFor(String value, int index) {
     final t = value.toLowerCase();
-    if (_hasAny(t, ['window'])) return 'window';
-    if (_hasAny(t, ['table', 'desk', 'chair'])) return 'table';
-    if (_hasAny(t, ['door', 'doorway', 'threshold'])) return 'door';
-    if (_hasAny(t, ['right'])) return 'right';
-    if (_hasAny(t, ['left'])) return 'left';
+    if (_hasAny(t, ['window'])) { return 'window'; }
+    if (_hasAny(t, ['table', 'desk', 'chair'])) { return 'table'; }
+    if (_hasAny(t, ['door', 'doorway', 'threshold'])) { return 'door'; }
+    if (_hasAny(t, ['right'])) { return 'right'; }
+    if (_hasAny(t, ['left'])) { return 'left'; }
     return index == 0 ? 'left' : 'right';
   }
 
   static SceneActor _actorFor(String text, List<SceneActor> actors, int index) {
     final t = text.toLowerCase();
     for (final actor in actors) {
-      if (_hasAny(t, [actor.id.replaceAll('_', ' '), actor.name])) return actor;
+      if (_hasAny(t, [actor.id.replaceAll('_', ' '), actor.name])) { return actor; }
     }
     return actors[index % actors.length];
   }
@@ -292,7 +292,7 @@ class SuperBookSceneGraph {
     }
 
     for (final key in ['outside_window', 'window', 'table', 'door', 'outside']) {
-      if (anchors.containsKey(key) && t.contains(key.replaceAll('_', ' '))) return key;
+      if (anchors.containsKey(key) && t.contains(key.replaceAll('_', ' '))) { return key; }
     }
     if (anchors.containsKey('window') && _hasAny(t, ['look', 'turn', 'reach'])) {
       return 'window';
@@ -323,20 +323,20 @@ class SuperBookSceneGraph {
 
   static String _normalizeAction(String value) {
     final t = value.toLowerCase();
-    if (_hasAny(t, ['carriage', 'coach', 'wagon', 'horse arrives'])) return 'carriage';
+    if (_hasAny(t, ['carriage', 'coach', 'wagon', 'horse arrives'])) { return 'carriage'; }
     if (_hasAny(t, [
       'walk', 'walked', 'walking', 'approach', 'approached', 'enter', 'entered',
       'leave', 'left', 'leaving', 'move', 'moved', 'go', 'went', 'cross', 'crossed',
       'run', 'ran', 'running', 'rush', 'rushed', 'flee', 'fled',
     ])) return 'walk';
-    if (_hasAny(t, ['stand', 'stood', 'rise', 'rose', 'get up', 'got up'])) return 'stand';
+    if (_hasAny(t, ['stand', 'stood', 'rise', 'rose', 'get up', 'got up'])) { return 'stand'; }
     if (_hasAny(t, [
       'reach', 'reached', 'open', 'opened', 'take', 'took', 'pick up', 'picked up',
       'hold', 'held', 'write', 'wrote',
     ])) return 'reach';
-    if (_hasAny(t, ['fight', 'fought', 'fighting', 'strike', 'struck', 'duel', 'attack', 'attacked'])) return 'fight';
-    if (_hasAny(t, ['sit', 'sits', 'sat', 'sitting', 'seated'])) return 'sit';
-    if (_hasAny(t, ['read', 'reads', 'reading', 'letter', 'book'])) return 'read';
+    if (_hasAny(t, ['fight', 'fought', 'fighting', 'strike', 'struck', 'duel', 'attack', 'attacked'])) { return 'fight'; }
+    if (_hasAny(t, ['sit', 'sits', 'sat', 'sitting', 'seated'])) { return 'sit'; }
+    if (_hasAny(t, ['read', 'reads', 'reading', 'letter', 'book'])) { return 'read'; }
     if (_hasAny(t, [
       'turn', 'turned', 'look', 'looked', 'watch', 'watched', 'notice', 'noticed',
       'see', 'saw', 'hear', 'heard', 'listen', 'listened',
