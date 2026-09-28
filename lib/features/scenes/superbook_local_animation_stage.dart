@@ -16,6 +16,7 @@ class SuperBookLocalAnimationStage extends StatefulWidget {
     this.actionHint = '',
     this.backgroundImageBase64,
     this.scenePlan,
+    this.narrativeFocus = '',
   });
 
   final Scene scene;
@@ -24,6 +25,7 @@ class SuperBookLocalAnimationStage extends StatefulWidget {
   final String actionHint;
   final String? backgroundImageBase64;
   final AiScenePlan? scenePlan;
+  final String narrativeFocus;
 
   @override
   State<SuperBookLocalAnimationStage> createState() =>
@@ -51,6 +53,7 @@ class _SuperBookLocalAnimationStageState
           scene: widget.scene,
           bookCharacters: widget.characters,
           passage: widget.passage,
+          narrativeFocus: widget.narrativeFocus,
         );
 
   int _cycleSeconds() {
@@ -100,8 +103,7 @@ class _SuperBookLocalAnimationStageState
                 characters: widget.characters,
                 actionHint: widget.actionHint,
                 sceneGraph: graph,
-                avatarSeed:
-                    '${widget.scene.title}|${widget.scene.moment}|${widget.passage.join(' ')}',
+                avatarSeed: '${widget.scene.title}|${widget.scene.moment}|${widget.narrativeFocus}',
                 drawBackground: !hasImage,
               ),
               child: const SizedBox.expand(),
@@ -144,7 +146,21 @@ class _LocalStoryPainter extends CustomPainter {
     return h % 8;
   }
 
-  String get _text => [scene.title, scene.moment, passage.join(' '), if (sceneGraph != null) ...[sceneGraph!.environment, ...sceneGraph!.props, ...sceneGraph!.timeline.map((b) => b.text),],].join(' ').toLowerCase();
+  String get _text {
+    if (sceneGraph != null) {
+      return [
+        scene.title,
+        scene.moment,
+        narrativeFocus,
+        sceneGraph!.environment,
+        ...sceneGraph!.props,
+        ...sceneGraph!.timeline.map((b) => b.text),
+      ].join(' ').toLowerCase();
+    }
+    return [scene.title, scene.moment, passage.join(' ')]
+        .join(' ')
+        .toLowerCase();
+  }
 
   bool get _rain =>
       _text.contains('rain') || _text.contains('storm') || _text.contains('wet');
@@ -201,6 +217,7 @@ class _LocalStoryPainter extends CustomPainter {
         phaseProgress,
         i,
         action,
+        characterSeed: actor == null ? '$i' : '${actor.id}|${actor.description}',
         actionProgress: phaseProgress,
         integrated: widgetHasImage,
       );
@@ -601,6 +618,7 @@ class _LocalStoryPainter extends CustomPainter {
     Canvas canvas, Offset feet, double s, double phase, int index, String action, {
     double actionProgress = 0,
     bool integrated = false,
+    String characterSeed = '',
   }) {
     final swing = math.sin(phase * math.pi * 2);
     final act = Curves.easeInOut.transform(actionProgress.clamp(0.0, 1.0));
@@ -615,7 +633,11 @@ class _LocalStoryPainter extends CustomPainter {
     const skins = [Color(0xFFF1D9B7),Color(0xFFD7A77D),Color(0xFFC78C69),Color(0xFF9B654B),Color(0xFFE5C09A),Color(0xFFB97858),Color(0xFFF0CBA8),Color(0xFF8D5A43)];
     const coats = [Color(0xFF6F4050),Color(0xFF3E5870),Color(0xFF7A5A3A),Color(0xFF3F6B5B),Color(0xFF7B4E3D),Color(0xFF5C4A73),Color(0xFF596B46),Color(0xFF754B63)];
     const hairs = [Color(0xFF4A3027),Color(0xFF2F2927),Color(0xFF6A422D),Color(0xFF211D1B),Color(0xFF8A5A35),Color(0xFF3A2420),Color(0xFF5A3A28),Color(0xFF2B2423)];
-    final variant = (_avatarVariant + index * 3) % 8;
+    var characterHash = 0;
+    for (final code in characterSeed.codeUnits) {
+      characterHash = (characterHash * 31 + code) & 0x7fffffff;
+    }
+    final variant = (characterHash + _avatarVariant + index * 3) % 8;
     final skin = skins[variant], coat = coats[variant], hair = hairs[variant];
     final coatLight = Color.lerp(coat, Colors.white, .18)!;
     final coatDark = Color.lerp(coat, Colors.black, .18)!;
