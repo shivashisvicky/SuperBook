@@ -75,5 +75,8 @@ void main() {
     expect(graph.timeline.first.targetAnchor, 'window');
     expect(graph.timeline[2].targetAnchor, 'window');
     expect(graph.timeline[3].targetAnchor, 'outside_window');
+    expect(graph.timeline[0].duration.inMilliseconds, greaterThanOrEqualTo(2800));
+    expect(graph.timeline[2].duration.inMilliseconds, greaterThanOrEqualTo(4000));
+    expect(graph.timeline[4].duration.inMilliseconds, greaterThanOrEqualTo(4000));
   });
 }
