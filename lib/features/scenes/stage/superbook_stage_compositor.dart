@@ -18,7 +18,7 @@ class _SuperBookStageCompositorState extends State<SuperBookStageCompositor> wit
   @override void didUpdateWidget(covariant SuperBookStageCompositor old){super.didUpdateWidget(old);if(old.script!=widget.script){controller.duration=Duration(milliseconds:_duration());controller..stop()..reset()..repeat();}}
   int _duration()=>math.max(3000,widget.script.beats.fold<int>(0,(a,b)=>a+b.durationMs));
   int _beat(double p){var left=p*_duration();for(var i=0;i<widget.script.beats.length;i++){if(left<widget.script.beats[i].durationMs)return i;left-=widget.script.beats[i].durationMs;}return math.max(0,widget.script.beats.length-1);}
-  double _phase(double p,int index){var left=p*_duration();for(var i=0;i<index;i++)left-=widget.script.beats[i].durationMs;return (left/widget.script.beats[index].durationMs).clamp(0.0,1.0);}
+  double _phase(double p,int index){var left=p*_duration();for(var i=0;i<index;i++)left-=widget.script.beats[i].durationMs;return ((left/widget.script.beats[index].durationMs).clamp(0.0,1.0)).toDouble();}
   @override Widget build(BuildContext context)=>AnimatedBuilder(animation:controller,builder:(context,_){final index=_beat(controller.value);final phase=widget.script.beats.isEmpty?0:_phase(controller.value,index);return CustomPaint(painter:_StagePainter(progress:controller.value,script:widget.script,characters:widget.characters,passage:widget.passage,beatIndex:index,beatProgress:phase),child:const SizedBox.expand());});
   @override void dispose(){controller.dispose();super.dispose();}
 }
