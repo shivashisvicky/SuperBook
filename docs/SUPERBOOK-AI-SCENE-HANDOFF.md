@@ -1629,3 +1629,127 @@ Do not enable:
 - paid third-party T2V.
 
 The known Alibaba T2V billing blocker remains unchanged and is not part of this recovery pass.
+
+
+# 23B. USER-OBSERVED REGRESSION: REPETITIVE SCENES / PENDULUM MOTION / PACING
+
+**Observed:** 2026-09-28  
+**Evidence:** `ScreenRecording_09-28-2026 12-35-34_1.mp4`
+
+The deployed reader exposed three concrete defects.
+
+## A. Repetitive composition
+
+The recording showed multiple chapters collapsing into essentially the same indoor composition: two characters, central doorway, table, and repeated window/garden vocabulary.
+
+Root causes identified:
+
+1. The generated Gutenberg `Scene.atmosphere` contains generic thematic prose such as garden/window language.
+2. The local renderer treated that generic atmosphere as literal visual evidence.
+3. The local renderer drew a table and doorway by default for nearly every indoor scene.
+4. The production scene graph contained a hard-coded animation-lab canary that could activate from broad keyword combinations.
+5. Scene Director previously received the passage but not the reader's `NarrativeBeat.summary`, so the editorial focus of the current chapter was not explicit.
+
+## B. Story context was under-fed
+
+The reader now sends the existing `NarrativeBeat.title` and `NarrativeBeat.summary` to the Worker in addition to book/chapter/passage/title/author.
+
+The Scene Director prompt now explicitly treats the beat summary as the chapter's visual focus and prohibits introducing convenient generic objects such as windows, gardens, drawing rooms, tables, or carriages unless the passage establishes them.
+
+The existing Llama 3.3 JSON scene-generation architecture remains intact.
+
+## C. Animation pacing was mathematically wrong
+
+The local animation stage previously calculated total duration from per-beat durations, but then mapped the controller's progress uniformly across the number of beats.
+
+Therefore a 4.5-second carriage beat and a 1.7-second look beat could receive essentially the same visible time.
+
+The reader now uses cumulative timeline durations to calculate:
+
+- active beat;
+- local beat progress;
+- action timing.
+
+Production action durations were also increased to make literary actions legible:
+
+- look: 3.0s
+- stand: 2.8s
+- walk: 4.2s
+- reach: 3.2s
+- talk: 3.6s
+- carriage: 4.5s
+- sit: 2.8s
+
+## D. Pendulum/swivel motion
+
+The character painter previously applied continuous sinusoidal lean/bob behavior to looking/listening characters. This made static observation read as repeated swiveling.
+
+That continuous lean has been removed from `look/listen`.
+
+Only purposeful actions retain motion:
+
+- walk: restrained gait/bob;
+- talk: very small mouth/body movement;
+- stand: one-time rise;
+- reach: directed arm movement.
+
+## E. Renderer composition
+
+The room renderer no longer automatically draws:
+
+- a doorway in every interior;
+- a table in every interior;
+- a window merely because a generic atmosphere mentions a garden.
+
+Furniture/window/door elements now require textual/scene evidence.
+
+The generated AI image is still not used as an unrelated background plate.
+
+## F. Performance
+
+The animation widget was rebuilding the optional background image inside the per-frame `AnimatedBuilder`. That image is now kept outside the animation rebuild, so only the animated scene layer repaints.
+
+## G. Stale scene cache
+
+Scene cache keys were bumped from the previous scene format to:
+
+```
+scene-v3:<book>:<chapter>:<passage-hash>
+```
+
+This prevents a newly fixed TEST build from silently reusing an older scene generated under the defective prompt/renderer behavior.
+
+## Current branch
+
+```
+test/superbook-ai-scene-foundation
+```
+
+No changes were made to `main`.
+
+## Validation required
+
+Do not consider this visual milestone complete until TEST is manually checked across several genuinely different chapters.
+
+Minimum acceptance:
+
+1. Chapters with different locations must visibly differ.
+2. A chapter without a window must not receive a window merely because it is an estate/family chapter.
+3. A chapter without a table must not receive a table merely because it is indoors.
+4. Static characters must not continuously swivel.
+5. Walking/standing/reaching must be slow enough to understand.
+6. Different characters must be selected from the actual current passage/beat, not from a generic book-wide character list.
+7. The displayed Story Moment summary must correspond to what is actually animated.
+8. A Worker failure must still leave a usable local experience.
+9. The animation-lab must remain an experiment/reference, not a separate production-only path.
+
+## Billing constraint
+
+Still unchanged:
+
+- no AI Gateway credits;
+- no Unified Billing;
+- no Workers Paid;
+- no R2;
+- no paid T2V.
+
