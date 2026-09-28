@@ -57,6 +57,7 @@ class SuperBookSceneGraph {
     required Scene scene,
     required List<BookCharacter> bookCharacters,
     required List<String> passage,
+    String narrativeFocus = '',
   }) {
     final source = [
       plan.environment.location,
@@ -64,7 +65,9 @@ class SuperBookSceneGraph {
       scene.title,
       scene.moment,
       scene.atmosphere,
-      ...passage,
+      narrativeFocus,
+      plan.sceneSummary,
+      plan.environment.description,
       ...plan.actions,
       ...plan.characters.map((c) => '${c.id} ${c.action} ${c.position}'),
       ...plan.props,
