@@ -42,7 +42,16 @@ class SceneStageScript {
       for(final a in cast){
         final active=a.id==b.actorId;
         final target=b.targetAnchor==null?null:graph.anchors[b.targetAnchor!];
-        tracks.add(ActorTrack(actorId:a.id,pose:_pose(b.action,b.text,active),targetX:active?target?.x:null,targetY:active ? .78 : null,facing:active&&target!=null?(target.x>a.x?1:-1):a.facing));
+        final pose=_pose(b.action,b.text,active);
+        final defaultWalkX=a.x<.5?.72:.28;
+        final targetX=active?(target?.x??(pose==ActorPose.walk?defaultWalkX:null)):null;
+        tracks.add(ActorTrack(
+          actorId:a.id,
+          pose:pose,
+          targetX:targetX,
+          targetY:active?.78:null,
+          facing:active&&targetX!=null?(targetX>a.x?1:-1):a.facing,
+        ));
       }
       beats.add(ChoreographedBeat(text:b.text,durationMs:b.duration.inMilliseconds.clamp(2200,5200).toInt(),tracks:tracks));
     }
@@ -56,7 +65,13 @@ class SceneStageScript {
     final out=<StageSetPiece>[];
     void maybe(String id,double x,double y,double d,[double scale=1]){if(!ids.contains(id))out.add(add(id,x,y,d,scale));}
     switch(b){
-      case EnvironmentBiome.drawingParlor: maybe('window',.78,.35,.05,1.25); maybe('armchair_left',.18,.67,.30,1.15); maybe('armchair_right',.82,.67,.30,1.15); maybe('table',.52,.64,.20,1.0); maybe('door',.10,.54,.10,1.15); break;
+      case EnvironmentBiome.drawingParlor:
+        maybe('armchair_left',.22,.67,.30,1.15);
+        maybe('armchair_right',.78,.67,.30,1.15);
+        if(ids.contains('window')) maybe('window',.78,.35,.05,1.25);
+        if(ids.contains('table')) maybe('table',.52,.64,.20,1.0);
+        if(ids.contains('door')) maybe('door',.10,.54,.10,1.15);
+        break;
       case EnvironmentBiome.libraryStudy: maybe('bookcase_left',.14,.48,.05,1.5); maybe('bookcase_right',.86,.48,.05,1.5); maybe('desk',.53,.62,.18,1.05); maybe('chair',.53,.73,.28,1.0); break;
       case EnvironmentBiome.hearthStudy: maybe('fireplace',.18,.53,.04,1.35); maybe('desk',.67,.62,.18,1.0); maybe('chair',.67,.73,.28,1.0); break;
       case EnvironmentBiome.diningHall: maybe('table',.50,.62,.18,1.5); maybe('chair_left',.30,.72,.28,1.0); maybe('chair_right',.70,.72,.28,1.0); maybe('window',.82,.34,.04,1.1); break;
