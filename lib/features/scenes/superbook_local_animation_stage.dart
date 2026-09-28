@@ -258,18 +258,18 @@ class _LocalStoryPainter extends CustomPainter {
       final y = action == 'walk'
           ? baseY + (targetY - baseY) * travel
           : baseY;
-      final scale = math.min(size.width, size.height) / 430 *
-          (widgetHasImage ? .78 : 1.0);
+      // Actors are the story, not tiny annotations on the background.
+      final scale = math.min(size.width, size.height) / 390;
       _paintCharacter(
         canvas,
-        Offset(x, size.height * (widgetHasImage ? .665 : y)),
+        Offset(x, size.height * y),
         scale,
         phaseProgress,
         i,
         action,
         characterSeed: actor == null
-            ? '$i|\${passage.join(' ')}'
-            : '\${actor.id}|\${actor.name}|\${actor.description}',
+            ? '$i|' + passage.join(' ')
+            : actor.id + '|' + actor.name + '|' + actor.description,
         actionProgress: phaseProgress,
         integrated: widgetHasImage,
       );
@@ -889,16 +889,24 @@ class _LocalStoryPainter extends CustomPainter {
     final listen = action == 'listen' || action == 'look';
     final talk = action == 'talk';
     final seatedTalk = talk && _indoors;
-    final bob = walk ? math.sin(phase * math.pi * 2) * 3.0 * s : talk ? math.sin(phase * math.pi * 2) * 1.2 * s : 0.0;
+    final bob = walk
+        ? math.sin(phase * math.pi * 2) * 5.0 * s
+        : talk
+            ? math.sin(phase * math.pi * 4) * 2.2 * s
+            : listen
+                ? math.sin(phase * math.pi * 2) * 1.0 * s
+                : 0.0;
     final lean = stand
         ? -10 * (1 - act)
         : walk
-            ? 2
+            ? 5 + swing * 2
             : fight
-                ? -5
+                ? -7
                 : read
                     ? -4
-                    : 0;
+                    : talk
+                        ? math.sin(phase * math.pi * 2) * 2
+                        : 0;
     const skins = [Color(0xFFF1D9B7),Color(0xFFD7A77D),Color(0xFFC78C69),Color(0xFF9B654B),Color(0xFFE5C09A),Color(0xFFB97858),Color(0xFFF0CBA8),Color(0xFF8D5A43)];
     const coats = [Color(0xFF6F4050),Color(0xFF3E5870),Color(0xFF7A5A3A),Color(0xFF3F6B5B),Color(0xFF7B4E3D),Color(0xFF5C4A73),Color(0xFF596B46),Color(0xFF754B63)];
     const hairs = [Color(0xFF4A3027),Color(0xFF2F2927),Color(0xFF6A422D),Color(0xFF211D1B),Color(0xFF8A5A35),Color(0xFF3A2420),Color(0xFF5A3A28),Color(0xFF2B2423)];
@@ -1027,8 +1035,15 @@ class _LocalStoryPainter extends CustomPainter {
       rightHand = shoulder + Offset(28 * s, 68 * s + 8 * s * (1 - act));
     } else if (talk) {
       final gesture = math.sin(phase * math.pi * 2);
-      leftHand = shoulder + Offset(-30 * s - gesture * 16 * s, 53 * s - math.max(0, gesture) * 20 * s);
-      rightHand = shoulder + Offset(30 * s + gesture * 18 * s, 50 * s - math.max(0, -gesture) * 20 * s);
+      final accent = math.sin(phase * math.pi * 4);
+      leftHand = shoulder + Offset(
+        -30 * s - gesture * 22 * s,
+        53 * s - math.max(0, gesture) * 30 * s - accent * 3 * s,
+      );
+      rightHand = shoulder + Offset(
+        30 * s + gesture * 22 * s,
+        50 * s - math.max(0, -gesture) * 30 * s + accent * 3 * s,
+      );
     } else if (listen) {
       leftHand = shoulder + Offset(-28 * s, 60 * s);
       rightHand = shoulder + Offset(28 * s, 55 * s - math.sin(phase * math.pi * 2) * 4 * s);
