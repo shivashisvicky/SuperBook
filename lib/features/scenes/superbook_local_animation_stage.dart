@@ -154,7 +154,7 @@ class _LocalStoryPainter extends CustomPainter {
       return [
         scene.title,
         scene.moment,
-        widget.narrativeFocus,
+        narrativeFocus,
         sceneGraph!.environment,
         ...sceneGraph!.props,
         ...sceneGraph!.timeline.map((b) => b.text),
