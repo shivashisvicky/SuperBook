@@ -165,13 +165,12 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         actionHint: '${generated.plan.sceneSummary} ${generated.plan.motion} ${generated.plan.actions.join(' ')} ${generated.plan.characters.map((c) => c.action).join(' ')}',
         scenePlan: generated.plan,
         narrativeFocus: widget.beat.summary,
-        backgroundImageBase64: generated.imageBase64,
       );
     }
 
-    // Keep the generated still as the cinematic establishing frame. The
-    // live local actors, gestures and grounded story elements are composited
-    // over that frame and remain fully network-free after generation.
+    // The Experience Player is now a unified illustrated stage. The AI still
+    // remains available as generation output, but is never composited beneath
+    // the articulated actors.
     return SuperBookLocalAnimationStage(
       scene: widget.scene,
       passage: _chapter.passage,
