@@ -355,7 +355,7 @@ class SuperBookSceneGraph {
 
     const actionWords = [
       'walk', 'walked', 'walking', 'went', 'go', 'entered', 'enter',
-      'left', 'leaving', 'stood', 'stand', 'sat', 'sit', 'sitting',
+      'left', 'leaving', 'stood', 'stand', 'rose', 'rise', 'sat', 'sit', 'sitting',
       'read', 'reading', 'wrote', 'write', 'opened', 'open', 'closed',
       'looked', 'look', 'saw', 'see', 'heard', 'hear', 'said', 'spoke',
       'asked', 'replied', 'answered', 'protested', 'argued', 'insisted',
