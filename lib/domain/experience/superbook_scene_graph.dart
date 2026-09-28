@@ -127,33 +127,21 @@ class SuperBookSceneGraph {
       ...plan.characters.map((c) => '${c.id}: ${c.action}'),
     ].where((a) => a.trim().isNotEmpty).take(6).toList();
 
-    final canary = _hasAny(source, ['carriage', 'coach']) &&
-        _hasAny(source, ['window', 'outside']) &&
-        _hasAny(source, ['stand', 'rise', 'get up']) &&
-        _hasAny(source, ['walk', 'approach', 'go to', 'move to']);
-
-    if (canary) {
-      final actor = actors.first.id;
-      timeline.addAll([
-        SceneActionBeat(text: 'Turn toward the window', action: 'look', actorId: actor, targetAnchor: 'window', duration: const Duration(milliseconds: 1700)),
-        SceneActionBeat(text: 'Stand', action: 'stand', actorId: actor, targetAnchor: 'table', duration: const Duration(milliseconds: 1800)),
-        SceneActionBeat(text: 'Walk to the window', action: 'walk', actorId: actor, targetAnchor: 'window', duration: const Duration(milliseconds: 3200)),
-        SceneActionBeat(text: 'Reach and look outside', action: 'reach', actorId: actor, targetAnchor: 'outside_window', duration: const Duration(milliseconds: 1900)),
-        SceneActionBeat(text: 'Carriage arrives outside', action: 'carriage', actorId: actor, targetAnchor: 'outside_window', duration: const Duration(milliseconds: 3200)),
-      ]);
-    } else {
-      for (var i = 0; i < plannedActions.length; i++) {
-        final text = plannedActions[i];
-        final action = _normalizeAction(text);
-        final actor = _actorFor(text, actors, i);
-        timeline.add(SceneActionBeat(
-          text: text,
-          action: action,
-          actorId: actor.id,
-          targetAnchor: _targetFor(text, anchors),
-          duration: Duration(milliseconds: action == 'walk' ? 3000 : 1900),
-        ));
-      }
+    // Production scenes must be driven by the actual AI plan. The old
+    // animation-lab canary was intentionally removed from the reader path:
+    // otherwise any passage mentioning a carriage/window/standing/walking
+    // could collapse into the same five-beat demonstration.
+    for (var i = 0; i < plannedActions.length; i++) {
+      final text = plannedActions[i];
+      final action = _normalizeAction(text);
+      final actor = _actorFor(text, actors, i);
+      timeline.add(SceneActionBeat(
+        text: text,
+        action: action,
+        actorId: actor.id,
+        targetAnchor: _targetFor(text, anchors),
+        duration: _durationFor(action),
+      ));
     }
 
     if (timeline.isEmpty) {
@@ -212,6 +200,27 @@ class SuperBookSceneGraph {
     }
     if (anchors.containsKey('window') && _hasAny(t, ['look', 'turn', 'reach'])) return 'window';
     return null;
+  }
+
+  static Duration _durationFor(String action) {
+    switch (action) {
+      case 'walk':
+        return const Duration(milliseconds: 4200);
+      case 'carriage':
+        return const Duration(milliseconds: 4500);
+      case 'reach':
+        return const Duration(milliseconds: 3200);
+      case 'stand':
+        return const Duration(milliseconds: 2800);
+      case 'talk':
+        return const Duration(milliseconds: 3600);
+      case 'look':
+        return const Duration(milliseconds: 3000);
+      case 'sit':
+        return const Duration(milliseconds: 2800);
+      default:
+        return const Duration(milliseconds: 3000);
+    }
   }
 
   static String _normalizeAction(String value) {
