@@ -5,7 +5,7 @@ import 'package:superbook/domain/experience/ai_scene_plan.dart';
 import 'package:superbook/domain/experience/superbook_scene_graph.dart';
 
 void main() {
-  test('canary scene becomes an explicit reader timeline', () {
+  test('AI scene plan becomes an explicit reader timeline', () {
     const plan = AiScenePlan(
       schemaVersion: '1',
       sceneSummary: 'A family waits in a dining room as a carriage arrives outside.',
@@ -32,7 +32,13 @@ void main() {
         description: 'A dining room with a window looking outside.',
       ),
       props: ['dining table', 'window', 'carriage'],
-      actions: ['turn toward the window', 'stand', 'walk to the window', 'reach and look outside', 'carriage arrives outside'],
+      actions: [
+        'turn toward the window',
+        'stand',
+        'walk to the window',
+        'reach and look outside',
+        'carriage arrives outside',
+      ],
       camera: AiSceneCamera(
         shot: 'medium wide',
         angle: 'eye level',
@@ -43,7 +49,7 @@ void main() {
       imagePrompt: 'A coherent dining room scene.',
     );
 
-    const scene = Scene(
+    final scene = Scene(
       title: 'Dining room',
       moment: 'A carriage arrives outside.',
       atmosphere: 'Warm evening light.',
@@ -65,13 +71,18 @@ void main() {
     expect(graph.anchors.containsKey('window'), isTrue);
     expect(graph.anchors.containsKey('outside_window'), isTrue);
     expect(graph.props, contains('carriage'));
-    expect(graph.timeline.map((b) => b.action), [
+
+    final actions = graph.timeline.map((b) => b.action).toList();
+    expect(actions.take(5), [
       'look',
       'stand',
       'walk',
       'reach',
       'carriage',
     ]);
+    expect(actions.length, 6);
+    expect(graph.timeline[5].actorId, 'elizabeth');
+
     expect(graph.timeline.first.targetAnchor, 'window');
     expect(graph.timeline[2].targetAnchor, 'window');
     expect(graph.timeline[3].targetAnchor, 'outside_window');
