@@ -99,7 +99,14 @@ class SuperBookSceneGraph {
       'outside', 'courtyard', 'path', 'station', 'battlefield', 'battle',
       'ship', 'deck',
     ]);
-    final indoors = explicitIndoor && !explicitOutdoor;
+    final strongIndoor = _hasAny(physicalSource, [
+      'room', 'hall', 'dining', 'library', 'parlor', 'parlour', 'bedroom',
+      'office', 'inside', 'interior', 'chamber', 'kitchen', 'fireplace',
+      'hearth',
+    ]);
+    // Mentioning the exterior from inside a room does not move the scene
+    // outdoors. A strong interior location wins over incidental "outside".
+    final indoors = strongIndoor || (explicitIndoor && !explicitOutdoor);
 
     final hasWindow = _hasAny(physicalSource, ['window']) &&
         _hasAny(physicalSource, [
