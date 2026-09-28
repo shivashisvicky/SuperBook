@@ -40,9 +40,9 @@ class SceneStageScript {
       for(final a in cast){
         final active=a.id==b.actorId;
         final target=b.targetAnchor==null?null:graph.anchors[b.targetAnchor!];
-        tracks.add(ActorTrack(actorId:a.id,pose:_pose(b.action,b.text,active),targetX:active?target?.x:null,targetY:active?.78:null,facing:active&&target!=null?(target.x>a.x?1:-1):a.facing));
+        tracks.add(ActorTrack(actorId:a.id,pose:_pose(b.action,b.text,active),targetX:active?target?.x:null,targetY:active ? .78 : null,facing:active&&target!=null?(target.x>a.x?1:-1):a.facing));
       }
-      beats.add(ChoreographedBeat(text:b.text,durationMs:b.duration.inMilliseconds.clamp(2200,5200),tracks:tracks));
+      beats.add(ChoreographedBeat(text:b.text,durationMs:b.duration.inMilliseconds.clamp(2200,5200).toInt(),tracks:tracks));
     }
     if(beats.isEmpty&&cast.isNotEmpty) beats.add(ChoreographedBeat(text:scene.moment,durationMs:3200,tracks:cast.map((a)=>ActorTrack(actorId:a.id,pose:ActorPose.idleStand)).toList()));
     return SceneStageScript(biome:biome,lighting:_lighting(scene,passage),setPieces:pieces,cast:cast,beats:beats);
