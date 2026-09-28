@@ -1437,3 +1437,195 @@ Do not generalize until the canary is visually coherent.
 CI/deployment success is not visual verification. Inspect the real deployed TEST surface after every visual change.
 
 No main branch changes.
+
+
+# 23A. RECOVERY PASS: READER SCENE-GRAPH INTEGRATION
+
+**Updated:** 2026-09-28 IST  
+**Branch:** `test/superbook-ai-scene-foundation`  
+**Verified HEAD:** `5d5de90ff427f8cc76913cba51a2d356a85021e0`
+
+The separate animation experiment has now been connected to the real reader architecture at the semantic layer.
+
+## Changes made
+
+### 1. AI ScenePlan is now a reader input, not just an action string
+
+Added:
+
+```
+lib/domain/experience/superbook_scene_graph.dart
+```
+
+The scene graph normalizes:
+
+- environment;
+- semantic anchors;
+- named actors;
+- props;
+- action timeline;
+- action targets;
+- actor starting positions.
+
+The graph is derived once from the existing `AiScenePlan`, book characters, scene metadata, and passage.
+
+### 2. The reader now passes the structured plan into the animation stage
+
+Updated:
+
+```
+lib/features/scenes/scene_player_screen.dart
+```
+
+The Experience no longer uses the generated still as a background plate underneath unrelated runtime actors.
+
+The generated still remains available as a generated AI artifact, but the primary reader Experience is now the local animated scene driven by the structured plan.
+
+This deliberately removes the previously observed:
+
+```
+AI photographic background
+        +
+generic vector actors pasted on top
+```
+
+failure mode.
+
+### 3. Local animation now consumes the scene graph
+
+Updated:
+
+```
+lib/features/scenes/superbook_local_animation_stage.dart
+```
+
+When an AI plan exists, the stage now:
+
+- uses named planned actors;
+- resolves semantic starting anchors;
+- resolves target anchors;
+- uses explicit scene-graph action beats;
+- moves a walking actor toward the target anchor;
+- places carriage motion against the outside-window/outside depth anchor;
+- derives animation duration from the scene timeline;
+- keeps the network-free local renderer as the playback engine.
+
+The old generic passage keyword path remains only as a fallback when no structured scene plan exists.
+
+### 4. Animation-lab canary behavior is now recognized in the real reader
+
+The proven canary sequence is detected semantically when the scene contains the relevant ingredients:
+
+- carriage/coach;
+- window/outside;
+- stand/rise;
+- walk/approach/move.
+
+The reader then creates:
+
+1. turn/look toward window;
+2. stand;
+3. walk to window;
+4. reach/look outside;
+5. carriage arrives outside.
+
+This is not a separate demo page. It is generated as the reader's local scene timeline.
+
+The actor is not hard-coded to the name Elizabeth. The first planned scene actor is used, preserving the architecture for real-book scenes.
+
+### 5. Automated regression coverage
+
+Added:
+
+```
+test/domain/superbook_scene_graph_test.dart
+```
+
+The test verifies:
+
+- actor identity;
+- window anchor;
+- outside-window anchor;
+- carriage prop;
+- explicit canary action order;
+- action targets.
+
+## CI evidence
+
+Commit:
+
+```
+5d5de90ff427f8cc76913cba51a2d356a85021e0
+test: verify reader scene graph canary
+```
+
+SuperBook CI:
+
+```
+36388601743
+```
+
+Result:
+
+```
+completed / success
+```
+
+All validation stages passed:
+
+- flutter pub get;
+- flutter create web;
+- flutter analyze;
+- flutter test;
+- flutter build web.
+
+TEST Pages:
+
+```
+36388601631
+```
+
+Result:
+
+```
+completed / success
+```
+
+The Pages build and deployment both completed successfully from the same HEAD.
+
+TEST URL:
+
+https://shivashisvicky.github.io/SuperBook/test/?v=5d5de90f
+
+## Important verification boundary
+
+The successful CI and Pages runs prove the code builds, tests, and deploys.
+
+They do **not** by themselves prove that the animation is visually acceptable.
+
+The next required verification is therefore visual inspection of the deployed reader, specifically:
+
+1. open a real Gutenberg book;
+2. open the Experience from the reader;
+3. confirm the local animation is visible immediately;
+4. confirm the AI plan, when available, changes the actual actor/action staging;
+5. confirm no AI photographic background has unrelated vector actors pasted over it;
+6. confirm a canary-like passage produces turn → stand → walk → reach/look → carriage staging;
+7. confirm chapters continue to load from the actual selected book;
+8. confirm the experience remains usable if the AI Worker is unavailable.
+
+Do not call the visual milestone complete until those observations are confirmed.
+
+## Billing boundary remains unchanged
+
+No paid infrastructure was introduced.
+
+Do not enable:
+
+- AI Gateway credits;
+- Unified Billing;
+- Workers Paid;
+- R2;
+- paid third-party T2V.
+
+The known Alibaba T2V billing blocker remains unchanged and is not part of this recovery pass.
