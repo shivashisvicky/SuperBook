@@ -81,6 +81,10 @@ class SuperBookSceneGraph {
     final hasDoor = _hasAny(source, ['door', 'entrance', 'threshold']);
     final hasTable = _hasAny(source, ['table', 'dining', 'desk']);
     final hasCarriage = _hasAny(source, ['carriage', 'coach', 'wagon', 'horse']);
+    final groundedProps = plan.props
+        .where((prop) => _isGroundedProp(prop, source))
+        .take(3)
+        .toList();
 
     final anchors = <String, SceneAnchor>{
       'center': const SceneAnchor('center', .50, .68),
@@ -161,8 +165,8 @@ class SuperBookSceneGraph {
       environment: _environmentLabel(source, indoors),
       anchors: anchors,
       actors: actors,
-      props: plan.props.isNotEmpty
-          ? plan.props.take(3).toList()
+      props: groundedProps.isNotEmpty
+          ? groundedProps
           : (hasCarriage ? const ['carriage'] : const []),
       timeline: timeline,
     );
@@ -170,6 +174,16 @@ class SuperBookSceneGraph {
 
   static bool _hasAny(String text, List<String> terms) =>
       terms.any((term) => text.contains(term));
+
+  static bool _isGroundedProp(String prop, String source) {
+    final words = prop
+        .toLowerCase()
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((word) => word.length >= 4);
+    final meaningful = words.toList();
+    return meaningful.isEmpty ||
+        meaningful.any((word) => source.contains(word));
+  }
 
   static String _environmentLabel(String source, bool indoors) {
     if (_hasAny(source, ['forest', 'woods', 'woodland'])) return 'Forest or woodland';
