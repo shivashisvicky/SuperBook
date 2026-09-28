@@ -909,7 +909,6 @@ class _LocalStoryPainter extends CustomPainter {
     final variant = (characterHash + _avatarVariant + index * 3) % 8;
     final skin = skins[variant], coat = coats[variant], hair = hairs[variant];
     final coatLight = Color.lerp(coat, Colors.white, .18)!;
-    final coatDark = Color.lerp(coat, Colors.black, .18)!;
     final skinShadow = Color.lerp(skin, Colors.black, .12)!;
     final taller = variant == 1 || variant == 5;
     final bodyScale = taller ? 1.08 : (variant == 2 || variant == 7 ? .94 : 1.0);
