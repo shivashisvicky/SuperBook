@@ -500,6 +500,18 @@ class _LocalStoryPainter extends CustomPainter {
     } else {
       _paintOutdoors(canvas, size, t);
     }
+
+    final dialogue = _dialogueText;
+    if (dialogue != null && _currentBeatAction == 'talk') {
+      final activeIndex = _activeActorIndex;
+      final bubbleX = size.width * (activeIndex == 0 ? .30 : .70);
+      _paintDialogueBubble(
+        canvas,
+        size,
+        Offset(bubbleX, size.height * .16),
+        dialogue,
+      );
+    }
   }
 
   void _paintRoom(Canvas canvas, Size size, double t) {
@@ -631,6 +643,36 @@ class _LocalStoryPainter extends CustomPainter {
 
   void _paintOutdoors(Canvas canvas, Size size, double t) {
     final environment = sceneGraph?.environment.toLowerCase() ?? _text;
+    if (environment.contains('narrative setting not specified')) {
+      final paper = Paint()..color = const Color(0xFFD8D0C2);
+      canvas.drawRect(Offset.zero & size, paper);
+      final horizon = Paint()
+        ..color = const Color(0xFFB9AD9C)
+        ..strokeWidth = 2;
+      canvas.drawLine(
+        Offset(0, size.height * .60),
+        Offset(size.width, size.height * .60),
+        horizon,
+      );
+      for (var i = 0; i < 5; i++) {
+        final x = size.width * (.12 + i * .19);
+        canvas.drawLine(
+          Offset(x, size.height * .60),
+          Offset(x + size.width * .06, size.height * .46),
+          Paint()
+            ..color = const Color(0xFFB0A392)
+            ..strokeWidth = 2,
+        );
+      }
+      if (_night) {
+        canvas.drawCircle(
+          Offset(size.width * .78, size.height * .18),
+          size.width * .055,
+          Paint()..color = const Color(0xFFF2E9C9),
+        );
+      }
+      return;
+    }
     final sea = environment.contains('at sea');
     final forest =
         environment.contains('forest') || environment.contains('woodland');
@@ -745,6 +787,70 @@ class _LocalStoryPainter extends CustomPainter {
         );
       }
     }
+  }
+
+  String? get _dialogueText {
+    final source = passage.join(' ');
+    final match = RegExp(r'[“"]([^”"]{8,220})[”"]').firstMatch(source);
+    return match?.group(1)?.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  String get _currentBeatAction {
+    if (sceneGraph == null || sceneGraph!.timeline.isEmpty) return '';
+    return sceneGraph!
+        .timeline[_beatIndex.clamp(0, sceneGraph!.timeline.length - 1)]
+        .action;
+  }
+
+  int get _activeActorIndex {
+    if (sceneGraph == null || sceneGraph!.timeline.isEmpty) return 0;
+    final id = sceneGraph!
+        .timeline[_beatIndex.clamp(0, sceneGraph!.timeline.length - 1)]
+        .actorId;
+    final index = sceneGraph!.actors.indexWhere((actor) => actor.id == id);
+    return index < 0 ? 0 : index;
+  }
+
+  void _paintDialogueBubble(
+    Canvas canvas,
+    Size size,
+    Offset anchor,
+    String text,
+  ) {
+    final maxWidth = size.width * .48;
+    final displayText =
+        text.length > 130 ? text.substring(0, 127) + '…' : text;
+    final tp = TextPainter(
+      text: TextSpan(
+        text: displayText,
+        style: const TextStyle(
+          color: Color(0xFF24211E),
+          fontSize: 13,
+          height: 1.15,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: 4,
+      ellipsis: '…',
+    )..layout(maxWidth: maxWidth);
+
+    final bubble = Rect.fromCenter(
+      center: anchor,
+      width: maxWidth + 24,
+      height: tp.height + 24,
+    );
+    final paint = Paint()..color = Colors.white.withValues(alpha: .94);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(bubble, const Radius.circular(14)),
+      paint,
+    );
+    final tail = Path()
+      ..moveTo(anchor.dx - 8, bubble.bottom)
+      ..lineTo(anchor.dx + 5, bubble.bottom)
+      ..lineTo(anchor.dx - 2, bubble.bottom + 12)
+      ..close();
+    canvas.drawPath(tail, paint);
+    tp.paint(canvas, Offset(bubble.left + 12, bubble.top + 12));
   }
 
   void _paintTree(Canvas canvas, Offset center, double radius) {
