@@ -73,13 +73,26 @@ class SuperBookSceneGraph {
       ...plan.props,
     ].join(' ').toLowerCase();
 
-    final indoors = _hasAny(source, [
+    final explicitIndoor = _hasAny(source, [
       'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
       'bedroom', 'office', 'inside', 'interior',
     ]);
-    final hasWindow = source.contains('window');
-    final hasDoor = _hasAny(source, ['door', 'entrance', 'threshold']);
-    final hasTable = _hasAny(source, ['table', 'dining', 'desk']);
+    final explicitOutdoor = _hasAny(source, [
+      'garden', 'forest', 'woods', 'woodland', 'field', 'meadow', 'street',
+      'road', 'sea', 'ocean', 'shore', 'harbour', 'harbor', 'outdoors',
+    ]);
+    final indoors = explicitIndoor || !explicitOutdoor;
+    final hasWindow = source.contains('window') &&
+        _hasAny(source, ['look', 'looked', 'see', 'saw', 'watch', 'outside', 'through']);
+    final hasDoor = _hasAny(source, [
+      'doorway', 'threshold', 'open door', 'opened the door', 'through the door',
+      'at the door', 'enter', 'entered', 'entering', 'exit',
+    ]);
+    final hasTable = source.contains('table') &&
+        _hasAny(source, [
+          'sit', 'sat', 'sitting', 'dinner', 'eat', 'ate', 'write', 'wrote',
+          'map', 'key', 'desk', 'at the table',
+        ]);
     final hasCarriage = _hasAny(source, ['carriage', 'coach', 'wagon', 'horse']);
     final groundedProps = plan.props
         .where((prop) => _isGroundedProp(prop, source))
