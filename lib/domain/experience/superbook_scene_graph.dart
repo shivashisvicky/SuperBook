@@ -68,22 +68,6 @@ class SuperBookSceneGraph {
       narrativeFocus,
     ].join(' ').toLowerCase();
 
-    final aiSource = [
-      plan.environment.location,
-      plan.environment.description,
-      plan.sceneSummary,
-      ...plan.actions,
-      ...plan.characters.map((c) => '${c.id} ${c.action} ${c.position}'),
-    ].join(' ').toLowerCase();
-
-    final literaryHasSetting = _hasAny(literarySource, [
-      'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
-      'bedroom', 'office', 'inside', 'interior', 'chamber', 'kitchen',
-      'fireplace', 'hearth', 'garden', 'forest', 'woods', 'woodland',
-      'field', 'meadow', 'street', 'road', 'sea', 'ocean', 'shore',
-      'harbour', 'harbor', 'outdoors', 'outside', 'courtyard', 'path',
-      'station', 'battlefield', 'battle', 'ship', 'deck',
-    ]);
     // The book passage is authoritative. AI may describe how to stage a
     // moment, but it must never manufacture the physical location.
     final physicalSource = literarySource;
