@@ -249,7 +249,7 @@ void main() {
       schemaVersion: '1',
       sceneSummary: 'A woman walks alone.',
       visualStyle: 'cinematic literary realism',
-      characters: const [],
+      characters: [],
       environment: AiSceneEnvironment(
         location: 'Forest',
         time: 'day',
