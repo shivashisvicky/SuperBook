@@ -66,7 +66,7 @@ class _SuperBookLocalAnimationStageState
         .trim();
     final words = raw.isEmpty ? 0 : raw.split(' ').length;
     final beats = math.max(1, (words / 22).ceil());
-    return (beats * 15).clamp(30, 300);
+    return (beats * 18).clamp(12, 120);
   }
 
   @override
@@ -141,7 +141,7 @@ class _LocalStoryPainter extends CustomPainter {
     return h % 8;
   }
 
-  String get _text => '${scene.atmosphere} ${scene.moment} ${passage.join(' ')}'.toLowerCase();
+  String get _text => [scene.title, scene.moment, passage.join(' '), if (sceneGraph != null) ...[sceneGraph!.environment, ...sceneGraph!.props, ...sceneGraph!.timeline.map((b) => b.text),],].join(' ').toLowerCase();
 
   bool get _rain =>
       _text.contains('rain') || _text.contains('storm') || _text.contains('wet');
@@ -150,7 +150,7 @@ class _LocalStoryPainter extends CustomPainter {
       _text.contains('night') || _text.contains('dark') || _text.contains('moon');
 
   bool get _indoors {
-    final t = '${scene.title} ${scene.moment} ${scene.atmosphere}'.toLowerCase();
+    final t = _text;
     return t.contains('room') ||
         t.contains('hall') ||
         t.contains('inside') ||
@@ -241,13 +241,37 @@ class _LocalStoryPainter extends CustomPainter {
     return beats.isEmpty ? [raw] : beats;
   }
 
-  double get _beatProgress => progress * _beats.length;
-  int get _beatIndex => math.min(_beats.length - 1, _beatProgress.floor());
-  bool get _isNarrativePhase => (_beatProgress % 1.0) < .52;
+  int get _timelineTotalMs {
+    if (sceneGraph == null || sceneGraph!.timeline.isEmpty) return _beats.length * 1800;
+    return sceneGraph!.timeline.fold<int>(0, (sum, beat) => sum + beat.duration.inMilliseconds);
+  }
+
+  int get _beatIndex {
+    final count = _beats.length;
+    if (count == 0) return 0;
+    final target = (progress * _timelineTotalMs).floor();
+    var elapsed = 0;
+    for (var i = 0; i < count; i++) {
+      final duration = sceneGraph == null ? 1800 : sceneGraph!.timeline[i].duration.inMilliseconds;
+      if (target < elapsed + duration) return i;
+      elapsed += duration;
+    }
+    return count - 1;
+  }
+
+  bool get _isNarrativePhase => false;
 
   double get _phaseProgress {
-    final phase = _beatProgress % 1.0;
-    return _isNarrativePhase ? phase / .52 : (phase - .52) / .48;
+    final count = _beats.length;
+    if (count == 0) return 0;
+    final target = (progress * _timelineTotalMs).floor();
+    var elapsed = 0;
+    for (var i = 0; i < count; i++) {
+      final duration = sceneGraph == null ? 1800 : sceneGraph!.timeline[i].duration.inMilliseconds;
+      if (target < elapsed + duration) return ((target - elapsed) / duration).clamp(0.0, 1.0);
+      elapsed += duration;
+    }
+    return 1.0;
   }
 
   String get _currentBeat {
@@ -400,7 +424,7 @@ class _LocalStoryPainter extends CustomPainter {
     final text = _text;
     final drawingRoom = text.contains('drawing room') || text.contains('drawing-room') || text.contains('parlor');
     final diningRoom = text.contains('dining room') || text.contains('dining-room') || text.contains('dinner');
-    final windowScene = text.contains('window') || text.contains('garden');
+    final windowScene = text.contains('window');
     final hallScene = text.contains('hall') || text.contains('corridor') || text.contains('stairs');
 
     canvas.drawRect(
@@ -577,8 +601,8 @@ class _LocalStoryPainter extends CustomPainter {
     final listen = action == 'listen' || action == 'look';
     final talk = action == 'talk';
     final seatedTalk = talk && _indoors;
-    final bob = math.sin(phase * math.pi * 4) * (walk ? 5.5 : (talk ? 4.5 : (listen ? 2.5 : 1.5))) * s;
-    final lean = stand ? -16 * (1 - act) : action == 'look' ? 8 * math.sin(act * math.pi) : talk ? math.sin(phase * math.pi * 2) * 5 : walk ? 3 : 0;
+    final bob = walk ? math.sin(phase * math.pi * 2) * 3.0 * s : talk ? math.sin(phase * math.pi * 2) * 1.2 * s : 0.0;
+    final lean = stand ? -10 * (1 - act) : walk ? 2 : 0;
     const skins = [Color(0xFFF1D9B7),Color(0xFFD7A77D),Color(0xFFC78C69),Color(0xFF9B654B),Color(0xFFE5C09A),Color(0xFFB97858),Color(0xFFF0CBA8),Color(0xFF8D5A43)];
     const coats = [Color(0xFF6F4050),Color(0xFF3E5870),Color(0xFF7A5A3A),Color(0xFF3F6B5B),Color(0xFF7B4E3D),Color(0xFF5C4A73),Color(0xFF596B46),Color(0xFF754B63)];
     const hairs = [Color(0xFF4A3027),Color(0xFF2F2927),Color(0xFF6A422D),Color(0xFF211D1B),Color(0xFF8A5A35),Color(0xFF3A2420),Color(0xFF5A3A28),Color(0xFF2B2423)];
