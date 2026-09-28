@@ -219,6 +219,7 @@ class _LocalStoryPainter extends CustomPainter {
 
     final beat = _currentBeat;
     final narrativePhase = _isNarrativePhase;
+    _paintGroundedStoryElements(canvas, size, t);
     final phaseProgress = _phaseProgress;
     final currentAction = _action(beat);
     final activeBeat = sceneGraph != null && sceneGraph!.timeline.isNotEmpty
@@ -266,7 +267,9 @@ class _LocalStoryPainter extends CustomPainter {
         phaseProgress,
         i,
         action,
-        characterSeed: actor == null ? '$i' : '${actor.id}|${actor.description}',
+        characterSeed: actor == null
+            ? '$i|\${passage.join(' ')}'
+            : '\${actor.id}|\${actor.name}|\${actor.description}',
         actionProgress: phaseProgress,
         integrated: widgetHasImage,
       );
@@ -766,6 +769,7 @@ class _LocalStoryPainter extends CustomPainter {
             size.height * (.24 + (i % 3) * .06),
           ),
           size.width * (forest ? (.075 + (i % 2) * .02) : .07),
+          phase: t,
         );
       }
     }
@@ -854,19 +858,19 @@ class _LocalStoryPainter extends CustomPainter {
     tp.paint(canvas, Offset(bubble.left + 12, bubble.top + 12));
   }
 
-  void _paintTree(Canvas canvas, Offset center, double radius) {
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: center + Offset(0, radius * .9),
-        width: radius * .18,
-        height: radius * 1.2,
-      ),
-      Paint()..color = const Color(0xFF4D3B30),
-    );
+  void _paintTree(Canvas canvas, Offset center, double radius, {double phase = 0}) {
+    final sway = math.sin(phase + center.dx * .01) * radius * .08;
+    final trunkTop = center + Offset(sway, radius * .9);
+    final trunkBottom = center + Offset(0, radius * 2.05);
+    canvas.drawLine(trunkTop, trunkBottom, Paint()
+      ..color = const Color(0xFF4D3B30)
+      ..strokeWidth = radius * .18
+      ..strokeCap = StrokeCap.round);
     final leaves = Paint()..color = const Color(0xFF304735);
-    canvas.drawCircle(center, radius, leaves);
-    canvas.drawCircle(center + Offset(-radius * .45, radius * .22), radius * .7, leaves);
-    canvas.drawCircle(center + Offset(radius * .45, radius * .20), radius * .7, leaves);
+    final crown = center + Offset(sway, 0);
+    canvas.drawCircle(crown, radius, leaves);
+    canvas.drawCircle(crown + Offset(-radius * .45, radius * .22), radius * .7, leaves);
+    canvas.drawCircle(crown + Offset(radius * .45, radius * .20), radius * .7, leaves);
   }
 
   void _paintCharacter(
@@ -946,38 +950,27 @@ class _LocalStoryPainter extends CustomPainter {
       ),
       contactShadow,
     );
-    final dress = Path()..moveTo(shoulder.dx - 20 * s, shoulder.dy + 4 * s)..quadraticBezierTo(hip.dx - 28 * s, hip.dy + 18 * s, feet.dx - 40 * s, feet.dy - 5 * s)..lineTo(feet.dx + 40 * s, feet.dy - 5 * s)..quadraticBezierTo(hip.dx + 28 * s, hip.dy + 18 * s, shoulder.dx + 20 * s, shoulder.dy + 4 * s)..close();
-    canvas.drawPath(dress, Paint()..color = coat);
-    canvas.drawPath(
-      Path()
-        ..moveTo(shoulder.dx, shoulder.dy + 8 * s)
-        ..lineTo(hip.dx - 18 * s, hip.dy + 14 * s)
-        ..lineTo(hip.dx - 10 * s, hip.dy + 18 * s)
-        ..lineTo(shoulder.dx + 3 * s, shoulder.dy + 13 * s)
-        ..close(),
-      Paint()..color = coatLight.withValues(alpha: integrated ? .72 : .9),
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(hip.dx + 10 * s, hip.dy + 12 * s)
-        ..lineTo(feet.dx + 34 * s, feet.dy - 5 * s)
-        ..lineTo(feet.dx + 20 * s, feet.dy - 5 * s)
-        ..lineTo(hip.dx + 2 * s, hip.dy + 16 * s)
-        ..close(),
-      Paint()..color = coatDark.withValues(alpha: integrated ? .70 : .9),
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: shoulder + Offset(0, 23 * s),
-          width: 38 * s,
-          height: 56 * s,
-        ),
-        Radius.circular(11 * s),
-      ),
-      Paint()..color = coat,
-    );
-    canvas.drawCircle(head, (20 + (variant % 3) * 2) * s, Paint()..color = skin);
+    final female = _isFemaleCharacter(characterSeed);
+    final male = _isMaleCharacter(characterSeed) && !female;
+    if (female) {
+      final dress = Path()
+        ..moveTo(shoulder.dx - 20 * s, shoulder.dy + 4 * s)
+        ..quadraticBezierTo(hip.dx - 28 * s, hip.dy + 18 * s, feet.dx - 40 * s, feet.dy - 5 * s)
+        ..lineTo(feet.dx + 40 * s, feet.dy - 5 * s)
+        ..quadraticBezierTo(hip.dx + 28 * s, hip.dy + 18 * s, shoulder.dx + 20 * s, shoulder.dy + 4 * s)
+        ..close();
+      canvas.drawPath(dress, Paint()..color = coat);
+    } else {
+      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: shoulder + Offset(0, 22 * s), width: 42 * s, height: 58 * s), Radius.circular(8 * s)), Paint()..color = coat);
+      canvas.drawLine(shoulder + Offset(0, 12 * s), hip + Offset(0, 23 * s), Paint()..color = coatLight..strokeWidth = 3 * s);
+      if (male) {
+        canvas.drawLine(hip + Offset(-7 * s, 5 * s), feet + Offset(-13 * s, -3 * s), leg);
+        canvas.drawLine(hip + Offset(7 * s, 5 * s), feet + Offset(13 * s, -3 * s), leg);
+      }
+    }
+    if (female) {
+      canvas.drawPath(Path()..moveTo(shoulder.dx, shoulder.dy + 8 * s)..lineTo(hip.dx - 18 * s, hip.dy + 14 * s)..lineTo(hip.dx - 10 * s, hip.dy + 18 * s)..lineTo(shoulder.dx + 3 * s, shoulder.dy + 13 * s)..close(), Paint()..color = coatLight.withValues(alpha: integrated ? .72 : .9));
+    }    canvas.drawCircle(head, (20 + (variant % 3) * 2) * s, Paint()..color = skin);
     canvas.drawArc(
       Rect.fromCircle(center: head, radius: (20 + (variant % 3) * 2) * s),
       .35,
@@ -1088,6 +1081,82 @@ class _LocalStoryPainter extends CustomPainter {
   }
 
 
+  String get _literaryVisualText => [scene.title, scene.moment, ...passage].join(' ').toLowerCase();
+
+  bool _containsWord(String source, List<String> terms) {
+    final normalized = ' ${source.replaceAll(RegExp(r'[^a-z0-9]+'), ' ')} ';
+    return terms.any((term) => normalized.contains(' ${term.toLowerCase()} '));
+  }
+
+  bool _isFemaleCharacter(String seed) => _containsWord(seed.toLowerCase(), [
+        'female', 'woman', 'women', 'girl', 'lady', 'mrs', 'miss', 'ms',
+        'daughter', 'wife', 'mother', 'her', 'she',
+      ]);
+
+  bool _isMaleCharacter(String seed) => _containsWord(seed.toLowerCase(), [
+        'male', 'man', 'men', 'boy', 'gentleman', 'mr', 'sir', 'son',
+        'husband', 'father', 'his', 'he',
+      ]);
+
+  void _paintGroundedStoryElements(Canvas canvas, Size size, double t) {
+    final source = _literaryVisualText;
+    final hasDog = _containsWord(source, ['dog', 'puppy', 'hound']);
+    final barking = _containsWord(source, ['bark', 'barks', 'barked', 'barking']);
+    final hasTrees = _containsWord(source, ['tree', 'trees', 'wood', 'woods', 'woodland']);
+    final blooming = _containsWord(source, ['bloom', 'bloomed', 'blooming', 'blossom', 'blossomed', 'blossoms', 'flower', 'flowers']);
+    if (hasTrees) {
+      final baseY = size.height * .46;
+      for (var i = 0; i < 4; i++) {
+        final center = Offset(size.width * (.12 + i * .25), baseY - (i % 2) * size.height * .035);
+        if (blooming) {
+          _paintBloomingTree(canvas, center, size.width * .055, t + i);
+        } else {
+          _paintTree(canvas, center, size.width * .055, phase: t + i);
+        }
+      }
+    }
+    if (hasDog) {
+      _paintDog(canvas, Offset(size.width * (.78 + .035 * math.sin(t)), size.height * .62), size.width * .055, t, barking);
+    }
+  }
+
+  void _paintBloomingTree(Canvas canvas, Offset center, double radius, double phase) {
+    final sway = math.sin(phase) * radius * .10;
+    final crown = center + Offset(sway, 0);
+    canvas.drawLine(center + Offset(sway, radius * .75), center + Offset(0, radius * 2.1),
+        Paint()..color = const Color(0xFF5A4030)..strokeWidth = radius * .18);
+    final foliage = Paint()..color = const Color(0xFF4F7048);
+    canvas.drawCircle(crown, radius, foliage);
+    canvas.drawCircle(crown + Offset(-radius * .45, radius * .2), radius * .68, foliage);
+    canvas.drawCircle(crown + Offset(radius * .45, radius * .18), radius * .68, foliage);
+    final blossom = Paint()..color = const Color(0xFFF1D6DF);
+    for (var i = 0; i < 8; i++) {
+      final a = phase + i * math.pi * 2 / 8;
+      final p = crown + Offset(math.cos(a) * radius * .72, math.sin(a) * radius * .58);
+      final pulse = .75 + .25 * math.sin(phase * 2 + i);
+      canvas.drawCircle(p, radius * .13 * pulse, blossom);
+    }
+  }
+
+  void _paintDog(Canvas canvas, Offset center, double radius, double phase, bool barking) {
+    final body = Paint()..color = const Color(0xFF9A6847);
+    final dark = Paint()..color = const Color(0xFF3B2A23);
+    final legs = Paint()..color = const Color(0xFF4B3428)..strokeWidth = radius * .16..strokeCap = StrokeCap.round;
+    canvas.drawOval(Rect.fromCenter(center: center, width: radius * 2.5, height: radius * 1.15), body);
+    final head = center + Offset(radius * 1.05, -radius * .35);
+    canvas.drawCircle(head, radius * .58, body);
+    canvas.drawPath(Path()..moveTo(head.dx - radius*.35, head.dy-radius*.35)..lineTo(head.dx-radius*.08, head.dy-radius*.75)..lineTo(head.dx+radius*.02, head.dy-radius*.25)..close(), dark);
+    canvas.drawLine(center + Offset(-radius*.7, radius*.35), center + Offset(-radius*.7, radius*.95), legs);
+    canvas.drawLine(center + Offset(radius*.7, radius*.35), center + Offset(radius*.7, radius*.95), legs);
+    final tail = math.sin(phase * 4) * radius * .55;
+    canvas.drawLine(center + Offset(-radius*1.05, -radius*.1), center + Offset(-radius*1.5, -radius*.6 + tail), legs);
+    canvas.drawCircle(head + Offset(radius*.38, -radius*.08), radius*.07, dark);
+    if (barking) {
+      final open = .65 + .35 * ((math.sin(phase * 8) + 1) / 2);
+      canvas.drawOval(Rect.fromCenter(center: head + Offset(radius*.48, radius*.25), width: radius*.30, height: radius*.22*open), Paint()..color = const Color(0xFF4A2222));
+      canvas.drawArc(Rect.fromCircle(center: head + Offset(radius*.7, radius*.25), radius: radius*.35), -.7, 1.4, false, Paint()..color = Colors.white.withValues(alpha: .3)..style = PaintingStyle.stroke..strokeWidth = 1.5);
+    }
+  }
   void _paintRain(Canvas canvas, Size size) {
     final rain = Paint()
       ..color = Colors.white.withValues(alpha: .22)
