@@ -288,4 +288,53 @@ void main() {
     expect(graph.timeline.single.action, 'walk');
   });
 
+
+  test('interior remains authoritative when the passage mentions outside', () {
+    const plan = AiScenePlan(
+      schemaVersion: '1',
+      sceneSummary: 'A woman sits in the dining room and looks outside.',
+      visualStyle: 'cinematic literary realism',
+      characters: [
+        AiSceneCharacter(
+          id: 'woman',
+          description: 'A woman seated at the table.',
+          action: 'looks outside',
+          emotion: 'curious',
+          position: 'center',
+        ),
+      ],
+      environment: AiSceneEnvironment(
+        location: 'Dining room',
+        time: 'evening',
+        description: 'A room with a window.',
+      ),
+      props: ['dining table', 'window'],
+      actions: ['looks outside'],
+      camera: AiSceneCamera(
+        shot: 'medium',
+        angle: 'eye level',
+        movement: 'slow push-in',
+      ),
+      lighting: 'evening light',
+      motion: 'She looks outside.',
+      imagePrompt: 'A woman in a dining room looking through a window.',
+    );
+
+    final graph = SuperBookSceneGraph.from(
+      plan: plan,
+      scene: const Scene(
+        title: 'The Dining Room',
+        moment: 'She sat in the dining room and looked outside.',
+        atmosphere: 'An interior moment.',
+        caption: 'She looked outside.',
+      ),
+      bookCharacters: const [],
+      passage: const [
+        'She sat in the dining room and looked outside through the window.',
+      ],
+    );
+
+    expect(graph.environment, 'Dining room');
+  });
+
 }
