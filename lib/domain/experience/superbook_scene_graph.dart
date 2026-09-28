@@ -328,23 +328,23 @@ class SuperBookSceneGraph {
       'walk', 'walked', 'walking', 'approach', 'approached', 'enter', 'entered',
       'leave', 'left', 'leaving', 'move', 'moved', 'go', 'went', 'cross', 'crossed',
       'run', 'ran', 'running', 'rush', 'rushed', 'flee', 'fled',
-    ])) return 'walk';
+    ])) { return 'walk'; }
     if (_hasAny(t, ['stand', 'stood', 'rise', 'rose', 'get up', 'got up'])) { return 'stand'; }
     if (_hasAny(t, [
       'reach', 'reached', 'open', 'opened', 'take', 'took', 'pick up', 'picked up',
       'hold', 'held', 'write', 'wrote',
-    ])) return 'reach';
+    ])) { return 'reach'; }
     if (_hasAny(t, ['fight', 'fought', 'fighting', 'strike', 'struck', 'duel', 'attack', 'attacked'])) { return 'fight'; }
     if (_hasAny(t, ['sit', 'sits', 'sat', 'sitting', 'seated'])) { return 'sit'; }
     if (_hasAny(t, ['read', 'reads', 'reading', 'letter', 'book'])) { return 'read'; }
     if (_hasAny(t, [
       'turn', 'turned', 'look', 'looked', 'watch', 'watched', 'notice', 'noticed',
       'see', 'saw', 'hear', 'heard', 'listen', 'listened',
-    ])) return 'look';
+    ])) { return 'look'; }
     if (_hasAny(t, [
       'say', 'said', 'speak', 'spoke', 'talk', 'talked', 'ask', 'asked',
       'reply', 'replied', 'answer', 'answered',
-    ])) return 'talk';
+    ])) { return 'talk'; }
     return 'look';
   }
 }
