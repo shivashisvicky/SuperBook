@@ -142,4 +142,150 @@ void main() {
     expect(graph.anchors.containsKey('window'), isFalse);
   });
 
+
+  test('literary past tense drives distinct scene actions', () {
+    const plan = AiScenePlan(
+      schemaVersion: '1',
+      sceneSummary: 'A man sat by the fireplace and read a letter.',
+      visualStyle: 'cinematic literary realism',
+      characters: [
+        AiSceneCharacter(
+          id: 'man',
+          description: 'A man seated by the fire.',
+          action: 'sat beside the fireplace and read the letter',
+          emotion: 'concerned',
+          position: 'center',
+        ),
+      ],
+      environment: AiSceneEnvironment(
+        location: 'Warm drawing room',
+        time: 'evening',
+        description: 'A comfortable interior with a fireplace.',
+      ),
+      props: ['fireplace', 'letter'],
+      actions: ['sat beside the fireplace', 'read the letter'],
+      camera: AiSceneCamera(
+        shot: 'medium',
+        angle: 'eye level',
+        movement: 'slow push-in',
+      ),
+      lighting: 'firelight',
+      motion: 'He sat and read.',
+      imagePrompt: 'A man reading beside a fireplace.',
+    );
+
+    final graph = SuperBookSceneGraph.from(
+      plan: plan,
+      scene: const Scene(
+        title: 'The Letter',
+        moment: 'He sat beside the fireplace and read the letter.',
+        atmosphere: 'A quiet interior moment.',
+        caption: 'He read the letter.',
+      ),
+      bookCharacters: const [],
+      passage: const [
+        'He sat beside the fireplace and read the letter.',
+      ],
+    );
+
+    expect(graph.environment, 'Fireplace interior');
+    expect(graph.actors.length, 1);
+    expect(graph.timeline[0].action, 'sit');
+    expect(graph.timeline[1].action, 'read');
+    expect(graph.props, contains('letter'));
+  });
+
+  test('substring collisions cannot create room anchors', () {
+    const plan = AiScenePlan(
+      schemaVersion: '1',
+      sceneSummary: 'She walked outside.',
+      visualStyle: 'cinematic literary realism',
+      characters: [
+        AiSceneCharacter(
+          id: 'woman',
+          description: 'A woman walking alone.',
+          action: 'walked outside',
+          emotion: 'calm',
+          position: 'center',
+        ),
+      ],
+      environment: AiSceneEnvironment(
+        location: 'Forest',
+        time: 'day',
+        description: 'Trees and open ground.',
+      ),
+      props: const [],
+      actions: ['walked outside'],
+      camera: AiSceneCamera(
+        shot: 'wide',
+        angle: 'eye level',
+        movement: 'tracking',
+      ),
+      lighting: 'daylight',
+      motion: 'She walked outside.',
+      imagePrompt: 'A woman outdoors.',
+    );
+
+    final graph = SuperBookSceneGraph.from(
+      plan: plan,
+      scene: const Scene(
+        title: 'Outside',
+        moment: 'She walked outside.',
+        atmosphere: 'Open air.',
+        caption: 'She walked outside.',
+      ),
+      bookCharacters: const [],
+      passage: const ['She walked outside beneath the trees.'],
+    );
+
+    expect(graph.environment, 'Forest or woodland');
+    expect(graph.anchors.containsKey('door'), isFalse);
+    expect(graph.anchors.containsKey('table'), isFalse);
+    expect(graph.anchors.containsKey('window'), isFalse);
+  });
+
+  test('a solitary passage does not spawn a second fallback actor', () {
+    const plan = AiScenePlan(
+      schemaVersion: '1',
+      sceneSummary: 'A woman walks alone.',
+      visualStyle: 'cinematic literary realism',
+      characters: const [],
+      environment: AiSceneEnvironment(
+        location: 'Forest',
+        time: 'day',
+        description: 'Trees and a narrow path.',
+      ),
+      props: const [],
+      actions: ['walked alone'],
+      camera: AiSceneCamera(
+        shot: 'wide',
+        angle: 'eye level',
+        movement: 'tracking',
+      ),
+      lighting: 'daylight',
+      motion: 'She walked alone.',
+      imagePrompt: 'A solitary woman in a forest.',
+    );
+
+    final graph = SuperBookSceneGraph.from(
+      plan: plan,
+      scene: const Scene(
+        title: 'Alone',
+        moment: 'She walked alone through the forest.',
+        atmosphere: 'A solitary woodland moment.',
+        caption: 'She walked alone.',
+      ),
+      bookCharacters: const [
+        BookCharacter(name: 'Woman', description: 'A woman.'),
+        BookCharacter(name: 'Man', description: 'A man.'),
+      ],
+      passage: const [
+        'She walked alone through the forest.',
+      ],
+    );
+
+    expect(graph.actors.length, 1);
+    expect(graph.timeline.single.action, 'walk');
+  });
+
 }
