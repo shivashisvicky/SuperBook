@@ -74,7 +74,7 @@ class SuperBookSceneGraph {
       'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
       'bedroom', 'office', 'inside', 'interior',
     ]);
-    final hasWindow = _hasAny(source, ['window', 'outside', 'garden']);
+    final hasWindow = source.contains('window');
     final hasDoor = _hasAny(source, ['door', 'entrance', 'threshold']);
     final hasTable = _hasAny(source, ['table', 'dining', 'desk']);
     final hasCarriage = _hasAny(source, ['carriage', 'coach', 'wagon', 'horse']);
@@ -198,7 +198,7 @@ class SuperBookSceneGraph {
     for (final key in ['outside_window', 'window', 'table', 'door', 'outside']) {
       if (anchors.containsKey(key) && t.contains(key.replaceAll('_', ' '))) return key;
     }
-    if (anchors.containsKey('window') && _hasAny(t, ['look', 'turn', 'reach'])) return 'window';
+    if (anchors.containsKey('outside_window') &&\n        t.contains('outside') &&\n        _hasAny(t, ['look', 'turn', 'reach'])) return 'outside_window';\n    if (anchors.containsKey('window') && _hasAny(t, ['look', 'turn', 'reach'])) return 'window';
     return null;
   }
 
