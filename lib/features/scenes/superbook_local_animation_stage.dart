@@ -1,3 +1,4 @@
+// ignore_for_file: curly_braces_in_flow_control_structures, prefer_function_declarations_over_variables
 import 'package:flutter/material.dart';
 import '../../domain/book.dart';
 import '../../domain/experience/ai_scene_plan.dart';
