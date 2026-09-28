@@ -148,6 +148,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         passage: _chapter.passage,
         characters: widget.book.characters,
         actionHint: '${_generated?.plan.sceneSummary ?? ''} ${_generated?.plan.motion ?? ''} ${_generated?.plan.actions.join(' ') ?? ''} ${_generated?.plan.characters.map((c) => c.action).join(' ') ?? ''}',
+        scenePlan: _generated?.plan,
       );
 
   Widget _visual(GeneratedScene generated) {
@@ -160,6 +161,9 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       );
     }
 
+    // The generated still remains an AI visual artifact, but it is not
+    // composited under unrelated runtime actors. The reader Experience is
+    // driven by the same structured plan through the local scene graph.
     return SuperBookLocalAnimationStage(
       scene: widget.scene,
       passage: _chapter.passage,
@@ -170,7 +174,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         ...generated.plan.actions,
         ...generated.plan.characters.map((c) => c.action),
       ].join(' '),
-      backgroundImageBase64: generated.imageBase64,
+      scenePlan: generated.plan,
     );
   }
 
