@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../models/scene_stage_script.dart';
-import '../rigs/humanoid_puppet_rig.dart';
-import '../rigs/quadruped_puppet_rig.dart';
-import '../environments/biome_backdrop_painter.dart';
-import '../environments/stage_set_piece_painter.dart';
+import 'models/scene_stage_script.dart';
+import 'rigs/humanoid_puppet_rig.dart';
+import 'rigs/quadruped_puppet_rig.dart';
+import 'environments/biome_backdrop_painter.dart';
+import 'environments/stage_set_piece_painter.dart';
 import '../../../domain/book.dart';
 
 class SuperBookStageCompositor extends StatefulWidget{
