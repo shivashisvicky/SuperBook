@@ -96,7 +96,7 @@ class SuperBookSceneGraph {
       scene.moment,
       narrativeFocus,
       ...passage.take(2),
-    ].join(' ').toLowerCase();
+    ].join(' ');
     final immediateOutdoorTerms = [
       ...specificOutdoorTerms,
       'park', 'ramble', 'walk', 'walks', 'outside', 'outdoors', 'path', 'battle',
