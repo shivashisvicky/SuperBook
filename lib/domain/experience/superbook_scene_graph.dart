@@ -502,7 +502,7 @@ class SuperBookSceneGraph {
     for (final abbreviation in abbreviations) {
       protectedSource = protectedSource.replaceAll(
         abbreviation,
-        abbreviation.substring(0, abbreviation.length - 1) + '\u0001',
+        '${abbreviation.substring(0, abbreviation.length - 1)}\u0001',
       );
     }
     final sentences = protectedSource
