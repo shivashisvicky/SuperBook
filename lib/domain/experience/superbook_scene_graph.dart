@@ -158,7 +158,13 @@ class SuperBookSceneGraph {
       'father', 'guest', 'cousin', 'with him', 'with her', 'to him', 'to her',
       'together', 'both', 'between',
     ]);
-    final targetCount = (explicitSolo && !isDialogue) ? 1 : 2;
+    final targetCount = isDialogue
+        ? 2
+        : (explicitSolo
+            ? 1
+            : plan.characters.isEmpty
+                ? 1
+                : plan.characters.length.clamp(1, 2));
     final planned = plan.characters.take(targetCount).toList();
     if (planned.isEmpty) {
       final selected = <BookCharacter>[
