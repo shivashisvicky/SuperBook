@@ -155,23 +155,20 @@ class SuperBookSceneGraph {
     final actorLimit = explicitSolo ? 1 : 2;
     final planned = plan.characters.take(actorLimit).toList();
     if (planned.isEmpty) {
-      final selected = <BookCharacter>[];
-      final broader = <BookCharacter>[];
-      for (final character in bookCharacters) {
-        final name = character.name.trim();
-        if (name.isEmpty) continue;
-        if (_nameAppears(name, immediateSource)) {
+      final selected = <BookCharacter>[
+        ..._orderedCharacterMentions(bookCharacters, immediateSource),
+      ];
+      final broader = _orderedCharacterMentions(bookCharacters, literarySource);
+      for (final character in broader) {
+        if (!selected.any((item) => item.name.toLowerCase() == character.name.toLowerCase())) {
           selected.add(character);
-        } else if (_nameAppears(name, literarySource)) {
-          broader.add(character);
         }
       }
-      selected.addAll(broader);
       for (final character in selected.take(actorLimit)) {
         actors.add(SceneActor(
           id: _slug(character.name),
           name: character.name,
-          description: character.description,
+          description: _genderedCharacterDescription(character, immediateSource),
           startAnchor: actors.isEmpty ? 'left' : 'right',
         ));
       }
@@ -250,6 +247,69 @@ class SuperBookSceneGraph {
     );
   }
 
+  static List<BookCharacter> _orderedCharacterMentions(
+    List<BookCharacter> characters,
+    String source,
+  ) {
+    final matches = <({BookCharacter character, int index})>[];
+    for (final character in characters) {
+      final name = character.name.trim();
+      if (name.isEmpty) continue;
+      final match = RegExp(
+        r'(?<![A-Za-z])' + RegExp.escape(name) + r'(?![A-Za-z])',
+        caseSensitive: false,
+      ).firstMatch(source);
+      if (match != null) {
+        matches.add((character: character, index: match.start));
+      }
+    }
+    matches.sort((a, b) => a.index.compareTo(b.index));
+    return matches.map((item) => item.character).toList();
+  }
+
+  static String _genderedCharacterDescription(
+    BookCharacter character,
+    String source,
+  ) {
+    final existing = character.description.trim();
+    final lower = existing.toLowerCase();
+    if (_hasAny(lower, [
+      'female', 'woman', 'girl', 'lady', 'mrs', 'miss', 'daughter',
+      'sister', 'wife', 'mother', 'aunt', 'niece',
+    ])) {
+      return existing.isEmpty ? 'female character' : existing;
+    }
+    if (_hasAny(lower, [
+      'male', 'man', 'boy', 'gentleman', 'mr', 'sir', 'son', 'brother',
+      'husband', 'father', 'uncle', 'nephew',
+    ])) {
+      return existing.isEmpty ? 'male character' : existing;
+    }
+    final name = RegExp.escape(character.name.trim());
+    if (RegExp(r'\b(?:Mrs\.?|Ms\.?|Miss|Lady)\s+' + name + r'\b', caseSensitive: false)
+        .hasMatch(source)) {
+      return existing.isEmpty ? 'female character' : '\$existing; female character';
+    }
+    if (RegExp(r'\b(?:Mr\.?|Sir|Captain|Colonel|Col|Capt)\s+' + name + r'\b', caseSensitive: false)
+        .hasMatch(source)) {
+      return existing.isEmpty ? 'male character' : '\$existing; male character';
+    }
+    final mention = RegExp.escape(character.name.trim());
+    final match = RegExp(
+      r'(.{0,80})\b' + mention + r'\b(.{0,80})',
+      caseSensitive: false,
+      dotAll: true,
+    ).firstMatch(source);
+    final context = match == null ? '' : match.group(1)! + ' ' + match.group(2)!;
+    if (_hasAny(context, ['she', 'her', 'herself'])) {
+      return existing.isEmpty ? 'female character' : '\$existing; female character';
+    }
+    if (_hasAny(context, ['he', 'him', 'his', 'himself'])) {
+      return existing.isEmpty ? 'male character' : '\$existing; male character';
+    }
+    return existing;
+  }
+
   static bool _nameAppears(String name, String source) {
     final normalizedName = name.toLowerCase().trim();
     if (normalizedName.isEmpty) return false;
@@ -267,15 +327,16 @@ class SuperBookSceneGraph {
     required int startIndex,
   }) {
     final actors = <SceneActor>[];
-    final named = RegExp(r'\b(?:Mr\.?|Mrs\.?|Miss|Lady|Sir|Captain|Colonel)\s+([A-Z][a-z]+)\b')
-        .allMatches(source);
+    final named = RegExp(
+      r'\b(?:Mr\.?|Mrs\.?|Ms\.?|Miss|Lady|Sir|Rev\.?|Dr\.?|Col\.?|Capt\.?|Captain|Colonel)\s+([A-Z][a-z]+)\b',
+    ).allMatches(source);
     for (final match in named) {
       if (actors.length >= limit) break;
       final name = match.group(1);
       if (name == null) continue;
-      final female = RegExp(r'\b(?:Mrs\.?|Miss|Lady)\s+' + RegExp.escape(name) + r'\b')
+      final female = RegExp(r'\b(?:Mrs\.?|Ms\.?|Miss|Lady)\s+' + RegExp.escape(name) + r'\b', caseSensitive: false)
           .hasMatch(source);
-      final male = RegExp(r'\b(?:Mr\.?|Sir|Captain|Colonel)\s+' + RegExp.escape(name) + r'\b')
+      final male = RegExp(r'\b(?:Mr\.?|Sir|Rev\.?|Dr\.?|Col\.?|Capt\.?|Captain|Colonel)\s+' + RegExp.escape(name) + r'\b', caseSensitive: false)
           .hasMatch(source);
       actors.add(SceneActor(
         id: _slug(name),
@@ -444,9 +505,20 @@ class SuperBookSceneGraph {
         .trim();
     if (source.isEmpty) return const [];
 
-    final sentences = source
+    const abbreviations = [
+      'Mr.', 'Mrs.', 'Ms.', 'Miss.', 'Dr.', 'St.', 'Rev.', 'Col.',
+      'Capt.', 'Lady.', 'Sir.',
+    ];
+    var protectedSource = source;
+    for (final abbreviation in abbreviations) {
+      protectedSource = protectedSource.replaceAll(
+        abbreviation,
+        abbreviation.substring(0, abbreviation.length - 1) + '\u0001',
+      );
+    }
+    final sentences = protectedSource
         .split(RegExp(r'(?<=[.!?])\s+'))
-        .map((s) => s.trim())
+        .map((s) => s.replaceAll('\u0001', '.').trim())
         .where((s) => s.length >= 12)
         .toList();
 
