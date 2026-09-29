@@ -288,11 +288,11 @@ class SuperBookSceneGraph {
     final name = RegExp.escape(character.name.trim());
     if (RegExp(r'\b(?:Mrs\.?|Ms\.?|Miss|Lady)\s+' + name + r'\b', caseSensitive: false)
         .hasMatch(source)) {
-      return existing.isEmpty ? 'female character' : '\$existing; female character';
+      return existing.isEmpty ? 'female character' : '$existing; female character';
     }
     if (RegExp(r'\b(?:Mr\.?|Sir|Captain|Colonel|Col|Capt)\s+' + name + r'\b', caseSensitive: false)
         .hasMatch(source)) {
-      return existing.isEmpty ? 'male character' : '\$existing; male character';
+      return existing.isEmpty ? 'male character' : '$existing; male character';
     }
     final mention = RegExp.escape(character.name.trim());
     final match = RegExp(
