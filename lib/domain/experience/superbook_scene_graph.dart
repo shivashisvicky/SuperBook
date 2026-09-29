@@ -582,15 +582,15 @@ class SuperBookSceneGraph {
     // such as "and" and "then" are never sentence boundaries.
     final protected = source.replaceAllMapped(
       RegExp(
-        r'\\b(Mr|Mrs|Ms|Miss|Dr|St|Rev|Col|Capt|Gen|Lady|Sir)\\.',
+        r'\b(Mr|Mrs|Ms|Miss|Dr|St|Rev|Col|Capt|Gen|Lady|Sir)\.',
         caseSensitive: false,
       ),
-      (m) => '${m[1]}\\u0000',
+      (m) => '${m[1]}\u0000',
     );
 
     final rawSentences = protected
         .split(RegExp(r'(?<=[.!?;:])\\s+'))
-        .map((s) => s.replaceAll('\\u0000', '.').trim())
+        .map((s) => s.replaceAll('\u0000', '.').trim())
         .where((s) => s.length >= 14)
         .toList();
 
