@@ -47,12 +47,14 @@ class _StagePainter extends CustomPainter{
         var x=actor.x,y=actor.y;
         if((track.pose==ActorPose.walk||track.pose==ActorPose.run)&&track.targetX!=null){
           final e=Curves.easeInOut.transform(beatProgress);
-          x=actor.x+(track.targetX!-actor.x)*e;
+          final startX=track.startX??actor.x;
+          x=startX+(track.targetX!-startX)*e;
           y=actor.y+((track.targetY??actor.y)-actor.y)*e;
         }
         final bookCharacter=characters.where((c)=>c.name.toLowerCase()==actor.name.toLowerCase()).firstOrNull;
         final source=bookCharacter??BookCharacter(name:actor.name,role:'',description:actor.description);
-        final profile=CharacterVisualProfile.from(source,actor.description);
+        final slotIndex=script.cast.indexWhere((item)=>item.id==actor.id);
+        final profile=CharacterVisualProfile.from(source,actor.description,slotIndex:slotIndex<0?0:slotIndex);
         HumanoidPuppetRig(profile).paint(c,Offset(x*s.width,y*s.height),math.min(s.width,s.height)/360,beatProgress,track.pose,track.facing??actor.facing);
       }
       _paintBeatBubble(c,s,beat,ordered);
@@ -93,5 +95,5 @@ class _StagePainter extends CustomPainter{
     }
   }
 
-  @override bool shouldRepaint(covariant _StagePainter old)=>old.progress!=progress||old.beatIndex!=beatIndex||old.script!=script;
+  @override bool shouldRepaint(covariant _StagePainter old)=>old.progress!=progress||old.beatIndex!=beatIndex||old.beatProgress!=beatProgress||old.script!=script;
 }
