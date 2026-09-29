@@ -76,11 +76,12 @@ class SceneStageScript {
         final sx=currentX[a.id]!;
         double? tx;
         if(active && {ActorPose.walk,ActorPose.run}.contains(pose)){
-          tx = target?.x ?? (sx < .5 ? .64 : .36);
+          final candidateX = target?.x ?? (sx < .5 ? .64 : .36);
+          tx = candidateX;
           for(final other in cast){
             if(other.id==a.id) continue;
             final otherX=currentX[other.id]!;
-            if((tx-otherX).abs()<.24){
+            if((candidateX-otherX).abs()<.24){
               tx=sx<otherX
                   ? (otherX-.24).clamp(.16,.84).toDouble()
                   : (otherX+.24).clamp(.16,.84).toDouble();
