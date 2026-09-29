@@ -187,7 +187,9 @@ void main() {
     expect(graph.environment, 'Fireplace interior');
     expect(graph.actors.length, 1);
     expect(graph.timeline[0].action, 'sit');
-    expect(graph.timeline[1].action, 'read');
+    expect(graph.timeline.length, 1);
+    expect(graph.timeline[0].action, 'sit');
+    expect(graph.timeline[0].text, contains('and read the letter'));
     expect(graph.props, contains('letter'));
   });
 
@@ -385,4 +387,126 @@ void main() {
     expect(graph.timeline.length, greaterThanOrEqualTo(2));
   });
 
+
+  test('dialogue fills a missing second actor and prefers honorific full names', () {
+    const plan = AiScenePlan(
+      schemaVersion: '1',
+      sceneSummary: 'Mr. Bennet speaks with his guest.',
+      visualStyle: 'cinematic literary realism',
+      characters: [
+        AiSceneCharacter(
+          id: 'Mr. Bennet',
+          description: 'A gentleman.',
+          action: 'speaks with his guest',
+          emotion: 'engaged',
+          position: 'left',
+        ),
+      ],
+      environment: AiSceneEnvironment(
+        location: 'Drawing room',
+        time: 'evening',
+        description: 'A drawing room.',
+      ),
+      props: [],
+      actions: ['Mr. Bennet spoke with his guest.'],
+      camera: AiSceneCamera(
+        shot: 'medium',
+        angle: 'eye level',
+        movement: 'static',
+      ),
+      lighting: 'warm',
+      motion: 'They converse.',
+      imagePrompt: 'Two people in conversation.',
+    );
+
+    final graph = SuperBookSceneGraph.from(
+      plan: plan,
+      scene: const Scene(
+        title: 'Conversation',
+        moment: 'Mr. Bennet said to his guest that the evening was pleasant.',
+        atmosphere: 'A quiet social conversation.',
+        caption: 'A conversation.',
+      ),
+      bookCharacters: const [
+        BookCharacter(
+          name: 'Elizabeth Bennet',
+          role: 'daughter',
+          description: 'A young woman.',
+        ),
+        BookCharacter(
+          name: 'Mr. Bennet',
+          role: 'father',
+          description: 'A gentleman.',
+        ),
+        BookCharacter(
+          name: 'Mr. Collins',
+          role: 'guest',
+          description: 'A gentleman guest.',
+        ),
+      ],
+      passage: const [
+        'Mr. Bennet said to his guest that the evening was pleasant.',
+        'He spoke with Mr. Collins about the visit.',
+      ],
+    );
+
+    expect(graph.actors.length, 2);
+    expect(graph.actors.first.name, 'Mr. Bennet');
+    expect(graph.actors[1].name, 'Mr. Collins');
+  });
+
+  test('literary beats do not split Mr. and Mrs. Bennet', () {
+    const plan = AiScenePlan(
+      schemaVersion: '1',
+      sceneSummary: 'A family discusses a guest.',
+      visualStyle: 'cinematic literary realism',
+      characters: [],
+      environment: AiSceneEnvironment(
+        location: 'Drawing room',
+        time: 'evening',
+        description: 'A drawing room.',
+      ),
+      props: [],
+      actions: [],
+      camera: AiSceneCamera(
+        shot: 'medium',
+        angle: 'eye level',
+        movement: 'static',
+      ),
+      lighting: 'warm',
+      motion: 'The family talks.',
+      imagePrompt: 'A family conversation.',
+    );
+
+    final graph = SuperBookSceneGraph.from(
+      plan: plan,
+      scene: const Scene(
+        title: 'The Guest',
+        moment: '[Illustration]',
+        atmosphere: 'A family conversation.',
+        caption: 'The family discusses the visit.',
+      ),
+      bookCharacters: const [
+        BookCharacter(
+          name: 'Mr. Bennet',
+          role: 'father',
+          description: 'A gentleman.',
+        ),
+        BookCharacter(
+          name: 'Mrs. Bennet',
+          role: 'mother',
+          description: 'A woman.',
+        ),
+      ],
+      passage: const [
+        'They considered all Mr. Collins\'s scruples of leaving Mr. and Mrs. Bennet for a single evening.',
+      ],
+    );
+
+    expect(graph.timeline, isNotEmpty);
+    expect(
+      graph.timeline.first.text,
+      contains('leaving Mr. and Mrs. Bennet'),
+    );
+  });
 }
