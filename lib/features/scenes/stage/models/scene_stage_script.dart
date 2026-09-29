@@ -3,7 +3,21 @@
 import '../../../../domain/book.dart';
 import '../../../../domain/experience/superbook_scene_graph.dart';
 
-enum EnvironmentBiome { forestWoodland, gardenMeadow, streetStation, seaHarbor, battlefield, roadCarriage, drawingParlor, libraryStudy, hearthStudy, diningHall, bedchamber, corridorHall, neutral }
+enum EnvironmentBiome {
+  forestWoodland,
+  gardenMeadow,
+  streetStation,
+  seaHarbor,
+  battlefield,
+  roadCarriage,
+  drawingParlor,
+  libraryStudy,
+  hearthStudy,
+  diningHall,
+  bedchamber,
+  corridorHall,
+  neutral,
+}
 enum LightingMood { dawn, daylight, overcastRain, dusk, nightMoon, warmHearth, candlelight }
 enum ActorPose { idleStand, walk, run, sitIdle, sitRead, sitWrite, talkGesture, listenAttentive, lookWindow, reachObject, combatSlash, boardCarriage }
 
@@ -19,7 +33,7 @@ class SceneStageScript {
   factory SceneStageScript.fromGraph({required SuperBookSceneGraph graph,required List<BookCharacter> bookCharacters,required Scene scene,required List<String> passage}) {
     final biome=_biome(graph.environment);
     final pieces=<StageSetPiece>[];
-    final outdoorBiomes={
+    final Set<EnvironmentBiome> outdoorBiomes = {
       EnvironmentBiome.forestWoodland,
       EnvironmentBiome.gardenMeadow,
       EnvironmentBiome.streetStation,
