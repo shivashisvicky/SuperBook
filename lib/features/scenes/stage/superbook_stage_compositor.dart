@@ -77,7 +77,7 @@ class _StagePainter extends CustomPainter{
     textPainter.layout(maxWidth:maxWidth);
     const paddingX=14.0;
     const paddingY=10.0;
-    final width=(textPainter.width+paddingX*2).clamp(110.0,maxWidth+paddingX*2);
+    final width=(textPainter.width+paddingX*2).clamp(110.0,maxWidth+paddingX*2).toDouble();
     final height=textPainter.height+paddingY*2;
     final centerX=(actor.x*s.width).clamp(width/2+10,s.width-width/2-10).toDouble();
     final top=s.height*.17;
