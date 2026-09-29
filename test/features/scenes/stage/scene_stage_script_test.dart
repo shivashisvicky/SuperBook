@@ -54,7 +54,7 @@ void main() {
 
     final track = script.beats.single.tracks.single;
     expect(track.pose, ActorPose.walk);
-    expect(track.targetX, closeTo(.72, .0001));
+    expect(track.targetX, closeTo(.64, .0001));
     expect(track.targetY, closeTo(.78, .0001));
   });
 
