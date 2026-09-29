@@ -91,16 +91,30 @@ class SuperBookSceneGraph {
     // Resolve the immediate beat before falling back to the wider passage.
     // Words such as "outside" are incidental unless a concrete outdoor
     // location is actually named.
-    final immediateSource = '${scene.title} ${scene.moment}';
-    final immediateIndoor = _hasAny(immediateSource, indoorTerms);
-    final immediateOutdoor = _hasAny(immediateSource, specificOutdoorTerms);
+    final immediateSource = [
+      scene.title,
+      scene.moment,
+      narrativeFocus,
+      ...passage.take(2),
+    ].join(' ').toLowerCase();
+    final immediateOutdoorTerms = [
+      ...specificOutdoorTerms,
+      'park', 'ramble', 'walk', 'walks', 'outside', 'outdoors', 'path', 'battle',
+    ];
+    final immediateIndoorTerms = [
+      ...indoorTerms,
+      'sitting', 'sat', 'writing', 'wrote', 'read', 'reading', 'letter',
+      'dine', 'dinner', 'drawing room', 'parlor',
+    ];
+    final immediateIndoor = _hasAny(immediateSource, immediateIndoorTerms);
+    final immediateOutdoor = _hasAny(immediateSource, immediateOutdoorTerms);
     final indoors = immediateIndoor && !immediateOutdoor
         ? true
         : immediateOutdoor && !immediateIndoor
             ? false
             : explicitIndoor && !explicitOutdoor;
 
-    final hasWindow = _hasAny(physicalSource, ['window']) &&
+    final hasWindow = indoors && _hasAny(physicalSource, ['window']) &&
         _hasAny(physicalSource, [
           'look', 'looked', 'see', 'saw', 'watch', 'outside', 'through',
           'open', 'opened', 'view',
@@ -141,24 +155,46 @@ class SuperBookSceneGraph {
       'alone', 'by himself', 'by herself', 'on his own', 'on her own',
       'single figure', 'solitary',
     ]);
-    final planned = plan.characters.take(explicitSolo ? 1 : 2).toList();
+    final actorLimit = explicitSolo ? 1 : 2;
+    final planned = plan.characters.take(actorLimit).toList();
     if (planned.isEmpty) {
-      for (final c in bookCharacters.take(explicitSolo ? 1 : 2)) {
+      final selected = <BookCharacter>[];
+      final broader = <BookCharacter>[];
+      for (final character in bookCharacters) {
+        final name = character.name.trim();
+        if (name.isEmpty) continue;
+        if (_nameAppears(name, immediateSource)) {
+          selected.add(character);
+        } else if (_nameAppears(name, literarySource)) {
+          broader.add(character);
+        }
+      }
+      selected.addAll(broader);
+      for (final character in selected.take(actorLimit)) {
         actors.add(SceneActor(
-          id: _slug(c.name),
-          name: c.name,
-          description: c.description,
+          id: _slug(character.name),
+          name: character.name,
+          description: character.description,
           startAnchor: actors.isEmpty ? 'left' : 'right',
+        ));
+      }
+      if (actors.length < actorLimit) {
+        actors.addAll(_inferImmediateActors(
+          immediateSource,
+          limit: actorLimit - actors.length,
+          startIndex: actors.length,
         ));
       }
     } else {
       for (var i = 0; i < planned.length; i++) {
-        final c = planned[i];
+        final character = planned[i];
         actors.add(SceneActor(
-          id: _slug(c.id.isEmpty ? c.description : c.id),
-          name: c.id.isEmpty ? (i < bookCharacters.length ? bookCharacters[i].name : 'Character ${i + 1}') : c.id,
-          description: c.description,
-          startAnchor: _anchorFor(c.position, i),
+          id: _slug(character.id.isEmpty ? character.description : character.id),
+          name: character.id.isEmpty
+              ? (i < bookCharacters.length ? bookCharacters[i].name : 'Character ${i + 1}')
+              : character.id,
+          description: character.description,
+          startAnchor: _anchorFor(character.position, i),
         ));
       }
     }
@@ -215,6 +251,63 @@ class SuperBookSceneGraph {
           : (hasCarriage ? const ['carriage'] : const []),
       timeline: timeline,
     );
+  }
+
+  static bool _nameAppears(String name, String source) {
+    final normalizedName = name.toLowerCase().trim();
+    if (normalizedName.isEmpty) return false;
+    if (_hasAny(source, [normalizedName])) return true;
+    final tokens = normalizedName
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((token) => token.length >= 3)
+        .toList();
+    return tokens.any((token) => _hasAny(source, [token]));
+  }
+
+  static List<SceneActor> _inferImmediateActors(
+    String source, {
+    required int limit,
+    required int startIndex,
+  }) {
+    final actors = <SceneActor>[];
+    final named = RegExp(r'\b(?:Mr\.?|Mrs\.?|Miss|Lady|Sir|Captain|Colonel)\s+([A-Z][a-z]+)\b')
+        .allMatches(source);
+    for (final match in named) {
+      if (actors.length >= limit) break;
+      final name = match.group(1);
+      if (name == null) continue;
+      final female = RegExp(r'\b(?:Mrs\.?|Miss|Lady)\s+' + RegExp.escape(name) + r'\b')
+          .hasMatch(source);
+      final male = RegExp(r'\b(?:Mr\.?|Sir|Captain|Colonel)\s+' + RegExp.escape(name) + r'\b')
+          .hasMatch(source);
+      actors.add(SceneActor(
+        id: _slug(name),
+        name: name,
+        description: female
+            ? 'female character present in the immediate passage'
+            : male
+                ? 'male character present in the immediate passage'
+                : 'character present in the immediate passage',
+        startAnchor: (startIndex + actors.length) == 0 ? 'left' : 'right',
+      ));
+    }
+    if (actors.length < limit && _hasAny(source, ['she', 'her', 'herself'])) {
+      actors.add(SceneActor(
+        id: 'immediate_female',
+        name: 'Character',
+        description: 'female character present in the immediate passage',
+        startAnchor: (startIndex + actors.length) == 0 ? 'left' : 'right',
+      ));
+    }
+    if (actors.length < limit && _hasAny(source, ['he', 'him', 'his', 'himself'])) {
+      actors.add(SceneActor(
+        id: 'immediate_male',
+        name: 'Character',
+        description: 'male character present in the immediate passage',
+        startAnchor: (startIndex + actors.length) == 0 ? 'left' : 'right',
+      ));
+    }
+    return actors;
   }
 
   static bool _hasAny(String text, List<String> terms) {
