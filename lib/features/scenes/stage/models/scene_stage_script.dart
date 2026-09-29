@@ -23,7 +23,7 @@ enum ActorPose { idleStand, walk, run, sitIdle, sitRead, sitWrite, talkGesture, 
 
 class StageSetPiece { const StageSetPiece({required this.id,required this.x,required this.y,required this.depth,this.scale=1}); final String id; final double x,y,depth,scale; }
 class CharacterPuppetSpec { const CharacterPuppetSpec({required this.id,required this.name,required this.description,required this.x,required this.y,required this.facing}); final String id,name,description; final double x,y,facing; }
-class ActorTrack { const ActorTrack({required this.actorId,required this.pose,this.targetX,this.targetY,this.facing}); final String actorId; final ActorPose pose; final double? targetX,targetY,facing; }
+class ActorTrack { const ActorTrack({required this.actorId,required this.pose,this.startX,this.targetX,this.targetY,this.facing}); final String actorId; final ActorPose pose; final double? startX,targetX,targetY,facing; }
 class ChoreographedBeat { const ChoreographedBeat({required this.text,required this.durationMs,required this.tracks}); final String text; final int durationMs; final List<ActorTrack> tracks; }
 
 class SceneStageScript {
@@ -66,31 +66,48 @@ class SceneStageScript {
       cast.add(CharacterPuppetSpec(id:a.id,name:a.name,description:desc,x:x,y:.78,facing:i==0?1:-1));
     }
     final beats=<ChoreographedBeat>[];
+    final currentX=<String,double>{for(final a in cast)a.id:a.x};
     for(final b in graph.timeline){
       final tracks=<ActorTrack>[];
       for(final a in cast){
         final active=a.id==b.actorId;
         final target=b.targetAnchor==null?null:graph.anchors[b.targetAnchor!];
         final pose=_pose(b.action,b.text,active);
-        final defaultWalkX=a.x<.5 ? .72 : .28;
-        final targetX=active?(target?.x??({ActorPose.walk,ActorPose.run}.contains(pose)?defaultWalkX:null)):null;
+        final sx=currentX[a.id]!;
+        double? tx;
+        if(active && {ActorPose.walk,ActorPose.run}.contains(pose)){
+          tx=target?.x??(sx<.5?.64:.36);
+          for(final other in cast){
+            if(other.id==a.id) continue;
+            final otherX=currentX[other.id]!;
+            if((tx-otherX).abs()<.24){
+              tx=sx<otherX
+                  ? (otherX-.24).clamp(.16,.84).toDouble()
+                  : (otherX+.24).clamp(.16,.84).toDouble();
+            }
+          }
+        } else if(active){
+          tx=target?.x;
+        }
         tracks.add(ActorTrack(
           actorId:a.id,
           pose:pose,
-          targetX:targetX,
-          targetY:active ? .78 : null,
-          facing:active&&targetX!=null?(targetX>a.x?1:-1):a.facing,
+          startX:sx,
+          targetX:tx,
+          targetY:active && tx!=null ? .78 : null,
+          facing:active&&tx!=null?(tx>sx?1:-1):a.facing,
         ));
+        if(tx!=null) currentX[a.id]=tx;
       }
       beats.add(ChoreographedBeat(text:b.text,durationMs:b.duration.inMilliseconds.clamp(2200,5200).toInt(),tracks:tracks));
     }
     for(final a in cast){
       final seated=beats.any((b)=>b.tracks.any((t)=>t.actorId==a.id && {ActorPose.sitIdle,ActorPose.sitRead,ActorPose.sitWrite}.contains(t.pose)));
-      if(seated && !pieces.any((p)=>p.id.startsWith('chair') && (p.x-a.x).abs()<.08)){
+      if(!isOutdoorBiome && seated && !pieces.any((p)=>p.id.contains('chair') && (p.x-a.x).abs()<.12)){
         pieces.add(StageSetPiece(id:'chair_'+a.id,x:a.x,y:.73,depth:.12));
       }
     }
-    if(beats.isEmpty&&cast.isNotEmpty) beats.add(ChoreographedBeat(text:scene.moment,durationMs:3200,tracks:cast.map((a)=>ActorTrack(actorId:a.id,pose:ActorPose.idleStand)).toList()));
+    if(beats.isEmpty&&cast.isNotEmpty) beats.add(ChoreographedBeat(text:scene.moment,durationMs:3200,tracks:cast.map((a)=>ActorTrack(actorId:a.id,pose:ActorPose.idleStand,startX:a.x)).toList()));
     return SceneStageScript(biome:biome,lighting:_lighting(scene,passage),setPieces:pieces,cast:cast,beats:beats);
   }
 
