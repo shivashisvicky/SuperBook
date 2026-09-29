@@ -80,7 +80,7 @@ void main() {
     ]);
     expect(graph.timeline.length, 3);
 
-    expect(graph.timeline[2].actorId, 'family_member');
+    expect(graph.timeline[2].actorId, 'elizabeth');
     expect(graph.timeline[2].targetAnchor, 'window');
     expect(graph.timeline[0].duration.inMilliseconds, greaterThanOrEqualTo(2800));
     expect(graph.timeline[2].duration.inMilliseconds, greaterThanOrEqualTo(4000));
