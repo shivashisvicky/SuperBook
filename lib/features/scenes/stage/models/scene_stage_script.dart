@@ -34,13 +34,6 @@ class SceneStageScript {
       pieces.add(StageSetPiece(id:e.key,x:e.value.x,y:e.value.y,depth:e.value.depth));
     }
     for(final prop in graph.props){
-      EnvironmentBiome.forestWoodland,
-      EnvironmentBiome.gardenMeadow,
-      EnvironmentBiome.streetStation,
-      EnvironmentBiome.seaHarbor,
-      EnvironmentBiome.battlefield,
-      EnvironmentBiome.roadCarriage,
-    };
     for(final prop in graph.props){
       final id=prop.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'),'_');
       if(isOutdoorBiome && {'window','outside_window','door','table'}.contains(id)) continue;
