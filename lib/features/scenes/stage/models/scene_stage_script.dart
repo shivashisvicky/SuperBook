@@ -1,4 +1,4 @@
-// ignore_for_file: curly_braces_in_flow_control_structures, prefer_function_declarations_over_variables
+// ignore_for_file: curly_braces_in_flow_control_structures, prefer_function_declarations_over_variables, prefer_interpolation_to_compose_strings
 
 import '../../../../domain/book.dart';
 import '../../../../domain/experience/superbook_scene_graph.dart';
