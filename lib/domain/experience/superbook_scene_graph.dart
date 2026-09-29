@@ -108,17 +108,13 @@ class SuperBookSceneGraph {
     ];
     final immediateIndoor = _hasAny(immediateSource, immediateIndoorTerms);
     final immediateOutdoor = _hasAny(immediateSource, immediateOutdoorTerms);
-    final indoors = immediateOutdoor
-        ? false
-        : immediateIndoor
-            ? true
+    final indoors = immediateIndoor
+        ? true
+        : immediateOutdoor
+            ? false
             : explicitIndoor && !explicitOutdoor;
 
-    final hasWindow = indoors && _hasAny(physicalSource, ['window']) &&
-        _hasAny(physicalSource, [
-          'look', 'looked', 'see', 'saw', 'watch', 'outside', 'through',
-          'open', 'opened', 'view',
-        ]);
+    final hasWindow = indoors && _hasAny(physicalSource, ['window']);
     final hasDoor = indoors && _hasAny(physicalSource, [
       'doorway', 'threshold', 'open door', 'opened the door',
       'through the door', 'at the door', 'door',
