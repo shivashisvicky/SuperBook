@@ -23,8 +23,17 @@ class SceneStageScript {
       if({'left','right','center','outside'}.contains(e.key)) continue;
       pieces.add(StageSetPiece(id:e.key,x:e.value.x,y:e.value.y,depth:e.value.depth));
     }
+    final outdoorBiomes={
+      EnvironmentBiome.forestWoodland,
+      EnvironmentBiome.gardenMeadow,
+      EnvironmentBiome.streetStation,
+      EnvironmentBiome.seaHarbor,
+      EnvironmentBiome.battlefield,
+      EnvironmentBiome.roadCarriage,
+    };
     for(final prop in graph.props){
       final id=prop.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'),'_');
+      if(outdoorBiomes.contains(biome) && {'window','outside_window','door','table'}.contains(id)) continue;
       if(!pieces.any((p)=>p.id==id)) pieces.add(StageSetPiece(id:id,x:.5,y:.62,depth:.18));
     }
     pieces.addAll(_environmentPieces(biome,pieces));
@@ -34,7 +43,11 @@ class SceneStageScript {
       final an=graph.anchors[a.startAnchor]??graph.anchors['center']!;
       final matches=bookCharacters.where((c)=>c.name.toLowerCase()==a.name.toLowerCase());
       final desc=[...matches.map((c)=>c.description),a.description].where((s)=>s.trim().isNotEmpty).join(' ');
-      cast.add(CharacterPuppetSpec(id:a.id,name:a.name,description:desc,x:an.x,y:.78,facing:i==0?1:-1));
+      var x=an.x;
+      if(cast.isNotEmpty && (x-cast.last.x).abs()<.26){
+        x=cast.last.x<.5 ? (cast.last.x+.26).clamp(.14,.86).toDouble() : (cast.last.x-.26).clamp(.14,.86).toDouble();
+      }
+      cast.add(CharacterPuppetSpec(id:a.id,name:a.name,description:desc,x:x,y:.78,facing:i==0?1:-1));
     }
     final beats=<ChoreographedBeat>[];
     for(final b in graph.timeline){
@@ -54,6 +67,12 @@ class SceneStageScript {
         ));
       }
       beats.add(ChoreographedBeat(text:b.text,durationMs:b.duration.inMilliseconds.clamp(2200,5200).toInt(),tracks:tracks));
+    }
+    for(final a in cast){
+      final seated=beats.any((b)=>b.tracks.any((t)=>t.actorId==a.id && {ActorPose.sitIdle,ActorPose.sitRead,ActorPose.sitWrite}.contains(t.pose)));
+      if(seated && !pieces.any((p)=>p.id.startsWith('chair') && (p.x-a.x).abs()<.08)){
+        pieces.add(StageSetPiece(id:'chair_'+a.id,x:a.x,y:.73,depth:.12));
+      }
     }
     if(beats.isEmpty&&cast.isNotEmpty) beats.add(ChoreographedBeat(text:scene.moment,durationMs:3200,tracks:cast.map((a)=>ActorTrack(actorId:a.id,pose:ActorPose.idleStand)).toList()));
     return SceneStageScript(biome:biome,lighting:_lighting(scene,passage),setPieces:pieces,cast:cast,beats:beats);
