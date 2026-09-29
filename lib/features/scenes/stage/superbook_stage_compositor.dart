@@ -44,7 +44,7 @@ class _StagePainter extends CustomPainter{
       final ordered=[...script.cast]..sort((a,b)=>a.y.compareTo(b.y));
       for(final actor in ordered){
         final track=beat.tracks.firstWhere((x)=>x.actorId==actor.id,orElse:()=>ActorTrack(actorId:actor.id,pose:ActorPose.idleStand));
-        var x=actor.x,y=actor.y;
+        var x=track.startX??actor.x,y=actor.y;
         if((track.pose==ActorPose.walk||track.pose==ActorPose.run)&&track.targetX!=null){
           final e=Curves.easeInOut.transform(beatProgress);
           final startX=track.startX??actor.x;
