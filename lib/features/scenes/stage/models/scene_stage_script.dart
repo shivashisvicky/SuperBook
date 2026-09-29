@@ -76,7 +76,7 @@ class SceneStageScript {
         final sx=currentX[a.id]!;
         double? tx;
         if(active && {ActorPose.walk,ActorPose.run}.contains(pose)){
-          tx=target?.x??(sx<.5?.64:.36);
+          tx = target?.x ?? (sx < .5 ? .64 : .36);
           for(final other in cast){
             if(other.id==a.id) continue;
             final otherX=currentX[other.id]!;
