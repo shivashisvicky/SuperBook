@@ -300,25 +300,14 @@ class SuperBookSceneGraph {
       caseSensitive: false,
       dotAll: true,
     ).firstMatch(source);
-    final context = match == null ? '' : match.group(1)! + ' ' + match.group(2)!;
+    final context = match == null ? '' : '${match.group(1)!} ${match.group(2)!}';
     if (_hasAny(context, ['she', 'her', 'herself'])) {
-      return existing.isEmpty ? 'female character' : '\$existing; female character';
+      return existing.isEmpty ? 'female character' : '$existing; female character';
     }
     if (_hasAny(context, ['he', 'him', 'his', 'himself'])) {
-      return existing.isEmpty ? 'male character' : '\$existing; male character';
+      return existing.isEmpty ? 'male character' : '$existing; male character';
     }
     return existing;
-  }
-
-  static bool _nameAppears(String name, String source) {
-    final normalizedName = name.toLowerCase().trim();
-    if (normalizedName.isEmpty) return false;
-    if (_hasAny(source, [normalizedName])) return true;
-    final tokens = normalizedName
-        .split(RegExp(r'[^a-z0-9]+'))
-        .where((token) => token.length >= 3)
-        .toList();
-    return tokens.any((token) => _hasAny(source, [token]));
   }
 
   static List<SceneActor> _inferImmediateActors(
