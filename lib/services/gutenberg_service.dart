@@ -605,7 +605,7 @@ class GutenbergService {
       // Atmosphere is reader context, not a reusable illustration template.
       // Keep it tied to the actual current chapter instead of injecting a
       // stock "drawing room" or other generic setting into every scene.
-      'estate': 'The current family and social moment described in this passage.',
+      'estate': '',
       'sea': 'The current maritime moment described in this passage.',
       'forest': 'The current woodland moment described in this passage.',
       'city': 'The current public-place moment described in this passage.',
