@@ -152,8 +152,14 @@ class SuperBookSceneGraph {
       'alone', 'by himself', 'by herself', 'on his own', 'on her own',
       'single figure', 'solitary',
     ]);
-    final actorLimit = explicitSolo ? 1 : 2;
-    final planned = plan.characters.take(actorLimit).toList();
+    final isDialogue = _hasAny(immediateSource, [
+      'said', 'spoke', 'replied', 'answered', 'asked', 'conversation',
+      'talk', 'talked', 'wife', 'husband', 'sister', 'brother', 'mother',
+      'father', 'guest', 'cousin', 'with him', 'with her', 'to him', 'to her',
+      'together', 'both', 'between',
+    ]);
+    final targetCount = (explicitSolo && !isDialogue) ? 1 : 2;
+    final planned = plan.characters.take(targetCount).toList();
     if (planned.isEmpty) {
       final selected = <BookCharacter>[
         ..._orderedCharacterMentions(bookCharacters, immediateSource),
@@ -164,7 +170,7 @@ class SuperBookSceneGraph {
           selected.add(character);
         }
       }
-      for (final character in selected.take(actorLimit)) {
+      for (final character in selected.take(targetCount)) {
         actors.add(SceneActor(
           id: _slug(character.name),
           name: character.name,
@@ -172,10 +178,10 @@ class SuperBookSceneGraph {
           startAnchor: actors.isEmpty ? 'left' : 'right',
         ));
       }
-      if (actors.length < actorLimit) {
+      if (actors.length < targetCount) {
         actors.addAll(_inferImmediateActors(
           immediateSource,
-          limit: actorLimit - actors.length,
+          limit: targetCount - actors.length,
           startIndex: actors.length,
         ));
       }
@@ -251,20 +257,47 @@ class SuperBookSceneGraph {
     List<BookCharacter> characters,
     String source,
   ) {
-    final matches = <({BookCharacter character, int index})>[];
+    final fullNameMatches = <({BookCharacter character, int index})>[];
+    final surnameMatches = <({BookCharacter character, int index})>[];
+
+    // Prefer exact/full-name mentions over bare surnames. This prevents
+    // "Mr. Bennet" from resolving to "Elizabeth Bennet" merely because
+    // both contain the surname "Bennet".
     for (final character in characters) {
       final name = character.name.trim();
       if (name.isEmpty) continue;
-      final match = RegExp(
+
+      final fullMatch = RegExp(
         r'(?<![A-Za-z])' + RegExp.escape(name) + r'(?![A-Za-z])',
         caseSensitive: false,
       ).firstMatch(source);
-      if (match != null) {
-        matches.add((character: character, index: match.start));
+      if (fullMatch != null) {
+        fullNameMatches.add((character: character, index: fullMatch.start));
+        continue;
+      }
+
+      final parts = name.split(RegExp(r'\\s+')).where((part) => part.isNotEmpty).toList();
+      if (parts.length < 2) continue;
+      final surname = parts.last;
+      final surnameMatch = RegExp(
+        r'(?<![A-Za-z])' + RegExp.escape(surname) + r'(?![A-Za-z])',
+        caseSensitive: false,
+      ).firstMatch(source);
+      if (surnameMatch != null) {
+        surnameMatches.add((character: character, index: surnameMatch.start));
       }
     }
-    matches.sort((a, b) => a.index.compareTo(b.index));
-    return matches.map((item) => item.character).toList();
+
+    fullNameMatches.sort((a, b) => a.index.compareTo(b.index));
+    surnameMatches.sort((a, b) => a.index.compareTo(b.index));
+
+    final ordered = <BookCharacter>[];
+    for (final match in [...fullNameMatches, ...surnameMatches]) {
+      if (!ordered.any((item) => item.name.toLowerCase() == match.character.name.toLowerCase())) {
+        ordered.add(match.character);
+      }
+    }
+    return ordered;
   }
 
   static String _genderedCharacterDescription(
@@ -489,55 +522,37 @@ class SuperBookSceneGraph {
   ) {
     final source = passage
         .where((line) => line.trim().isNotEmpty)
+        .take(6)
         .join(' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(RegExp(r'\\s+'), ' ')
         .trim();
     if (source.isEmpty) return const [];
 
-    const abbreviations = [
-      'Mr.', 'Mrs.', 'Ms.', 'Miss.', 'Dr.', 'St.', 'Rev.', 'Col.',
-      'Capt.', 'Lady.', 'Sir.',
-    ];
-    var protectedSource = source;
-    for (final abbreviation in abbreviations) {
-      protectedSource = protectedSource.replaceAll(
-        abbreviation,
-        '${abbreviation.substring(0, abbreviation.length - 1)}\u0001',
-      );
-    }
-    final sentences = protectedSource
-        .split(RegExp(r'(?<=[.!?])\s+'))
-        .map((s) => s.replaceAll('\u0001', '.').trim())
-        .where((s) => s.length >= 12)
+    // Protect titles/abbreviations from period-splitting. Coordinating words
+    // such as "and" and "then" are never sentence boundaries.
+    final protected = source.replaceAllMapped(
+      RegExp(
+        r'\\b(Mr|Mrs|Ms|Miss|Dr|St|Rev|Col|Capt|Gen|Lady|Sir)\\.',
+        caseSensitive: false,
+      ),
+      (m) => '${m[1]}\\u0000',
+    );
+
+    final rawSentences = protected
+        .split(RegExp(r'(?<=[.!?;:])\\s+'))
+        .map((s) => s.replaceAll('\\u0000', '.').trim())
+        .where((s) => s.length >= 14)
         .toList();
 
-    const actionWords = [
-      'walk', 'walked', 'walking', 'went', 'go', 'entered', 'enter',
-      'left', 'leaving', 'stood', 'stand', 'rose', 'rise', 'sat', 'sit', 'sitting',
-      'read', 'reading', 'wrote', 'write', 'opened', 'open', 'closed',
-      'looked', 'look', 'saw', 'see', 'heard', 'hear', 'said', 'spoke',
-      'asked', 'replied', 'answered', 'protested', 'argued', 'insisted',
-      'continued', 'ran', 'run', 'fought', 'fight', 'took', 'take',
-      'held', 'hold', 'reached', 'reach', 'turned', 'knelt', 'kneel',
-      'knocked', 'knock',
-    ];
-
     final beats = <String>[];
-    for (final sentence in sentences) {
-      // Split coordinated actions so "sat ... and read ..." becomes two
-      // distinct acting beats instead of one static frame.
-      final clauses = sentence
-          .split(RegExp(r'\s+(?:and|then)\s+', caseSensitive: false))
-          .map((s) => s.trim())
-          .where((s) => s.length >= 8);
-      for (final clause in clauses) {
-        if (_hasAny(clause.toLowerCase(), actionWords)) {
-          beats.add(clause);
-        }
+    for (var s in rawSentences) {
+      if (s.length > 140) {
+        s = '${s.substring(0, 137).trim()}…';
       }
+      beats.add(s);
     }
 
-    if (beats.isNotEmpty) return beats.take(8).toList();
+    if (beats.isNotEmpty) return beats.take(6).toList();
     if (sceneMoment.trim().isNotEmpty && sceneMoment != '[Illustration]') {
       return [sceneMoment.trim()];
     }
