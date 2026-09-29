@@ -13,9 +13,9 @@ class BiomeBackdropPainter{
     if(outdoor){_outdoor(c,s,b,t,blooming);}
     else if(b==EnvironmentBiome.neutral){c.drawRect(Rect.fromLTWH(0,s.height*.72,s.width,s.height*.28),Paint()..color=const Color(0xFF56483E));}
     else {_interior(c,s,b);}
-    if(l==LightingMood.overcastRain){final p=Paint()..color=Colors.white.withValues(alpha:.22)..strokeWidth=1.4;for(var i=0;i<90;i++){final x=(i*47+t*180)%s.width,y=(i*71+t*260)%s.height;c.drawLine(Offset(x,y),Offset(x-5,y+18),p);}}
+    if(outdoor && l==LightingMood.overcastRain){final p=Paint()..color=Colors.white.withValues(alpha:.22)..strokeWidth=1.4;for(var i=0;i<90;i++){final x=(i*47+t*180)%s.width,y=(i*71+t*260)%s.height;c.drawLine(Offset(x,y),Offset(x-5,y+18),p);}}
     if(l==LightingMood.warmHearth||l==LightingMood.candlelight)c.drawCircle(Offset(s.width*.55,s.height*.48),s.width*.58,Paint()..shader=RadialGradient(colors:[Colors.amber.withValues(alpha:.16),Colors.transparent]).createShader(Rect.fromCircle(center:Offset(s.width*.55,s.height*.48),radius:s.width*.58)));
-    if(night)c.drawCircle(Offset(s.width*.82,s.height*.14),s.width*.045,Paint()..color=const Color(0xFFF4EAC9));
+    if(outdoor && night)c.drawCircle(Offset(s.width*.82,s.height*.14),s.width*.045,Paint()..color=const Color(0xFFF4EAC9));
   }
   void _outdoor(Canvas c,Size s,EnvironmentBiome b,double t,bool blooming){
     final ground=b==EnvironmentBiome.seaHarbor?const Color(0xFF365F73):b==EnvironmentBiome.battlefield?const Color(0xFF62513F):const Color(0xFF486347);
