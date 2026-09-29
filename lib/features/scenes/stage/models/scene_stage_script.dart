@@ -34,7 +34,6 @@ class SceneStageScript {
       pieces.add(StageSetPiece(id:e.key,x:e.value.x,y:e.value.y,depth:e.value.depth));
     }
     for(final prop in graph.props){
-    for(final prop in graph.props){
       final id=prop.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'),'_');
       if(isOutdoorBiome && {'window','outside_window','door','table'}.contains(id)) continue;
       if(!pieces.any((p)=>p.id==id)) pieces.add(StageSetPiece(id:id,x:.5,y:.62,depth:.18));
