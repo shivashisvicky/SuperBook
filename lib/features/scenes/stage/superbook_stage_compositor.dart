@@ -1,4 +1,4 @@
-// ignore_for_file: curly_braces_in_flow_control_structures, prefer_function_declarations_over_variables
+// ignore_for_file: curly_braces_in_flow_control_structures, prefer_function_declarations_over_variables, prefer_interpolation_to_compose_strings
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'models/scene_stage_script.dart';
