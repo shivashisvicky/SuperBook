@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../domain/book.dart';
+import '../../domain/experience/ai_scene_plan.dart';
+import '../../domain/experience/superbook_scene_graph.dart';
 import '../../services/scene_generation/cloudflare_scene_provider.dart';
 import '../../services/scene_generation/scene_generation_cache.dart';
 import '../../services/scene_generation/scene_generation_provider.dart';
@@ -11,6 +13,8 @@ import 'superbook_local_animation_stage.dart';
 
 const _sceneEndpoint = String.fromEnvironment('SUPERBOOK_AI_SCENE_ENDPOINT');
 final _sceneCache = SceneGenerationCache();
+// Cloudflare scene generation is optional. Once unavailable, chapters use the local renderer.
+bool _remoteGenerationUnavailable = false;
 
 class ScenePlayerScreen extends StatefulWidget {
   const ScenePlayerScreen({
@@ -57,6 +61,10 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       unawaited(_loadVideo(cached!.videoUrl!));
     }
     if (cached != null) {
+      unawaited(_prefetchNextChapter());
+    } else if (_remoteGenerationUnavailable) {
+      _useLocalAnimation = true;
+      unawaited(_prefetchNextChapter());
     } else {
       unawaited(_generate());
     }
@@ -119,12 +127,12 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       final generated = await provider.generate(
         bookId: widget.book.id,
         chapterId: widget.beat.chapterId,
-        passage: _chapter.passage.join('\n'),
+        passage: _chapter.passage.take(6).join('\n'),
         author: widget.book.author,
         title: widget.book.title,
         beatTitle: widget.beat.title,
         beatSummary: widget.beat.summary,
-      );
+      ).timeout(const Duration(seconds: 5));
       _sceneCache.put(_cacheKey, generated);
       if (!mounted) return;
       setState(() {
@@ -134,12 +142,14 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       });
 
     } catch (error) {
+      _remoteGenerationUnavailable = true;
       if (!mounted) return;
       setState(() {
         _loading = false;
         _useLocalAnimation = true;
         _generationError = null;
       });
+      unawaited(_prefetchNextChapter());
     } finally {
       if (mounted && _loading) {
         setState(() => _loading = false);
@@ -266,8 +276,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
                 title: 'Story moment',
                 summary:
                     generated?.plan.sceneSummary ?? widget.scene.caption,
-                location: generated?.plan.environment.location ??
-                    widget.scene.atmosphere,
+                location: _resolvedLocation(generated),
                 currentIndex: currentIndex,
                 total: widget.book.chapters.length,
                 hasPrevious: hasPrevious,
@@ -414,17 +423,19 @@ class _StoryMomentOverlay extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      location,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.white70,
+                  if (location.trim().isNotEmpty &&
+                      location != 'Narrative setting not specified')
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        location,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.white70,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
                   const SizedBox(height: 8),
                 ],
                 Row(
