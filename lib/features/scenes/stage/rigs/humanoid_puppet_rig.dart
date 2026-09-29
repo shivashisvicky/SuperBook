@@ -7,11 +7,11 @@ import '../../../../domain/book.dart';
 class CharacterVisualProfile{
   const CharacterVisualProfile({required this.female,required this.child,required this.tall,required this.hair,required this.garment});
   final bool female,child,tall; final Color hair,garment;
-  factory CharacterVisualProfile.from(BookCharacter c,String extra){
+  factory CharacterVisualProfile.from(BookCharacter c,String extra,{int slotIndex=0}){
     final t='${c.name} ${c.role} ${c.description} $extra'.toLowerCase();
     final word=(String x)=>' ${t.replaceAll(RegExp(r'[^a-z0-9]+'),' ')} '.contains(' $x ');
     var h=17;for(final x in t.codeUnits)h=(h*31+x)&0x7fffffff;
-    return CharacterVisualProfile(female:['woman','female','girl','lady','mrs','miss','ms','madam','daughter','sister','wife','mother','aunt','niece','queen','princess','duchess','she','her','elizabeth','jane','lydia','mary','kitty','catherine','charlotte','georgiana','alice','emma','elinor','marianne','anne','fanny','lucy','maria'].any(word),child:['child','boy','girl','young','little'].any(word),tall:['tall','large','broad','stout','gentleman'].any(word),hair:Color([0xFF38261F,0xFF211C1A,0xFF6B432B,0xFF8B5A36][h%4]),garment:Color([0xFF4B5D73,0xFF704B4A,0xFF566B50,0xFF6B5948,0xFF5C4B6F][h%5]));
+    return CharacterVisualProfile(female:['woman','female','girl','lady','mrs','miss','ms','madam','daughter','sister','wife','mother','aunt','niece','queen','princess','duchess','she','her','elizabeth','jane','lydia','mary','kitty','catherine','charlotte','georgiana','alice','emma','elinor','marianne','anne','fanny','lucy','maria'].any(word),child:['child','boy','girl','young','little'].any(word),tall:['tall','large','broad','stout','gentleman'].any(word),hair:Color([0xFF2C1D14,0xFF5A3825,0xFF8C583A,0xFF1F1B18][(h+slotIndex)%4]),garment:Color([0xFF2E5077,0xFF7A2E43,0xFF3A6B5C,0xFF5B4279,0xFF2F6673][(h+slotIndex*2)%5]));
   }
 }
 class HumanoidPose {
@@ -73,7 +73,7 @@ class HumanoidPose {
     pelvisY: 2,
   );
   static const sit = HumanoidPose(
-    pelvisY: 16,
+    pelvisY: 8,
     torso: -.03,
     head: .08,
     lArm: -.25,
@@ -207,6 +207,11 @@ class HumanoidPuppetRig{
       limb,
     );
 
+    final silhouette = Paint()
+      ..color = const Color(0xFF25252A).withValues(alpha: .32)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8 * s;
+
     if (profile.female) {
       final skirtDrop = (a == ActorPose.sitIdle ||
               a == ActorPose.sitRead ||
@@ -231,6 +236,7 @@ class HumanoidPuppetRig{
         )
         ..close();
       c.drawPath(d, cloth);
+      c.drawPath(d, silhouette);
     } else {
       c.drawRRect(
         RRect.fromRectAndRadius(
@@ -238,6 +244,13 @@ class HumanoidPuppetRig{
           Radius.circular(8 * s),
         ),
         cloth,
+      );
+      c.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: torsoCenter, width: 30 * s, height: 54 * s),
+          Radius.circular(8 * s),
+        ),
+        silhouette,
       );
       c.drawRect(
         Rect.fromCenter(center: hip, width: 28 * s, height: 10 * s),
