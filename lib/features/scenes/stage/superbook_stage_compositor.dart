@@ -45,7 +45,7 @@ class _StagePainter extends CustomPainter{
       for(final actor in ordered){
         final track=beat.tracks.firstWhere((x)=>x.actorId==actor.id,orElse:()=>ActorTrack(actorId:actor.id,pose:ActorPose.idleStand));
         var x=actor.x,y=actor.y;
-        if(track.pose==ActorPose.walk&&track.targetX!=null){
+        if((track.pose==ActorPose.walk||track.pose==ActorPose.run)&&track.targetX!=null){
           final e=Curves.easeInOut.transform(beatProgress);
           x=actor.x+(track.targetX!-actor.x)*e;
           y=actor.y+((track.targetY??actor.y)-actor.y)*e;
@@ -64,7 +64,7 @@ class _StagePainter extends CustomPainter{
     if(script.lighting==LightingMood.warmHearth||script.lighting==LightingMood.candlelight)c.drawRect(Offset.zero&s,Paint()..color=Colors.amber.withValues(alpha:.018));
   }
   void _paintBeatBubble(Canvas c,Size s,ChoreographedBeat beat,List<CharacterPuppetSpec> ordered){
-    final activeTrack=beat.tracks.firstWhere((track)=>track.pose!=ActorPose.listenAttentive,orElse:()=>beat.tracks.isEmpty?const ActorTrack(actorId:'',pose:ActorPose.idleStand):beat.tracks.first);
+    final activeTrack=beat.tracks.firstWhere((track)=>track.pose!=ActorPose.listenAttentive&&track.pose!=ActorPose.idleStand,orElse:()=>beat.tracks.isEmpty?const ActorTrack(actorId:'',pose:ActorPose.idleStand):beat.tracks.first);
     final actor=ordered.firstWhere((item)=>item.id==activeTrack.actorId,orElse:()=>ordered.isEmpty?const CharacterPuppetSpec(id:'',name:'',description:'',x:.5,y:.78,facing:1):ordered.first);
     var text=beat.text.replaceAll(RegExp(r'\\s+'),' ').trim();
     if(text.length>150) text=text.substring(0,147)+'…';

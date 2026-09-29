@@ -19,11 +19,21 @@ class SceneStageScript {
   factory SceneStageScript.fromGraph({required SuperBookSceneGraph graph,required List<BookCharacter> bookCharacters,required Scene scene,required List<String> passage}) {
     final biome=_biome(graph.environment);
     final pieces=<StageSetPiece>[];
+    final outdoorBiomes={
+      EnvironmentBiome.forestWoodland,
+      EnvironmentBiome.gardenMeadow,
+      EnvironmentBiome.streetStation,
+      EnvironmentBiome.seaHarbor,
+      EnvironmentBiome.battlefield,
+      EnvironmentBiome.roadCarriage,
+    };
+    final isOutdoorBiome = outdoorBiomes.contains(biome);
     for(final e in graph.anchors.entries){
-      if({'left','right','center','outside'}.contains(e.key)) continue;
+      if({'left','right','center','outside','outside_window'}.contains(e.key)) continue;
+      if(isOutdoorBiome && {'window','door','table'}.contains(e.key)) continue;
       pieces.add(StageSetPiece(id:e.key,x:e.value.x,y:e.value.y,depth:e.value.depth));
     }
-    final outdoorBiomes={
+    for(final prop in graph.props){
       EnvironmentBiome.forestWoodland,
       EnvironmentBiome.gardenMeadow,
       EnvironmentBiome.streetStation,
@@ -33,7 +43,7 @@ class SceneStageScript {
     };
     for(final prop in graph.props){
       final id=prop.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'),'_');
-      if(outdoorBiomes.contains(biome) && {'window','outside_window','door','table'}.contains(id)) continue;
+      if(isOutdoorBiome && {'window','outside_window','door','table'}.contains(id)) continue;
       if(!pieces.any((p)=>p.id==id)) pieces.add(StageSetPiece(id:id,x:.5,y:.62,depth:.18));
     }
     pieces.addAll(_environmentPieces(biome,pieces));

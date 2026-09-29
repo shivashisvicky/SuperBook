@@ -14,7 +14,7 @@ import 'superbook_local_animation_stage.dart';
 const _sceneEndpoint = String.fromEnvironment('SUPERBOOK_AI_SCENE_ENDPOINT');
 final _sceneCache = SceneGenerationCache();
 // Cloudflare scene generation is optional. Once unavailable, chapters use the local renderer.
-bool _remoteGenerationUnavailable = false;
+bool _remoteGenerationDisabled = false;
 
 class ScenePlayerScreen extends StatefulWidget {
   const ScenePlayerScreen({
@@ -62,7 +62,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
     }
     if (cached != null) {
       unawaited(_prefetchNextChapter());
-    } else if (_remoteGenerationUnavailable) {
+    } else if (_remoteGenerationDisabled) {
       _useLocalAnimation = true;
       unawaited(_prefetchNextChapter());
     } else {
@@ -98,7 +98,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   Future<void> _generate({bool force = false}) async {
     if (_loading) return;
 
-    if (_remoteGenerationUnavailable || _sceneEndpoint.isEmpty) {
+    if (_remoteGenerationDisabled || _sceneEndpoint.isEmpty) {
       if (mounted) setState(() => _useLocalAnimation = true);
       return;
     }
@@ -137,7 +137,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         title: widget.book.title,
         beatTitle: widget.beat.title,
         beatSummary: widget.beat.summary,
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(const Duration(milliseconds: 4500));
       _sceneCache.put(_cacheKey, generated);
       if (!mounted) return;
       setState(() {
@@ -148,7 +148,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       unawaited(_prefetchNextChapter());
 
     } catch (error) {
-      _remoteGenerationUnavailable = true;
+      _remoteGenerationDisabled = true;
       if (!mounted) return;
       setState(() {
         _loading = false;
@@ -178,7 +178,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       );
 
   Future<void> _prefetchNextChapter() async {
-    if (_remoteGenerationUnavailable || _sceneEndpoint.isEmpty) return;
+    if (_remoteGenerationDisabled || _sceneEndpoint.isEmpty) return;
     final currentIndex = widget.book.chapters.indexWhere(
       (chapter) => chapter.id == widget.beat.chapterId,
     );
@@ -198,29 +198,29 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
     final key = _sceneCache.key(
       bookId: widget.book.id,
       chapterId: nextChapter.id,
-      passage: nextChapter.passage.join('\\n'),
+      passage: nextChapter.passage.join('\n'),
       beatTitle: nextBeat.title,
       beatSummary: nextBeat.summary,
     );
-    if (_sceneCache.get(key) != null || _remoteGenerationUnavailable) return;
+    if (_sceneCache.get(key) != null || _remoteGenerationDisabled) return;
 
     try {
       final generated = await CloudflareSceneProvider(endpoint: _sceneEndpoint)
           .generate(
             bookId: widget.book.id,
             chapterId: nextChapter.id,
-            passage: nextChapter.passage.take(6).join('\\n'),
+            passage: nextChapter.passage.take(6).join('\n'),
             author: widget.book.author,
             title: widget.book.title,
             beatTitle: nextBeat.title,
             beatSummary: nextBeat.summary,
           )
           .timeout(const Duration(seconds: 5));
-      if (!_remoteGenerationUnavailable) {
+      if (!_remoteGenerationDisabled) {
         _sceneCache.put(key, generated);
       }
     } catch (_) {
-      _remoteGenerationUnavailable = true;
+      _remoteGenerationDisabled = true;
     }
   }
 

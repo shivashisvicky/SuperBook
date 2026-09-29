@@ -119,12 +119,13 @@ class SuperBookSceneGraph {
       'doorway', 'threshold', 'open door', 'opened the door',
       'through the door', 'at the door', 'door',
     ]);
-    final hasTable = _hasAny(physicalSource, ['table', 'desk']) &&
+    final hasTable = indoors &&
+        _hasAny(physicalSource, ['table', 'desk']) &&
         _hasAny(physicalSource, [
           'sit', 'sat', 'sitting', 'seated', 'dinner', 'eat', 'ate',
           'write', 'wrote', 'map', 'key',
         ]);
-    final hasCarriage = _hasAny(physicalSource, [
+    final hasCarriage = !indoors && _hasAny(physicalSource, [
       'carriage', 'coach', 'wagon', 'horse',
     ]);
 
