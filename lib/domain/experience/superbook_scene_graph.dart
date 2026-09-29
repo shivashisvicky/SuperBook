@@ -178,13 +178,6 @@ class SuperBookSceneGraph {
           startAnchor: actors.isEmpty ? 'left' : 'right',
         ));
       }
-      if (actors.length < targetCount) {
-        actors.addAll(_inferImmediateActors(
-          immediateSource,
-          limit: targetCount - actors.length,
-          startIndex: actors.length,
-        ));
-      }
     } else {
       for (var i = 0; i < planned.length; i++) {
         final character = planned[i];
@@ -198,6 +191,63 @@ class SuperBookSceneGraph {
         ));
       }
     }
+
+    // A dialogue/interaction scene must never leave a named actor talking to
+    // empty air just because the planner returned one character.
+    if (actors.length < targetCount) {
+      final existingIds = actors.map((actor) => actor.id).toSet();
+      final remaining = bookCharacters
+          .where((character) => !existingIds.contains(_slug(character.name)))
+          .toList();
+
+      BookCharacter? secondaryMatch;
+      for (final character in remaining) {
+        if (_hasAny(immediateSource, [character.name])) {
+          secondaryMatch = character;
+          break;
+        }
+      }
+
+      if (secondaryMatch == null) {
+        for (final character in remaining) {
+          final tokens = character.name
+              .toLowerCase()
+              .split(RegExp(r'\s+'))
+              .where((word) => word.length >= 4)
+              .toList();
+          if (_hasAny(immediateSource, tokens)) {
+            secondaryMatch = character;
+            break;
+          }
+        }
+      }
+
+      if (secondaryMatch != null) {
+        actors.add(SceneActor(
+          id: _slug(secondaryMatch.name),
+          name: secondaryMatch.name,
+          description: _genderedCharacterDescription(
+            secondaryMatch,
+            immediateSource,
+          ),
+          startAnchor: 'right',
+        ));
+      } else {
+        final firstIsFemale = actors.isNotEmpty &&
+            _hasAny(actors.first.description.toLowerCase(), [
+              'female', 'woman', 'lady', 'miss', 'mrs',
+            ]);
+        actors.add(SceneActor(
+          id: firstIsFemale ? 'gentleman_companion' : 'lady_companion',
+          name: firstIsFemale ? 'Gentleman' : 'Lady',
+          description: firstIsFemale
+              ? 'male gentleman present in the conversation'
+              : 'female woman present in the conversation',
+          startAnchor: 'right',
+        ));
+      }
+    }
+
     if (actors.isEmpty) {
       actors.add(const SceneActor(
         id: 'protagonist',
@@ -276,7 +326,7 @@ class SuperBookSceneGraph {
         continue;
       }
 
-      final parts = name.split(RegExp(r'\\s+')).where((part) => part.isNotEmpty).toList();
+      final parts = name.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
       if (parts.length < 2) continue;
       final surname = parts.last;
       final surnameMatch = RegExp(
@@ -524,7 +574,7 @@ class SuperBookSceneGraph {
         .where((line) => line.trim().isNotEmpty)
         .take(6)
         .join(' ')
-        .replaceAll(RegExp(r'\\s+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     if (source.isEmpty) return const [];
 
