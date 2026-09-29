@@ -393,53 +393,6 @@ class SuperBookSceneGraph {
     return existing;
   }
 
-  static List<SceneActor> _inferImmediateActors(
-    String source, {
-    required int limit,
-    required int startIndex,
-  }) {
-    final actors = <SceneActor>[];
-    final named = RegExp(
-      r'\b(?:Mr\.?|Mrs\.?|Ms\.?|Miss|Lady|Sir|Rev\.?|Dr\.?|Col\.?|Capt\.?|Captain|Colonel)\s+([A-Z][a-z]+)\b',
-    ).allMatches(source);
-    for (final match in named) {
-      if (actors.length >= limit) break;
-      final name = match.group(1);
-      if (name == null) continue;
-      final female = RegExp(r'\b(?:Mrs\.?|Ms\.?|Miss|Lady)\s+' + RegExp.escape(name) + r'\b', caseSensitive: false)
-          .hasMatch(source);
-      final male = RegExp(r'\b(?:Mr\.?|Sir|Rev\.?|Dr\.?|Col\.?|Capt\.?|Captain|Colonel)\s+' + RegExp.escape(name) + r'\b', caseSensitive: false)
-          .hasMatch(source);
-      actors.add(SceneActor(
-        id: _slug(name),
-        name: name,
-        description: female
-            ? 'female character present in the immediate passage'
-            : male
-                ? 'male character present in the immediate passage'
-                : 'character present in the immediate passage',
-        startAnchor: (startIndex + actors.length) == 0 ? 'left' : 'right',
-      ));
-    }
-    if (actors.length < limit && _hasAny(source, ['she', 'her', 'herself'])) {
-      actors.add(SceneActor(
-        id: 'immediate_female',
-        name: 'Character',
-        description: 'female character present in the immediate passage',
-        startAnchor: (startIndex + actors.length) == 0 ? 'left' : 'right',
-      ));
-    }
-    if (actors.length < limit && _hasAny(source, ['he', 'him', 'his', 'himself'])) {
-      actors.add(SceneActor(
-        id: 'immediate_male',
-        name: 'Character',
-        description: 'male character present in the immediate passage',
-        startAnchor: (startIndex + actors.length) == 0 ? 'left' : 'right',
-      ));
-    }
-    return actors;
-  }
-
   static bool _hasAny(String text, List<String> terms) {
     final normalized = ' ${text
             .toLowerCase()
