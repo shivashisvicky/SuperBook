@@ -98,6 +98,11 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
   Future<void> _generate({bool force = false}) async {
     if (_loading) return;
 
+    if (_remoteGenerationUnavailable || _sceneEndpoint.isEmpty) {
+      if (mounted) setState(() => _useLocalAnimation = true);
+      return;
+    }
+
     if (_sceneEndpoint.isEmpty) {
       if (mounted) setState(() => _useLocalAnimation = true);
       return;
@@ -140,6 +145,7 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
         _loading = false;
         _generationError = null;
       });
+      unawaited(_prefetchNextChapter());
 
     } catch (error) {
       _remoteGenerationUnavailable = true;
