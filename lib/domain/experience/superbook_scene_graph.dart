@@ -542,7 +542,7 @@ class SuperBookSceneGraph {
     );
 
     final rawSentences = protected
-        .split(RegExp(r'(?<=[.!?;:])\\s+'))
+        .split(RegExp(r'(?<=[.!?;:])\s+'))
         .map((s) => s.replaceAll('\u0000', '.').trim())
         .where((s) => s.length >= 14)
         .toList();
