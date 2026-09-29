@@ -163,6 +163,83 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
     }
   }
 
+  AiScenePlan get _emptyScenePlan => const AiScenePlan(
+        schemaVersion: '1',
+        sceneSummary: '',
+        visualStyle: '',
+        characters: const [],
+        environment: const AiSceneEnvironment(location: '', time: '', description: ''),
+        props: const [],
+        actions: const [],
+        camera: const AiSceneCamera(shot: 'wide', angle: 'eye level', movement: ''),
+        lighting: '',
+        motion: '',
+        imagePrompt: '',
+      );
+
+  Future<void> _prefetchNextChapter() async {
+    if (_remoteGenerationUnavailable || _sceneEndpoint.isEmpty) return;
+    final currentIndex = widget.book.chapters.indexWhere(
+      (chapter) => chapter.id == widget.beat.chapterId,
+    );
+    final nextIndex = currentIndex + 1;
+    if (currentIndex < 0 || nextIndex >= widget.book.chapters.length) return;
+
+    final nextChapter = widget.book.chapters[nextIndex];
+    final nextBeat = widget.book.beats.firstWhere(
+      (beat) => beat.chapterId == nextChapter.id,
+      orElse: () => NarrativeBeat(
+        title: nextChapter.title,
+        summary: nextChapter.passage.isEmpty ? nextChapter.title : nextChapter.passage.first,
+        chapterId: nextChapter.id,
+        intensity: 1,
+      ),
+    );
+    final key = _sceneCache.key(
+      bookId: widget.book.id,
+      chapterId: nextChapter.id,
+      passage: nextChapter.passage.join('\\n'),
+      beatTitle: nextBeat.title,
+      beatSummary: nextBeat.summary,
+    );
+    if (_sceneCache.get(key) != null || _remoteGenerationUnavailable) return;
+
+    try {
+      final generated = await CloudflareSceneProvider(endpoint: _sceneEndpoint)
+          .generate(
+            bookId: widget.book.id,
+            chapterId: nextChapter.id,
+            passage: nextChapter.passage.take(6).join('\\n'),
+            author: widget.book.author,
+            title: widget.book.title,
+            beatTitle: nextBeat.title,
+            beatSummary: nextBeat.summary,
+          )
+          .timeout(const Duration(seconds: 5));
+      if (!_remoteGenerationUnavailable) {
+        _sceneCache.put(key, generated);
+      }
+    } catch (_) {
+      _remoteGenerationUnavailable = true;
+    }
+  }
+
+  String _resolvedLocation(GeneratedScene? generated) {
+    final generatedLocation = generated?.plan.environment.location.trim() ?? '';
+    if (generatedLocation.isNotEmpty &&
+        !generatedLocation.toLowerCase().contains('current family and social moment')) {
+      return generatedLocation;
+    }
+    final graph = SuperBookSceneGraph.from(
+      plan: generated?.plan ?? _emptyScenePlan,
+      scene: widget.scene,
+      bookCharacters: widget.book.characters,
+      passage: _chapter.passage,
+      narrativeFocus: widget.beat.summary,
+    );
+    return graph.environment;
+  }
+
   Widget _visualLocal() => SuperBookLocalAnimationStage(
         scene: widget.scene,
         passage: _chapter.passage,
@@ -199,7 +276,6 @@ class _ScenePlayerScreenState extends State<ScenePlayerScreen> {
       ].join(' '),
       scenePlan: generated.plan,
       narrativeFocus: widget.beat.summary,
-      backgroundImageBase64: generated.imageBase64,
     );
   }
 
