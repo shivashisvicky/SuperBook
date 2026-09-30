@@ -4,6 +4,7 @@ import '../../domain/book.dart';
 import '../../domain/experience/ai_scene_plan.dart';
 import '../../domain/experience/superbook_scene_graph.dart';
 import 'stage/models/scene_stage_script.dart';
+import 'stage/audio/stage_audio_coordinator.dart';
 import 'stage/superbook_stage_compositor.dart';
 
 class SuperBookLocalAnimationStage extends StatelessWidget {
@@ -39,5 +40,16 @@ class SuperBookLocalAnimationStage extends StatelessWidget {
       passage:passage,
     );
   }
-  @override Widget build(BuildContext context)=>SuperBookStageCompositor(script:_script(),characters:characters,passage:passage);
+  @override
+  Widget build(BuildContext context) {
+    final script = _script();
+    return StageAudioCoordinator(
+      script: script,
+      child: SuperBookStageCompositor(
+        script: script,
+        characters: characters,
+        passage: passage,
+      ),
+    );
+  }
 }
