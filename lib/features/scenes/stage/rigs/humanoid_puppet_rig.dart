@@ -9,9 +9,13 @@ class CharacterVisualProfile{
   final bool female,child,tall; final Color hair,garment;
   factory CharacterVisualProfile.from(BookCharacter c,String extra,{int slotIndex=0}){
     final t='${c.name} ${c.role} ${c.description} $extra'.toLowerCase();
-    final word=(String x)=>' ${t.replaceAll(RegExp(r'[^a-z0-9]+'),' ')} '.contains(' $x ');
+    final normalized=' ${t.replaceAll(RegExp(r'[^a-z0-9]+'),' ')} ';
+    final word=(String x)=>normalized.contains(' ${x.toLowerCase()} ');
+    final femaleCue=['woman','female','girl','lady','mrs','miss','ms','madam','daughter','sister','wife','mother','aunt','niece','queen','princess','duchess','she','her','elizabeth','jane','lydia','mary','kitty','catherine','charlotte','georgiana','alice','emma','elinor','marianne','anne','fanny','lucy','maria'].any(word);
+    final maleCue=['male','man','boy','gentleman','mr','sir','son','brother','husband','father','uncle','nephew','darcy','bingley','collins','wickham'].any(word);
+    final isFemale=femaleCue && !maleCue;
     var h=17;for(final x in t.codeUnits)h=(h*31+x)&0x7fffffff;
-    return CharacterVisualProfile(female:['woman','female','girl','lady','mrs','miss','ms','madam','daughter','sister','wife','mother','aunt','niece','queen','princess','duchess','she','her','elizabeth','jane','lydia','mary','kitty','catherine','charlotte','georgiana','alice','emma','elinor','marianne','anne','fanny','lucy','maria'].any(word),child:['child','boy','girl','young','little'].any(word),tall:['tall','large','broad','stout','gentleman'].any(word),hair:Color([0xFF2C1D14,0xFF5A3825,0xFF8C583A,0xFF1F1B18][(h+slotIndex)%4]),garment:Color([0xFF2E5077,0xFF7A2E43,0xFF3A6B5C,0xFF5B4279,0xFF2F6673][(h+slotIndex*2)%5]));
+    return CharacterVisualProfile(female:isFemale,child:['child','boy','girl','young','little'].any(word),tall:['tall','large','broad','stout','gentleman'].any(word),hair:Color([0xFF2C1D14,0xFF5A3825,0xFF8C583A,0xFF1F1B18][(h+slotIndex)%4]),garment:Color([0xFF2E5077,0xFF7A2E43,0xFF3A6B5C,0xFF5B4279,0xFF2F6673][(h+slotIndex*2)%5]));
   }
 }
 class HumanoidPose {
