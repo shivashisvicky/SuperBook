@@ -42,6 +42,7 @@ class _StagePainter extends CustomPainter{
     if(script.beats.isNotEmpty){
       final beat=script.beats[beatIndex];
       final ordered=[...script.cast]..sort((a,b)=>a.y.compareTo(b.y));
+      CharacterVisualProfile? firstProfile;
       for(final actor in ordered){
         final track=beat.tracks.firstWhere((x)=>x.actorId==actor.id,orElse:()=>ActorTrack(actorId:actor.id,pose:ActorPose.idleStand));
         var x=track.startX??actor.x,y=actor.y;
@@ -54,8 +55,17 @@ class _StagePainter extends CustomPainter{
         final bookCharacter=characters.where((c)=>c.name.toLowerCase()==actor.name.toLowerCase()).firstOrNull;
         final source=bookCharacter??BookCharacter(name:actor.name,role:'',description:actor.description);
         final slotIndex=script.cast.indexWhere((item)=>item.id==actor.id);
-        final profile=CharacterVisualProfile.from(source,actor.description,slotIndex:slotIndex<0?0:slotIndex);
-        HumanoidPuppetRig(profile).paint(c,Offset(x*s.width,y*s.height),math.min(s.width,s.height)/360,beatProgress,track.pose,track.facing??actor.facing);
+        final castIndex=slotIndex<0?0:slotIndex;
+        var profile=CharacterVisualProfile.from(source,actor.description,slotIndex:castIndex);
+        if(firstProfile!=null &&
+            (profile.garment==firstProfile!.garment || profile.hair==firstProfile!.hair)){
+          profile=CharacterVisualProfile.from(source,actor.description,slotIndex:castIndex+1);
+          if(profile.garment==firstProfile!.garment || profile.hair==firstProfile!.hair){
+            profile=CharacterVisualProfile.from(source,actor.description,slotIndex:castIndex+2);
+          }
+        }
+        firstProfile ??= profile;
+        HumanoidPuppetRig(profile).paint(c,Offset(x*s.width,(y-.045)*s.height),math.min(s.width,s.height)/360,beatProgress,track.pose,track.facing??actor.facing);
       }
       _paintBeatBubble(c,s,beat,ordered);
     }
@@ -68,7 +78,7 @@ class _StagePainter extends CustomPainter{
   void _paintBeatBubble(Canvas c,Size s,ChoreographedBeat beat,List<CharacterPuppetSpec> ordered){
     final activeTrack=beat.tracks.firstWhere((track)=>track.pose!=ActorPose.listenAttentive&&track.pose!=ActorPose.idleStand,orElse:()=>beat.tracks.isEmpty?const ActorTrack(actorId:'',pose:ActorPose.idleStand):beat.tracks.first);
     final actor=ordered.firstWhere((item)=>item.id==activeTrack.actorId,orElse:()=>ordered.isEmpty?const CharacterPuppetSpec(id:'',name:'',description:'',x:.5,y:.78,facing:1):ordered.first);
-    var text=beat.text.replaceAll(RegExp(r'\\s+'),' ').trim();
+    var text=beat.text.replaceAll('_','').replaceAll(RegExp(r'\\s+'),' ').trim();
     if(text.length>150) text=text.substring(0,147)+'…';
     if(text.isEmpty)return;
     final textPainter=TextPainter(
