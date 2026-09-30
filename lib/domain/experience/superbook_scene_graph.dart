@@ -531,16 +531,6 @@ class SuperBookSceneGraph {
       .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
       .replaceAll(RegExp(r'^_|_$'), '');
 
-  static String _anchorFor(String value, int index) {
-    final t = value.toLowerCase();
-    if (_hasAny(t, ['window'])) { return 'window'; }
-    if (_hasAny(t, ['table', 'desk', 'chair'])) { return 'table'; }
-    if (_hasAny(t, ['door', 'doorway', 'threshold'])) { return 'door'; }
-    if (_hasAny(t, ['right'])) { return 'right'; }
-    if (_hasAny(t, ['left'])) { return 'left'; }
-    return index == 0 ? 'left' : 'right';
-  }
-
   static SceneActor _actorFor(String text, List<SceneActor> actors, int index) {
     final t = text.toLowerCase();
     for (final actor in actors) {
