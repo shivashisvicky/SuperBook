@@ -58,9 +58,9 @@ class _StagePainter extends CustomPainter{
         final castIndex=slotIndex<0?0:slotIndex;
         var profile=CharacterVisualProfile.from(source,actor.description,slotIndex:castIndex);
         if(firstProfile!=null &&
-            (profile.garment==firstProfile!.garment || profile.hair==firstProfile!.hair)){
+            (profile.garment==firstProfile.garment || profile.hair==firstProfile.hair)){
           profile=CharacterVisualProfile.from(source,actor.description,slotIndex:castIndex+1);
-          if(profile.garment==firstProfile!.garment || profile.hair==firstProfile!.hair){
+          if(profile.garment==firstProfile.garment || profile.hair==firstProfile.hair){
             profile=CharacterVisualProfile.from(source,actor.description,slotIndex:castIndex+2);
           }
         }
