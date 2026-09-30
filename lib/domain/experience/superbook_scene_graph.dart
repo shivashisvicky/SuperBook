@@ -158,7 +158,10 @@ class SuperBookSceneGraph {
       'ladies', 'gentlemen', 'girls', 'both', 'between', 'with', 'to her',
       'to him', 'met', 'meet', 'related to', 'listened', 'entered',
     ]);
-    final targetCount = (explicitSolo && !isDialogueOrGroup) ? 1 : 2;
+    final targetCount =
+        (explicitSolo || (plan.characters.length == 1 && !isDialogueOrGroup))
+            ? 1
+            : 2;
 
     final actors = <SceneActor>[];
     final planned = plan.characters.take(targetCount).toList();
@@ -190,7 +193,28 @@ class SuperBookSceneGraph {
         r'\b(?:Mr\.?\s+[A-Z][a-z]+|Mrs\.?\s+[A-Z][a-z]+|Miss\s+[A-Z][a-z]+|Lady\s+[A-Z][a-z]+|Sir\s+[A-Z][a-z]+|Colonel\s+[A-Z][a-z]+|Captain\s+[A-Z][a-z]+|Elizabeth|Jane|Darcy|Bingley|Collins|Charlotte|Lydia|Wickham|Mary|Kitty|Catherine|Gardiner|Lucas|his\s+wife|her\s+husband|her\s+mother|her\s+father|his\s+father|her\s+sister|his\s+guest|her\s+friend|his\s+friend|her\s+aunt|their\s+aunt|uncle\s+Philips)\b',
       );
 
-      for (final match in mentionRegex.allMatches(rawImmediate)) {
+      final namedMatches = mentionRegex
+          .allMatches(rawImmediate)
+          .where((match) {
+            final raw = match.group(0)!.toLowerCase();
+            return !_hasAny(raw, [
+              'wife', 'husband', 'mother', 'father', 'sister', 'guest',
+              'friend', 'aunt',
+            ]);
+          })
+          .toList();
+      final relationshipMatches = mentionRegex
+          .allMatches(rawImmediate)
+          .where((match) {
+            final raw = match.group(0)!.toLowerCase();
+            return _hasAny(raw, [
+              'wife', 'husband', 'mother', 'father', 'sister', 'guest',
+              'friend', 'aunt',
+            ]);
+          })
+          .toList();
+
+      for (final match in [...namedMatches, ...relationshipMatches]) {
         if (actors.length >= targetCount) break;
         final rawName = match.group(0)!.replaceAll(RegExp(r'\s+'), ' ').trim();
         final lower = rawName.toLowerCase();
