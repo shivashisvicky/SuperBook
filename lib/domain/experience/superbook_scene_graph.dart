@@ -187,12 +187,12 @@ class SuperBookSceneGraph {
       ].join(' ');
 
       final mentionRegex = RegExp(
-        r'\\b(?:Mr\\.?\\s+[A-Z][a-z]+|Mrs\\.?\\s+[A-Z][a-z]+|Miss\\s+[A-Z][a-z]+|Lady\\s+[A-Z][a-z]+|Sir\\s+[A-Z][a-z]+|Colonel\\s+[A-Z][a-z]+|Captain\\s+[A-Z][a-z]+|Elizabeth|Jane|Darcy|Bingley|Collins|Charlotte|Lydia|Wickham|Mary|Kitty|Catherine|Gardiner|Lucas|his\\s+wife|her\\s+husband|her\\s+mother|her\\s+father|his\\s+father|her\\s+sister|his\\s+guest|her\\s+friend|his\\s+friend|her\\s+aunt|their\\s+aunt|uncle\\s+Philips)\\b',
+        r'\b(?:Mr\.?\s+[A-Z][a-z]+|Mrs\.?\s+[A-Z][a-z]+|Miss\s+[A-Z][a-z]+|Lady\s+[A-Z][a-z]+|Sir\s+[A-Z][a-z]+|Colonel\s+[A-Z][a-z]+|Captain\s+[A-Z][a-z]+|Elizabeth|Jane|Darcy|Bingley|Collins|Charlotte|Lydia|Wickham|Mary|Kitty|Catherine|Gardiner|Lucas|his\s+wife|her\s+husband|her\s+mother|her\s+father|his\s+father|her\s+sister|his\s+guest|her\s+friend|his\s+friend|her\s+aunt|their\s+aunt|uncle\s+Philips)\b',
       );
 
       for (final match in mentionRegex.allMatches(rawImmediate)) {
         if (actors.length >= targetCount) break;
-        final rawName = match.group(0)!.replaceAll(RegExp(r'\\s+'), ' ').trim();
+        final rawName = match.group(0)!.replaceAll(RegExp(r'\s+'), ' ').trim();
         final lower = rawName.toLowerCase();
 
         final isFemaleMention = _hasAny(lower, [
@@ -251,7 +251,18 @@ class SuperBookSceneGraph {
         final description =
             _genderedCharacterDescription(character, rawImmediate);
         final id = _slug(character.name);
-        if (actors.any((actor) => actor.id == id)) continue;
+        final nameParts = character.name
+            .toLowerCase()
+            .split(RegExp(r'\s+'))
+            .where((word) => word.length >= 4)
+            .toList();
+        final alreadyPresent = actors.any((actor) =>
+            actor.id == id ||
+            _hasAny(actor.name.toLowerCase(), [
+              character.name.toLowerCase(),
+              ...nameParts,
+            ]));
+        if (alreadyPresent) continue;
         actors.add(SceneActor(
           id: id,
           name: character.name,
@@ -338,7 +349,7 @@ class SuperBookSceneGraph {
     }
 
     return SuperBookSceneGraph(
-      environment: _environmentLabel(physicalSource, indoors),
+      environment: _environmentLabel(physicalSource, indoors, immediateSource),
       anchors: anchors,
       actors: actors,
       props: groundedProps.isNotEmpty
@@ -400,18 +411,20 @@ class SuperBookSceneGraph {
     String source,
   ) {
     final existing = character.description.trim();
-    final lower = existing.toLowerCase();
-    if (_hasAny(lower, [
-      'female', 'woman', 'girl', 'lady', 'mrs', 'miss', 'daughter',
-      'sister', 'wife', 'mother', 'aunt', 'niece',
+    final combined = '${character.name} $existing'.toLowerCase();
+    if (_hasAny(combined, [
+      'female', 'woman', 'girl', 'lady', 'mrs', 'miss', 'ms', 'daughter',
+      'sister', 'wife', 'mother', 'aunt', 'niece', 'elizabeth', 'jane',
+      'charlotte', 'lydia', 'mary', 'kitty', 'catherine', 'georgiana', 'maria',
     ])) {
-      return existing.isEmpty ? 'female character' : existing;
+      return existing.isEmpty ? 'female character' : '$existing; female character';
     }
-    if (_hasAny(lower, [
-      'male', 'man', 'boy', 'gentleman', 'mr', 'sir', 'son', 'brother',
-      'husband', 'father', 'uncle', 'nephew',
+    if (_hasAny(combined, [
+      'male', 'man', 'boy', 'gentleman', 'mr', 'sir', 'colonel', 'captain',
+      'son', 'brother', 'husband', 'father', 'uncle', 'nephew', 'darcy',
+      'bingley', 'collins', 'wickham',
     ])) {
-      return existing.isEmpty ? 'male character' : existing;
+      return existing.isEmpty ? 'male character' : '$existing; male character';
     }
     final name = RegExp.escape(character.name.trim());
     if (RegExp(r'\b(?:Mrs\.?|Ms\.?|Miss|Lady)\s+' + name + r'\b', caseSensitive: false)
@@ -458,7 +471,11 @@ class SuperBookSceneGraph {
     return words.isNotEmpty && words.every((word) => _hasAny(source, [word]));
   }
 
-  static String _environmentLabel(String source, bool indoors) {
+  static String _environmentLabel(
+    String source,
+    bool indoors,
+    String immediateSource,
+  ) {
     final hasPhysicalSetting = _hasAny(source, [
       'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
       'bedroom', 'office', 'inside', 'interior', 'chamber', 'kitchen',
@@ -470,12 +487,21 @@ class SuperBookSceneGraph {
     ]);
     if (!hasPhysicalSetting) return 'Narrative setting not specified';
     if (indoors) {
-      if (_hasAny(source, ['library', 'study'])) { return 'Library or study'; }
-      if (_hasAny(source, ['bedroom'])) { return 'Bedroom'; }
+      if (_hasAny(immediateSource, ['dining', 'dinner', 'dine', 'breakfast'])) {
+        return 'Dining room';
+      }
+      if (_hasAny(immediateSource, ['drawing room', 'drawing-room', 'parlor', 'parlour'])) {
+        return 'Drawing room';
+      }
+      if (_hasAny(immediateSource, ['library', 'study'])) { return 'Library or study'; }
+      if (_hasAny(immediateSource, ['bedroom', 'bed'])) { return 'Bedroom'; }
+      if (_hasAny(immediateSource, ['fireplace', 'hearth'])) { return 'Fireplace interior'; }
       if (_hasAny(source, ['dining', 'dinner'])) { return 'Dining room'; }
       if (_hasAny(source, ['drawing room', 'drawing-room', 'parlor', 'parlour'])) {
         return 'Drawing room';
       }
+      if (_hasAny(source, ['library', 'study'])) { return 'Library or study'; }
+      if (_hasAny(source, ['bedroom'])) { return 'Bedroom'; }
       if (_hasAny(source, ['fireplace', 'hearth'])) { return 'Fireplace interior'; }
       return 'Interior';
     }
