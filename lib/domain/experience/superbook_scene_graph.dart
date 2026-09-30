@@ -147,109 +147,148 @@ class SuperBookSceneGraph {
       'outside': const SceneAnchor('outside', .92, .62, depth: .75),
     };
 
-    final actors = <SceneActor>[];
-    final explicitSolo = _hasAny(literarySource, [
+    final explicitSolo = _hasAny(immediateSource, [
       'alone', 'by himself', 'by herself', 'on his own', 'on her own',
       'single figure', 'solitary',
     ]);
-    final isDialogue = _hasAny(immediateSource, [
+    final isDialogueOrGroup = _hasAny(immediateSource, [
       'said', 'spoke', 'replied', 'answered', 'asked', 'conversation',
-      'talk', 'talked', 'wife', 'husband', 'sister', 'brother', 'mother',
-      'father', 'guest', 'cousin', 'with him', 'with her', 'to him', 'to her',
-      'together', 'both', 'between',
+      'talk', 'talked', 'wife', 'husband', 'sister', 'sisters', 'brother',
+      'mother', 'father', 'guest', 'cousin', 'cousins', 'friend', 'friends',
+      'ladies', 'gentlemen', 'girls', 'both', 'between', 'with', 'to her',
+      'to him', 'met', 'meet', 'related to', 'listened', 'entered',
     ]);
-    final targetCount = isDialogue
-        ? 2
-        : (explicitSolo
-            ? 1
-            : plan.characters.isEmpty
-                ? 1
-                : plan.characters.length.clamp(1, 2));
+    final targetCount = (explicitSolo && !isDialogueOrGroup) ? 1 : 2;
+
+    final actors = <SceneActor>[];
     final planned = plan.characters.take(targetCount).toList();
-    if (planned.isEmpty) {
-      final selected = <BookCharacter>[
-        ..._orderedCharacterMentions(bookCharacters, immediateSource),
-      ];
-      final broader = _orderedCharacterMentions(bookCharacters, literarySource);
-      for (final character in broader) {
-        if (!selected.any((item) => item.name.toLowerCase() == character.name.toLowerCase())) {
-          selected.add(character);
-        }
-      }
-      for (final character in selected.take(targetCount)) {
-        actors.add(SceneActor(
-          id: _slug(character.name),
-          name: character.name,
-          description: _genderedCharacterDescription(character, immediateSource),
-          startAnchor: actors.isEmpty ? 'left' : 'right',
-        ));
-      }
-    } else {
+
+    if (planned.isNotEmpty) {
       for (var i = 0; i < planned.length; i++) {
         final character = planned[i];
         actors.add(SceneActor(
-          id: _slug(character.id.isEmpty ? character.description : character.id),
+          id: _slug(character.id.isEmpty ? 'actor_$i' : character.id),
           name: character.id.isEmpty
-              ? (i < bookCharacters.length ? bookCharacters[i].name : 'Character ${i + 1}')
+              ? (i < bookCharacters.length
+                  ? bookCharacters[i].name
+                  : 'Character ${i + 1}')
               : character.id,
           description: character.description,
-          startAnchor: _anchorFor(character.position, i),
+          startAnchor: i == 0 ? 'left' : 'right',
         ));
       }
     }
 
-    // A dialogue/interaction scene must never leave a named actor talking to
-    // empty air just because the planner returned one character.
     if (actors.length < targetCount) {
-      final existingIds = actors.map((actor) => actor.id).toSet();
-      final remaining = bookCharacters
-          .where((character) => !existingIds.contains(_slug(character.name)))
-          .toList();
+      final rawImmediate = [
+        scene.moment,
+        narrativeFocus,
+        ...passage.take(3),
+      ].join(' ');
 
-      BookCharacter? secondaryMatch;
-      for (final character in remaining) {
-        if (_hasAny(immediateSource, [character.name])) {
-          secondaryMatch = character;
-          break;
-        }
-      }
+      final mentionRegex = RegExp(
+        r'\\b(?:Mr\\.?\\s+[A-Z][a-z]+|Mrs\\.?\\s+[A-Z][a-z]+|Miss\\s+[A-Z][a-z]+|Lady\\s+[A-Z][a-z]+|Sir\\s+[A-Z][a-z]+|Colonel\\s+[A-Z][a-z]+|Captain\\s+[A-Z][a-z]+|Elizabeth|Jane|Darcy|Bingley|Collins|Charlotte|Lydia|Wickham|Mary|Kitty|Catherine|Gardiner|Lucas|his\\s+wife|her\\s+husband|her\\s+mother|her\\s+father|his\\s+father|her\\s+sister|his\\s+guest|her\\s+friend|his\\s+friend|her\\s+aunt|their\\s+aunt|uncle\\s+Philips)\\b',
+      );
 
-      if (secondaryMatch == null) {
-        for (final character in remaining) {
-          final tokens = character.name
-              .toLowerCase()
-              .split(RegExp(r'\s+'))
-              .where((word) => word.length >= 4)
-              .toList();
-          if (_hasAny(immediateSource, tokens)) {
-            secondaryMatch = character;
+      for (final match in mentionRegex.allMatches(rawImmediate)) {
+        if (actors.length >= targetCount) break;
+        final rawName = match.group(0)!.replaceAll(RegExp(r'\\s+'), ' ').trim();
+        final lower = rawName.toLowerCase();
+
+        final isFemaleMention = _hasAny(lower, [
+          'mrs', 'miss', 'lady', 'elizabeth', 'jane', 'charlotte',
+          'lydia', 'mary', 'kitty', 'catherine', 'wife', 'mother',
+          'sister', 'aunt',
+        ]);
+        final isMaleMention = _hasAny(lower, [
+          'mr', 'sir', 'colonel', 'captain', 'darcy', 'bingley',
+          'collins', 'wickham', 'husband', 'father', 'guest', 'uncle',
+        ]);
+
+        var canonicalKey = _slug(rawName);
+        for (final surname in [
+          'elizabeth', 'jane', 'darcy', 'bingley', 'collins',
+          'charlotte', 'lydia', 'wickham', 'mary', 'kitty',
+          'catherine', 'gardiner', 'lucas', 'philips',
+        ]) {
+          if (_hasAny(lower, [surname])) {
+            canonicalKey =
+                '${isFemaleMention ? 'f' : isMaleMention ? 'm' : 'x'}_$surname';
             break;
           }
         }
-      }
+        if (_hasAny(lower, ['bennet'])) {
+          canonicalKey = isFemaleMention ? 'mrs_bennet' : 'mr_bennet';
+        }
+        if (actors.any((actor) => actor.id == canonicalKey)) continue;
 
-      if (secondaryMatch != null) {
+        final genderTag = isFemaleMention
+            ? 'female woman lady'
+            : (isMaleMention ? 'male gentleman' : '');
+
         actors.add(SceneActor(
-          id: _slug(secondaryMatch.name),
-          name: secondaryMatch.name,
-          description: _genderedCharacterDescription(
-            secondaryMatch,
-            immediateSource,
-          ),
-          startAnchor: 'right',
+          id: canonicalKey,
+          name: rawName,
+          description: '$rawName $genderTag'.trim(),
+          startAnchor: actors.isEmpty ? 'left' : 'right',
+        ));
+      }
+    }
+
+    if (actors.length < targetCount) {
+      final rawImmediate = [
+        scene.moment,
+        narrativeFocus,
+        ...passage.take(3),
+      ].join(' ');
+
+      // Resolve book characters in prose order. Full names are considered
+      // before bare surnames so "Mr. Bennet" cannot resolve to Elizabeth.
+      final mentionedCharacters =
+          _orderedCharacterMentions(bookCharacters, rawImmediate);
+      for (final character in mentionedCharacters) {
+        if (actors.length >= targetCount) break;
+        final description =
+            _genderedCharacterDescription(character, rawImmediate);
+        final id = _slug(character.name);
+        if (actors.any((actor) => actor.id == id)) continue;
+        actors.add(SceneActor(
+          id: id,
+          name: character.name,
+          description: description,
+          startAnchor: actors.isEmpty ? 'left' : 'right',
+        ));
+      }
+    }
+
+    while (actors.length < targetCount) {
+      final slot = actors.length;
+      final anchor = slot == 0 ? 'left' : 'right';
+      if (slot == 0) {
+        final hasMale = _hasAny(immediateSource, [
+          'he', 'him', 'his', 'mr', 'gentleman', 'father',
+        ]);
+        final hasFemale = _hasAny(immediateSource, [
+          'she', 'her', 'mrs', 'miss', 'lady', 'woman',
+        ]);
+        final isFemale = hasFemale && !hasMale;
+        actors.add(SceneActor(
+          id: isFemale ? 'lead_lady' : 'lead_gentleman',
+          name: isFemale ? 'Lady' : 'Gentleman',
+          description: isFemale ? 'female woman lady' : 'male gentleman',
+          startAnchor: anchor,
         ));
       } else {
-        final firstIsFemale = actors.isNotEmpty &&
-            _hasAny(actors.first.description.toLowerCase(), [
-              'female', 'woman', 'lady', 'miss', 'mrs',
-            ]);
+        final firstIsFemale = _hasAny(
+          actors.first.description.toLowerCase(),
+          ['female', 'woman', 'lady', 'mrs', 'miss'],
+        );
         actors.add(SceneActor(
-          id: firstIsFemale ? 'gentleman_companion' : 'lady_companion',
-          name: firstIsFemale ? 'Gentleman' : 'Lady',
-          description: firstIsFemale
-              ? 'male gentleman present in the conversation'
-              : 'female woman present in the conversation',
-          startAnchor: 'right',
+          id: firstIsFemale ? 'companion_gentleman' : 'companion_lady',
+          name: firstIsFemale ? 'Companion Gentleman' : 'Companion Lady',
+          description:
+              firstIsFemale ? 'male gentleman' : 'female woman lady',
+          startAnchor: anchor,
         ));
       }
     }
