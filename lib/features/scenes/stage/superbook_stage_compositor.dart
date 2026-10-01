@@ -60,9 +60,6 @@ class _StagePainter extends CustomPainter{
         if(firstProfile!=null &&
             (profile.garment==firstProfile.garment || profile.hair==firstProfile.hair)){
           profile=CharacterVisualProfile.from(source,actor.description,slotIndex:castIndex+1);
-          if(profile.garment==firstProfile.garment || profile.hair==firstProfile.hair){
-            profile=CharacterVisualProfile.from(source,actor.description,slotIndex:castIndex+2);
-          }
         }
         firstProfile ??= profile;
         HumanoidPuppetRig(profile).paint(c,Offset(x*s.width,(y-.045)*s.height),math.min(s.width,s.height)/360,beatProgress,track.pose,track.facing??actor.facing);
