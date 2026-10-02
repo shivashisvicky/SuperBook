@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/book.dart';
+import '../../core/utils/text_sanitizer.dart';
 import '../../services/current_book_store.dart';
 import '../explore/explore_screen.dart';
 import '../scenes/scene_player_screen.dart';
@@ -170,7 +171,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 const SizedBox(height: 28),
                 for (final paragraph in chapter.passage) ...[
                   Text(
-                    paragraph,
+                    paragraph.cleanOcr(),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontSize: fontSize,
                           height: 1.65,
