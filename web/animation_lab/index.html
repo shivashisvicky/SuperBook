@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SuperBook Animation Lab · 10/10 Scene Engine</title>
+<style>
+:root{--bg:#090b10;--panel:#121722;--line:#273040;--text:#f4f0e8;--muted:#9aa5b5;--gold:#e8c77a;--green:#8de0a4}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#263044 0,#090b10 48%);color:var(--text);font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:20;background:rgba(9,11,16,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:14px 18px}
+header b{font-size:16px}.pill{display:inline-block;margin-left:8px;padding:3px 8px;border-radius:999px;background:#1c2635;color:var(--gold);font-size:11px}
+main{max-width:1050px;margin:auto;padding:18px}.grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:16px}
+.panel{background:rgba(18,23,34,.88);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 14px 50px rgba(0,0,0,.22)}
+h1,h2,h3{margin:0 0 8px}h1{font-size:22px}h2{font-size:17px}h3{font-size:13px;color:var(--gold);letter-spacing:.04em;text-transform:uppercase}
+p{color:#c1c8d2;margin:7px 0}.stage{position:relative;aspect-ratio:9/16;max-height:760px;background:#171a1f;border-radius:16px;overflow:hidden;border:1px solid #303746}
+.stage svg{display:block;width:100%;height:100%}.caption{position:absolute;left:6%;right:6%;top:5%;z-index:5;display:none}
+.caption .card{background:rgba(251,247,235,.96);color:#241f1a;border-radius:18px;padding:13px 16px;box-shadow:0 12px 35px rgba(0,0,0,.24);font-family:Georgia,serif;font-size:16px}
+.caption .kind{font:700 10px system-ui;color:#80662a;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+.hud{position:absolute;left:12px;right:12px;bottom:12px;z-index:6;display:flex;justify-content:space-between;align-items:end;gap:8px;pointer-events:none}
+.hud span{background:rgba(4,7,12,.66);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:6px 9px;color:#e8edf4;font-size:11px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}button{border:1px solid #394252;background:#1c2430;color:#f4f0e8;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}button:hover{background:#263142}.primary{background:#efe4c5;color:#19150f;border-color:#efe4c5}
+.metric{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #242b38}.metric:last-child{border:0}.ok{color:var(--green)}.warn{color:#e8b86b}
+.timeline{display:flex;flex-direction:column;gap:6px;margin-top:10px}.beat{display:grid;grid-template-columns:42px 58px 1fr 54px;gap:8px;align-items:center;background:#0d121b;border:1px solid #202938;border-radius:9px;padding:7px 8px;font-size:11px}.beat.active{border-color:#d9b96e;background:#1a1a17}.beat.done{opacity:.58}.beat .n{color:#788496}.beat .type{font-weight:800;color:var(--gold)}.beat .dur{text-align:right;color:#8490a1}
+.small{font-size:12px;color:var(--muted)}.scene-context{margin-top:10px;padding:10px 12px;border:1px solid #2d3747;border-radius:10px;background:#0d121b;display:flex;gap:8px;align-items:baseline}.scene-context b{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.06em}.scene-context span{font-size:12px;color:#d4dae3}.world-controls{margin-top:6px}.world.active{border-color:#e8c77a;background:#2a251a;color:#f3d88d}code{color:#d9c28a}.accept{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.accept div{padding:8px 10px;border-radius:9px;background:#0d121b;border:1px solid #202938}.accept b{display:block;font-size:11px}.accept span{font-size:11px;color:#9aa5b5}
+@media(max-width:800px){.grid{grid-template-columns:1fr}header{position:relative}.stage{max-height:none}}
+</style>
+</head>
+<body>
+<header><b>SuperBook Animation Lab</b><span class="pill">Animation Lab · isolated</span></header>
+<main>
+<div class="grid">
+<section class="panel">
+<h1>One complete story moment</h1>
+<p>This is a self-contained story scene engine: narrative beat → character reaction → full-body action → environmental interaction → visible prop movement → next beat.</p>
+<div class="stage" id="stage">
+<svg id="scene" viewBox="0 0 450 800" aria-label="Animated literary scene">
+<defs>
+  <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d8d0bf"/><stop offset="1" stop-color="#b9ad99"/></linearGradient>
+  <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#725e4e"/><stop offset="1" stop-color="#46382f"/></linearGradient>
+  <linearGradient id="window" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#9fb9c4"/><stop offset="1" stop-color="#d5d6c8"/></linearGradient>
+  <clipPath id="windowClip" clipPathUnits="userSpaceOnUse"><rect x="250" y="126" width="160" height="318" rx="4"/></clipPath>
+  <filter id="soft"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<rect width="450" height="800" fill="url(#wall)"/>
+<rect y="585" width="450" height="215" fill="url(#floor)"/>
+<path d="M0 585h450" stroke="#3b3029" stroke-width="5"/>
+<rect x="240" y="115" width="180" height="340" rx="6" fill="#5c4436"/>
+<rect x="250" y="126" width="160" height="318" rx="4" fill="url(#window)"/>
+<path d="M250 444h160" stroke="#3f3028" stroke-width="10"/>
+<path d="M246 120h168" stroke="#795c47" stroke-width="12"/>
+<g id="windowExterior" clip-path="url(#windowClip)">
+  <rect x="250" y="126" width="160" height="318" fill="#9fb9c4"/>
+  <circle cx="365" cy="172" r="30" fill="#eee5c9" opacity=".8"/>
+  <path d="M250 360 Q285 320 320 356 Q355 315 410 360 V444 H250Z" fill="#6e7f5e"/>
+  <path d="M250 404 Q315 365 410 402 V444 H250Z" fill="#4e4943"/>
+  <path d="M250 421h160" stroke="#e1d1a9" stroke-width="3"/>
+  <path d="M250 432h160" stroke="#e1d1a9" stroke-width="3"/>
+  <g opacity=".95">
+    <rect x="265" y="280" width="7" height="145" fill="#5b4737"/>
+    <circle cx="268" cy="274" r="48" fill="#4f7148"/>
+    <circle cx="302" cy="264" r="39" fill="#5c7d50"/>
+    <rect x="386" y="290" width="7" height="135" fill="#5b4737"/>
+    <circle cx="389" cy="280" r="46" fill="#55774c"/>
+    <circle cx="357" cy="294" r="34" fill="#638356"/>
+  </g>
+  <path d="M250 390 Q330 345 410 390 L410 444 H250Z" fill="#8c6b52" opacity=".92"/>
+  <path d="M250 392 Q330 350 410 392" fill="none" stroke="#d4c29a" stroke-width="8"/>
+  <path d="M260 420h140M260 432h140" stroke="#e1d1a9" stroke-width="3"/>
+  <path d="M280 418v20M305 418v20M330 418v20M355 418v20M380 418v20" stroke="#e1d1a9" stroke-width="3"/>
+  <g>
+    <rect x="335" y="346" width="48" height="58" fill="#8d6f58"/>
+    <path d="M327 347 L359 320 L391 347" fill="#4a403a"/>
+    <rect x="352" y="365" width="13" height="39" fill="#5d473a"/>
+    <rect x="340" y="357" width="11" height="11" fill="#e8d08b"/>
+    <rect x="368" y="357" width="11" height="11" fill="#e8d08b"/>
+  </g>
+  <circle cx="285" cy="407" r="5" fill="#c88b73"/>
+  <circle cx="305" cy="414" r="5" fill="#e2c15e"/>
+  <circle cx="397" cy="401" r="5" fill="#c88b73"/>
+</g>
+<path d="M330 126v318M250 285h160" stroke="#5c4436" stroke-width="6"/>
+<path d="M250 444h160" stroke="#2f2925" stroke-width="13"/>
+<path d="M250 126h160" stroke="#765845" stroke-width="13"/>
+<path d="M250 126v318M410 126v318" stroke="#765845" stroke-width="13"/>
+<path d="M262 420q74-25 136 0" stroke="#e6ded0" stroke-width="9" fill="none"/>
+<rect x="55" y="468" width="175" height="24" rx="8" fill="#5b3e2f"/>
+<rect x="95" y="492" width="9" height="75" fill="#483229"/><rect x="181" y="492" width="9" height="75" fill="#483229"/>
+<rect x="35" y="488" width="15" height="78" fill="#483229"/><rect x="216" y="488" width="15" height="78" fill="#483229"/>
+<path d="M45 468q90-30 185 0" fill="#72513c"/>
+<g id="chairA"><rect x="70" y="475" width="55" height="12" rx="5" fill="#654633"/><rect x="72" y="487" width="7" height="70" fill="#4a3328"/><rect x="116" y="487" width="7" height="70" fill="#4a3328"/></g>
+<g id="chairB"><rect x="174" y="475" width="55" height="12" rx="5" fill="#654633"/><rect x="176" y="487" width="7" height="70" fill="#4a3328"/><rect x="220" y="487" width="7" height="70" fill="#4a3328"/></g>
+<g id="worldGarden" opacity="0">
+  <rect x="0" y="0" width="450" height="585" fill="#b9c99f"/>
+  <circle cx="70" cy="185" r="62" fill="#55734f"/><circle cx="385" cy="175" r="72" fill="#4f6d4a"/>
+  <path d="M0 520 Q220 430 450 520 L450 585 L0 585Z" fill="#6f8157"/>
+  <path d="M225 585 Q235 510 310 430 Q330 410 345 392" fill="none" stroke="#c9b98e" stroke-width="48"/>
+  <g id="gardenHouse">
+    <path d="M250 320 L330 255 L410 320 V500 H250Z" fill="#8d6f58"/>
+    <path d="M235 325 L330 245 L425 325" fill="#4a403a"/>
+    <rect x="285" y="350" width="42" height="75" fill="#5d473a"/>
+    <rect x="350" y="350" width="34" height="34" fill="#e8d08b"/>
+  </g>
+</g>
+<g id="worldHouse" opacity="0">
+  <rect x="0" y="0" width="450" height="585" fill="#c8b49a"/>
+  <path d="M55 475 V240 L225 120 L395 240 V475Z" fill="#8b684f"/>
+  <path d="M35 245 L225 105 L415 245" fill="#403b39"/>
+  <rect x="190" y="330" width="70" height="145" fill="#5d4437"/>
+  <rect x="92" y="285" width="65" height="65" fill="#d9c989"/>
+  <rect x="293" y="285" width="65" height="65" fill="#d9c989"/>
+  <circle cx="70" cy="455" r="46" fill="#55734f"/><circle cx="380" cy="450" r="52" fill="#4f6d4a"/>
+</g>
+<g id="worldRoad" opacity="0">
+  <rect x="0" y="0" width="450" height="585" fill="#9fa88f"/>
+  <path d="M0 520 Q110 470 225 505 Q340 540 450 480 V585 H0Z" fill="#6b6259"/>
+  <path d="M0 500 Q225 450 450 475" fill="none" stroke="#d2c7aa" stroke-width="7" opacity=".7"/>
+  <rect x="55" y="225" width="95" height="210" fill="#8d765f"/>
+  <path d="M40 230 L102 180 L165 230" fill="#45403c"/>
+  <rect x="80" y="290" width="42" height="55" fill="#e1c978"/>
+</g>
+<g id="worldPark" opacity="0"><rect width="450" height="585" fill="#b7cba0"/><path d="M0 515 Q120 445 225 500 Q340 545 450 470 V585 H0Z" fill="#668258"/><path d="M225 585 Q225 515 285 430 Q305 400 325 370" fill="none" stroke="#d3bc8e" stroke-width="48"/><circle cx="75" cy="185" r="52" fill="#55784d"/><circle cx="385" cy="205" r="62" fill="#4f7149"/><path d="M25 410h400" stroke="#8c765b" stroke-width="7"/></g>
+<g id="worldStreet" opacity="0"><rect width="450" height="585" fill="#c4c9bd"/><rect y="430" width="450" height="155" fill="#686b6a"/><path d="M0 475h450M0 535h450" stroke="#d9d2b8" stroke-width="5" stroke-dasharray="26 18"/><rect x="30" y="170" width="110" height="260" fill="#8c7768"/><rect x="310" y="145" width="105" height="285" fill="#765f55"/><rect x="55" y="205" width="55" height="60" fill="#d8ca8d"/><rect x="335" y="180" width="52" height="58" fill="#d8ca8d"/></g>
+<g id="worldCafeteria" opacity="0"><rect width="450" height="585" fill="#d5c0a5"/><rect y="475" width="450" height="110" fill="#6d5849"/><rect x="42" y="185" width="145" height="26" rx="8" fill="#6a4935"/><rect x="55" y="211" width="14" height="145" fill="#49352b"/><rect x="160" y="211" width="14" height="145" fill="#49352b"/><circle cx="105" cy="155" r="34" fill="#e6d5a8"/><circle cx="345" cy="170" r="48" fill="#7c5c46"/><rect x="265" y="225" width="130" height="18" rx="7" fill="#754f38"/></g>
+<g id="worldAirplane" opacity="0"><rect width="450" height="585" fill="#cfd9df"/><rect x="38" y="145" width="374" height="290" rx="28" fill="#e9ecee" stroke="#9aa5ad" stroke-width="6"/><path d="M70 205h310M70 385h310" stroke="#b1bbc1" stroke-width="5"/><g fill="#87a9bd"><rect x="92" y="235" width="62" height="55" rx="10"/><rect x="194" y="235" width="62" height="55" rx="10"/><rect x="296" y="235" width="62" height="55" rx="10"/></g><path d="M80 330h290" stroke="#a5adb2" stroke-width="12"/></g>
+<g id="worldForest" opacity="0"><rect width="450" height="585" fill="#9fba91"/><path d="M0 480Q120 420 230 470T450 450V585H0Z" fill="#536f4d"/><g fill="#385b3b"><path d="M45 440l35-210 35 210z"/><path d="M145 440l42-250 42 250z"/><path d="M325 440l38-225 38 225z"/></g><path d="M210 585Q215 500 255 430T300 330" fill="none" stroke="#c9b487" stroke-width="46"/></g>
+<g id="worldBeach" opacity="0"><rect width="450" height="585" fill="#9dc7d5"/><circle cx="360" cy="105" r="42" fill="#f0d486"/><path d="M0 300Q110 270 225 305T450 295V585H0Z" fill="#ead7a7"/><path d="M0 360Q120 330 230 360T450 350" fill="none" stroke="#72a9b3" stroke-width="22"/><path d="M0 440Q120 410 240 440T450 430" fill="none" stroke="#5f9ba7" stroke-width="16"/><path d="M80 475q30-55 60 0M110 475q30-55 60 0" fill="none" stroke="#4b8a61" stroke-width="9"/></g>
+<g id="worldMountain" opacity="0"><rect width="450" height="585" fill="#b9ced7"/><circle cx="350" cy="105" r="38" fill="#eee3bd"/><path d="M0 450L120 190 205 360 290 135 450 450Z" fill="#6d7f86"/><path d="M120 190l-28 62 31-15 28 28zM290 135l-35 67 38-18 34 30z" fill="#eef0e8"/><path d="M0 500Q220 430 450 500V585H0Z" fill="#60785b"/></g>
+<g id="worldFarm" opacity="0"><rect width="450" height="585" fill="#b7c991"/><path d="M0 455Q120 410 225 455T450 430V585H0Z" fill="#6e8755"/><path d="M40 420h155V285H40z" fill="#9b7654"/><path d="M25 290l92-75 92 75z" fill="#4d4038"/><rect x="95" y="340" width="45" height="80" fill="#5c4639"/><path d="M250 585Q260 500 310 445" fill="none" stroke="#cbb58b" stroke-width="40"/><path d="M230 410h190" stroke="#8e704d" stroke-width="7"/><path d="M245 410v55M280 410v55M315 410v55M350 410v55M385 410v55" stroke="#8e704d" stroke-width="5"/></g>
+<g id="worldSchool" opacity="0"><rect width="450" height="585" fill="#c9c4b3"/><rect x="45" y="160" width="360" height="320" fill="#9b765e"/><path d="M25 165L225 65l200 100z" fill="#4b4540"/><rect x="185" y="330" width="80" height="150" fill="#5c4437"/><g fill="#d8c77f"><rect x="75" y="215" width="62" height="55"/><rect x="160" y="215" width="62" height="55"/><rect x="245" y="215" width="62" height="55"/></g><path d="M45 480h360" stroke="#5d5b53" stroke-width="16"/></g>
+<g id="worldOffice" opacity="0"><rect width="450" height="585" fill="#c8c6bd"/><rect y="470" width="450" height="115" fill="#71685e"/><rect x="55" y="220" width="145" height="18" fill="#554b45"/><rect x="72" y="238" width="10" height="150" fill="#554b45"/><rect x="173" y="238" width="10" height="150" fill="#554b45"/><rect x="250" y="210" width="145" height="18" fill="#554b45"/><rect x="267" y="228" width="10" height="150" fill="#554b45"/><rect x="368" y="228" width="10" height="150" fill="#554b45"/><rect x="82" y="165" width="65" height="38" fill="#87a5ae"/><rect x="275" y="155" width="82" height="48" fill="#87a5ae"/></g>
+<g id="worldLibrary" opacity="0"><rect width="450" height="585" fill="#d2c1a6"/><rect y="480" width="450" height="105" fill="#6c5849"/><g fill="#6e493b"><rect x="35" y="155" width="110" height="300"/><rect x="170" y="155" width="110" height="300"/><rect x="305" y="155" width="110" height="300"/></g><g fill="#bd8f63"><rect x="45" y="180" width="90" height="12"/><rect x="180" y="180" width="90" height="12"/><rect x="315" y="180" width="90" height="12"/><rect x="45" y="255" width="90" height="12"/><rect x="180" y="255" width="90" height="12"/><rect x="315" y="255" width="90" height="12"/></g></g>
+<g id="worldTrain" opacity="0"><rect width="450" height="585" fill="#b7bec2"/><rect y="455" width="450" height="130" fill="#5d6061"/><rect x="45" y="160" width="360" height="285" rx="18" fill="#596b70"/><g fill="#9ec0c8"><rect x="70" y="205" width="65" height="70"/><rect x="155" y="205" width="65" height="70"/><rect x="240" y="205" width="65" height="70"/><rect x="325" y="205" width="55" height="70"/></g><path d="M45 315h360" stroke="#c39b61" stroke-width="10"/><path d="M0 500h450" stroke="#33383a" stroke-width="12"/></g>
+<g id="worldShip" opacity="0"><rect width="450" height="585" fill="#9fc7d4"/><path d="M0 470Q115 435 225 470T450 455V585H0Z" fill="#548c9a"/><path d="M55 390h330l-55 95H110z" fill="#6b5547"/><rect x="105" y="260" width="240" height="130" fill="#e1ddd0"/><path d="M225 260V125" stroke="#5d4d43" stroke-width="9"/><path d="M225 135l90 70h-90z" fill="#f1eee4"/><path d="M70 415h310" stroke="#3f403f" stroke-width="8"/></g>
+<g id="worldCastle" opacity="0"><rect width="450" height="585" fill="#b9c6d0"/><path d="M0 470Q120 425 225 465T450 450V585H0Z" fill="#667e5b"/><rect x="80" y="180" width="290" height="290" fill="#817c79"/><rect x="45" y="115" width="75" height="355" fill="#716c6a"/><rect x="330" y="115" width="75" height="355" fill="#716c6a"/><path d="M40 115h85l-42-55zM325 115h85l-42-55z" fill="#4e4a49"/><rect x="190" y="325" width="70" height="145" fill="#4d4541"/></g>
+<g id="worldChurch" opacity="0"><rect width="450" height="585" fill="#c7c3b5"/><rect y="490" width="450" height="95" fill="#6f665c"/><path d="M105 490V205h240v285z" fill="#b5aa95"/><path d="M170 205V105h110v100z" fill="#9f9585"/><path d="M205 105V55h40v50z" fill="#786f64"/><path d="M190 320h70v170h-70z" fill="#554d48"/><circle cx="160" cy="285" r="28" fill="#8aa6b2"/><circle cx="290" cy="285" r="28" fill="#8aa6b2"/></g>
+<g id="worldMarket" opacity="0"><rect width="450" height="585" fill="#d2c39d"/><rect y="480" width="450" height="105" fill="#79634e"/><path d="M35 205h120v275H35z" fill="#a7654f"/><path d="M295 205h120v275H295z" fill="#65815e"/><path d="M20 205h150l-20-48H40z" fill="#d9a95c"/><path d="M280 205h150l-20-48H300z" fill="#c66b59"/><circle cx="95" cy="280" r="24" fill="#d5b35f"/><circle cx="355" cy="280" r="24" fill="#8eb16c"/></g>
+<g id="worldCity" opacity="0"><rect width="450" height="585" fill="#aeb8c2"/><rect y="445" width="450" height="140" fill="#55595b"/><rect x="25" y="125" width="95" height="320" fill="#756c69"/><rect x="145" y="80" width="105" height="365" fill="#625f66"/><rect x="275" y="150" width="150" height="295" fill="#806e68"/><g fill="#d5c77e"><rect x="42" y="155" width="25" height="32"/><rect x="78" y="155" width="25" height="32"/><rect x="164" y="115" width="28" height="32"/><rect x="205" y="115" width="28" height="32"/><rect x="300" y="185" width="30" height="34"/><rect x="345" y="185" width="30" height="34"/></g><path d="M0 500h450" stroke="#ddd4b7" stroke-width="5" stroke-dasharray="28 18"/></g>
+<g id="worldSnow" opacity="0"><rect width="450" height="585" fill="#dce8ed"/><circle cx="80" cy="100" r="34" fill="#f4f0dc"/><path d="M0 445Q120 390 230 440T450 425V585H0Z" fill="#f8fbfb"/><path d="M70 420l45-150 45 150zM300 420l50-180 50 180z" fill="#8b9aa0"/><path d="M115 270l-20 45 25-12 22 20zM350 240l-23 48 26-14 22 23z" fill="#f7fbfc"/></g>
+<g id="worldDesert" opacity="0"><rect width="450" height="585" fill="#e4c98f"/><circle cx="350" cy="110" r="48" fill="#f3d77f"/><path d="M0 470Q120 420 225 470T450 455V585H0Z" fill="#c7a36b"/><path d="M55 440q30-110 60 0M85 440q30-100 60 0" fill="none" stroke="#4d7650" stroke-width="14"/><path d="M250 585Q270 500 335 445" fill="none" stroke="#ecd9a6" stroke-width="38"/></g>
+<g id="worldDungeon" opacity="0"><rect width="450" height="585" fill="#4a4748"/><path d="M0 480h450v105H0z" fill="#302d30"/><path d="M35 130h380v350H35z" fill="#5b5657"/><path d="M65 165v250M125 165v250M185 165v250M245 165v250M305 165v250M365 165v250" stroke="#3e3a3d" stroke-width="16"/><path d="M0 465h450" stroke="#81746a" stroke-width="8"/></g>
+<g id="carriageClip" clip-path="url(#windowClip)">
+<g id="carriage" opacity="0" transform="translate(470 365) scale(1.18)">
+  <rect x="-70" y="-34" width="110" height="50" rx="13" fill="#4e3029"/>
+  <path d="M-62-34v-31h72v31" fill="#6b4739"/>
+  <path d="M-56-31h57" stroke="#b88a5d" stroke-width="4"/>
+  <rect x="-51" y="-25" width="35" height="22" rx="4" fill="#2e3940" opacity=".9"/>
+  <path d="M-69-15h108" stroke="#3a2521" stroke-width="5"/>
+  <circle id="wheelA" cx="-48" cy="20" r="17" fill="#252326"/><circle id="wheelB" cx="15" cy="20" r="17" fill="#252326"/>
+  <circle cx="-48" cy="20" r="6" fill="#b09262"/><circle cx="15" cy="20" r="6" fill="#b09262"/>
+  <path d="M-68 10h-45" stroke="#252326" stroke-width="6" stroke-linecap="round"/>
+  <path d="M-112 11q-12-23-30-7q-10 10 1 27h29" fill="#6d4b39"/>
+  <circle cx="-144" cy="22" r="11" fill="#4b342b"/>
+  <path d="M-159 12l-13-8M-159 32l-13 9" stroke="#4b342b" stroke-width="6" stroke-linecap="round"/>
+  <path d="M-131 3q18-9 36 3" fill="none" stroke="#9c6f4d" stroke-width="4"/>
+</g>
+</g>
+<g opacity=".8">
+  <rect x="25" y="185" width="92" height="6" rx="3" fill="#8d765f"/>
+  <rect x="25" y="191" width="92" height="42" rx="3" fill="#a58a70"/>
+  <rect x="36" y="201" width="20" height="20" fill="#d9c989"/>
+  <rect x="64" y="201" width="20" height="20" fill="#d9c989"/>
+  <rect x="92" y="201" width="15" height="20" fill="#d9c989"/>
+  <circle cx="45" cy="278" r="18" fill="#d6b873" opacity=".5"/>
+  <path d="M45 296v46" stroke="#6f5745" stroke-width="5"/>
+</g>
+<g id="shadowA" opacity=".2"><ellipse cx="126" cy="581" rx="30" ry="7" fill="#111"/></g>
+<g id="shadowB" opacity=".2"><ellipse cx="218" cy="581" rx="30" ry="7" fill="#111"/></g>
+
+<g id="elizabeth">
+  <path id="elizDress" d="" fill="#5d3f63"/>
+  <path id="elizWaist" d="" fill="none" stroke="#8b668d" stroke-width="4"/>
+  <g id="elizLeftLeg"><line id="elizLeftThigh" stroke="#342d31" stroke-width="13" stroke-linecap="round"/><line id="elizLeftShin" stroke="#29252a" stroke-width="11" stroke-linecap="round"/><line id="elizLeftFoot" stroke="#201e21" stroke-width="8" stroke-linecap="round"/></g>
+  <g id="elizRightLeg"><line id="elizRightThigh" stroke="#342d31" stroke-width="13" stroke-linecap="round"/><line id="elizRightShin" stroke="#29252a" stroke-width="11" stroke-linecap="round"/><line id="elizRightFoot" stroke="#201e21" stroke-width="8" stroke-linecap="round"/></g>
+  <g id="elizLeftArm"><line id="elizLeftUpper" stroke="#e4b990" stroke-width="14" stroke-linecap="round"/><line id="elizLeftLower" stroke="#e4b990" stroke-width="13" stroke-linecap="round"/><circle id="elizLeftHand" r="6" fill="#e4b990"/></g>
+  <g id="elizRightArm"><line id="elizRightUpper" stroke="#e4b990" stroke-width="14" stroke-linecap="round"/><line id="elizRightLower" stroke="#e4b990" stroke-width="13" stroke-linecap="round"/><circle id="elizRightHand" r="6" fill="#e4b990"/></g>
+  <g id="elizHead"><circle id="elizFace" r="29" fill="#e4b990"/><path d="M-29-6q2-38 29-38t29 38q-10-12-29-5q-19-7-29 5" fill="#4d3025"/><path d="M-10 3q4-3 8 0M8 3q4-3 8 0" stroke="#3a2923" stroke-width="2" fill="none"/></g>
+</g>
+
+<g id="jane">
+  <path id="janeDress" d="" fill="#395d67"/>
+  <path id="janeWaist" d="" fill="none" stroke="#668b92" stroke-width="4"/>
+  <g id="janeLeftLeg"><line id="janeLeftThigh" stroke="#292d35" stroke-width="13" stroke-linecap="round"/><line id="janeLeftShin" stroke="#25252a" stroke-width="11" stroke-linecap="round"/><line id="janeLeftFoot" stroke="#202025" stroke-width="8" stroke-linecap="round"/></g>
+  <g id="janeRightLeg"><line id="janeRightThigh" stroke="#292d35" stroke-width="13" stroke-linecap="round"/><line id="janeRightShin" stroke="#25252a" stroke-width="11" stroke-linecap="round"/><line id="janeRightFoot" stroke="#202025" stroke-width="8" stroke-linecap="round"/></g>
+  <g id="janeLeftArm"><line id="janeLeftUpper" stroke="#d8a77e" stroke-width="14" stroke-linecap="round"/><line id="janeLeftLower" stroke="#d8a77e" stroke-width="13" stroke-linecap="round"/><circle id="janeLeftHand" r="6" fill="#d8a77e"/></g>
+  <g id="janeRightArm"><line id="janeRightUpper" stroke="#d8a77e" stroke-width="14" stroke-linecap="round"/><line id="janeRightLower" stroke="#d8a77e" stroke-width="13" stroke-linecap="round"/><circle id="janeRightHand" r="6" fill="#d8a77e"/></g>
+  <g id="janeHead"><circle r="28" fill="#d8a77e"/><path d="M-28-5q2-37 28-37t28 37q-11-12-28-5q-17-7-28 5" fill="#6a4732"/></g>
+</g>
+</svg>
+<div id="caption" class="caption"><div class="card"><div id="captionKind" class="kind"></div><div id="captionText"></div></div></div>
+<div class="hud"><span id="actionHud">INITIALIZING</span><span id="clockHud">0.0s</span></div>
+</div>
+<div class="controls"><button class="primary" id="play">▶ Play scene</button><button id="pause">Ⅱ Pause</button><button id="restart">↺ Restart</button></div><div class="scene-context" id="sceneContext"><b>Scene resolver</b><span id="sceneContextText">Detecting setting…</span></div><div class="controls world-controls">
+<button class="world active" data-world="room">🏠 Room</button>
+<button class="world" data-world="garden">🌳 Garden</button>
+<button class="world" data-world="house">🏡 House</button>
+<button class="world" data-world="road">🛣️ Road</button>
+</div>
+<p class="small">Animation is tested separately from AI imagery. The scene resolver reads the full chapter/scene context, identifies the setting family, separates interior from exterior zones, and selects semantic props. It is designed to prevent a single object from randomly changing the whole world.</p>
+</section>
+
+<aside class="panel">
+<h2>10/10 acceptance board</h2>
+<p class="small">The score is earned by the scene, not by the amount of animation code.</p>
+<div class="metric"><span>Story-specific actions</span><b class="warn">TEST</b></div>
+<div class="metric"><span>Full-body acting</span><b class="warn">TEST</b></div>
+<div class="metric"><span>Readable narrative timing</span><b class="ok">PASS</b></div>
+<div class="metric"><span>Character-specific identity</span><b class="ok">PASS</b></div>
+<div class="metric"><span>Prop interaction</span><b class="warn">TEST</b></div>
+<div class="metric"><span>Distinct beats, no idle loop</span><b class="warn">TEST</b></div>
+<div class="metric"><span>Offline runtime</span><b class="ok">PASS</b></div>
+<div class="metric"><span>Chapter data can drive it</span><b class="warn">TEST</b></div>
+<div class="metric"><span>AI required at runtime</span><b class="ok">NO</b></div>
+<div class="metric"><span>Reader integration</span><b class="warn">NOT YET</b></div>
+
+<h3 style="margin-top:18px">Scene timeline</h3>
+<div id="timeline" class="timeline"></div>
+
+<h3 style="margin-top:18px">Engine rules</h3>
+<div class="accept">
+<div><b>01 · Scene graph</b><span>Actors, furniture, window, carriage</span></div>
+<div><b>02 · Rig</b><span>Head, torso, arms, knees, legs, feet</span></div>
+<div><b>03 · Clips</b><span>Hear, turn, stand, walk, look</span></div>
+<div><b>04 · Blocking</b><span>Actor positions are intentional</span></div>
+<div><b>05 · Timing</b><span>Read time ≠ action time</span></div>
+<div><b>06 · Props</b><span>Actions have visible targets</span></div>
+</div>
+<p class="small" style="margin-top:12px">This build uses explicit key poses, a weight-shift stand, planted feet, alternating gait, target-based reach, window blocking and an independently animated carriage with visible wheels, body and horse. Reader integration remains separate until this scene earns the test.</p>
+</aside>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const ease=t=>t*t*(3-2*t);
+const beats=[
+ {type:"read",text:"One morning, the family sat together in the dining-room.",ms:3600,label:"READ"},
+ {type:"act",text:"A carriage is heard outside.",ms:1700,label:"HEAR"},
+ {type:"act",text:"Elizabeth turns toward the window.",ms:1300,label:"TURN"},
+ {type:"act",text:"She rises from her seat.",ms:1900,label:"STAND"},
+ {type:"act",text:"Elizabeth walks across the room toward the window.",ms:3600,label:"WALK"},
+ {type:"act",text:"She reaches the window and looks outside.",ms:2200,label:"REACH + LOOK"},
+ {type:"act",text:"The carriage rolls into view.",ms:2500,label:"CARRIAGE"},
+ {type:"read",text:"The carriage has arrived. Everyone's attention is drawn to the window.",ms:4200,label:"READ"}
+];
+
+let current=0,playing=false,start=0,elapsed=0,raf=0;
+const worldButtons=[...document.querySelectorAll(".world")];
+const WORLD_IDS=["worldGarden","worldHouse","worldRoad","worldPark","worldStreet","worldCafeteria","worldAirplane","worldForest","worldBeach","worldMountain","worldFarm","worldSchool","worldOffice","worldLibrary","worldTrain","worldShip","worldCastle","worldChurch","worldMarket","worldCity","worldSnow","worldDesert","worldDungeon"];
+function setWorld(world){
+ // "room" is the base interior already drawn in the scene. World overlays are exterior/location plates.
+ WORLD_IDS.forEach(id=>$(id).setAttribute("opacity","0"));
+ if(world!=="room") {
+   const overlay=$("world"+world.charAt(0).toUpperCase()+world.slice(1));
+   if(overlay) overlay.setAttribute("opacity","1");
+ }
+ worldButtons.forEach(b=>b.classList.toggle("active",b.dataset.world===world));
+}
+worldButtons.forEach(b=>b.addEventListener("click",()=>setWorld(b.dataset.world)));
+
+const ENVIRONMENTS={
+ house:{label:"House",interior:"room",exterior:"road",props:["window","dining room","furniture","carriage"],family:"domestic"},
+ garden:{label:"Garden",interior:"garden",exterior:"garden",props:["trees","path","flowers"],family:"nature"},
+ park:{label:"Park",interior:"park",exterior:"park",props:["trees","path","benches"],family:"nature"},
+ road:{label:"Road",interior:"road",exterior:"road",props:["road","vehicles"],family:"transport"},
+ street:{label:"Street",interior:"street",exterior:"street",props:["buildings","sidewalk"],family:"urban"},
+ cafeteria:{label:"Cafeteria",interior:"cafeteria",exterior:"street",props:["tables","chairs","counter"],family:"public"},
+ airplane:{label:"Airplane",interior:"airplane",exterior:"airplane",props:["seats","windows"],family:"transport"},
+ forest:{label:"Forest",interior:"forest",exterior:"forest",props:["trees","path","woodland"],family:"nature"},
+ beach:{label:"Beach",interior:"beach",exterior:"beach",props:["sand","water","shore"],family:"nature"},
+ mountain:{label:"Mountain",interior:"mountain",exterior:"mountain",props:["peaks","trail","snow"],family:"nature"},
+ farm:{label:"Farm",interior:"farm",exterior:"farm",props:["barn","field","fence"],family:"rural"},
+ school:{label:"School",interior:"school",exterior:"street",props:["classroom","desks","schoolhouse"],family:"institution"},
+ office:{label:"Office",interior:"office",exterior:"street",props:["desk","computer","windows"],family:"work"},
+ library:{label:"Library",interior:"library",exterior:"street",props:["books","shelves","reading tables"],family:"public"},
+ train:{label:"Train",interior:"train",exterior:"road",props:["carriage","seats","windows"],family:"transport"},
+ ship:{label:"Ship",interior:"ship",exterior:"ship",props:["deck","mast","water"],family:"transport"},
+ castle:{label:"Castle",interior:"castle",exterior:"garden",props:["towers","courtyard","stone"],family:"historic"},
+ church:{label:"Church",interior:"church",exterior:"street",props:["altar","windows","pews"],family:"historic"},
+ market:{label:"Market",interior:"market",exterior:"street",props:["stalls","vendors","crowd"],family:"public"},
+ city:{label:"City",interior:"city",exterior:"city",props:["buildings","street","traffic"],family:"urban"},
+ snow:{label:"Snow / Winter",interior:"snow",exterior:"snow",props:["snow","mountains","winter"],family:"nature"},
+ desert:{label:"Desert",interior:"desert",exterior:"desert",props:["sand","dunes","oasis"],family:"nature"},
+ dungeon:{label:"Dungeon",interior:"dungeon",exterior:"castle",props:["stone","bars","corridor"],family:"historic"},
+ room:{label:"Room",interior:"room",exterior:"garden",props:["furniture","window"],family:"domestic"}
+};
+
+// The resolver uses the whole chapter/scene context, not whichever object happens to be mentioned last.
+// Location evidence is strong. Props such as "carriage" are deliberately weak.
+const ENV_RULES=[
+ ["airplane",/\b(airplane|aeroplane|flight|cockpit|cabin|boarding|pilot|airport|aisle|seatbelt)\b/g,10],
+ ["ship",/\b(ship|vessel|deck|mast|sailor|harbor|harbour|port|cabin at sea)\b/g,10],
+ ["train",/\b(train|railway|railroad|platform|locomotive|station|carriage compartment|railcar)\b/g,10],
+ ["dungeon",/\b(dungeon|cellar|prison cell|crypt|bars|underground|stone corridor)\b/g,10],
+ ["castle",/\b(castle|fortress|palace|tower|courtyard|drawbridge|moat)\b/g,9],
+ ["church",/\b(church|chapel|cathedral|altar|pews|vicar|priest)\b/g,9],
+ ["library",/\b(library|bookshelves|bookshelf|reading room|librarian|stacks)\b/g,9],
+ ["school",/\b(school|classroom|teacher|pupil|student|lesson|blackboard|schoolhouse)\b/g,9],
+ ["office",/\b(office|desk|colleague|meeting room|workplace|cubicle|secretary)\b/g,9],
+ ["cafeteria",/\b(cafeteria|cafe|coffee shop|restaurant|dining hall|counter|waiter|waitress|menu|canteen)\b/g,9],
+ ["market",/\b(market|bazaar|stall|vendor|merchant|marketplace|shopkeepers)\b/g,9],
+ ["beach",/\b(beach|shore|seaside|ocean|sea|sand|waves|coast)\b/g,9],
+ ["mountain",/\b(mountain|mountains|peak|summit|cliff|alpine|valley|trail)\b/g,9],
+ ["forest",/\b(forest|woods|woodland|grove|trees|thicket|underbrush)\b/g,8],
+ ["farm",/\b(farm|barn|field|stable|pasture|meadow|hay|farmer)\b/g,8],
+ ["desert",/\b(desert|dunes|oasis|sandstorm|arid|wasteland)\b/g,9],
+ ["snow",/\b(snow|snowy|winter|ice|frozen|blizzard|snowfall)\b/g,8],
+ ["park",/\b(park|playground|picnic|bench|fountain|bandstand)\b/g,8],
+ ["garden",/\b(garden|yard|orchard|lawn|flowers|hedge|rose garden)\b/g,8],
+ ["city",/\b(city|downtown|skyscraper|city centre|city center|traffic|urban)\b/g,7],
+ ["street",/\b(street|avenue|sidewalk|town|shopfront|crosswalk|boulevard)\b/g,7],
+ ["road",/\b(road|highway|lane|carriageway)\b/g,7],
+ ["house",/\b(house|home|dining-room|dining room|bedroom|parlor|parlour|sitting room|family sat|family together|indoors|window|chair|table|fireplace)\b/g,6]
+];
+function resolveEnvironment(text){
+ const t=text.toLowerCase();
+ const scores=Object.fromEntries(Object.keys(ENVIRONMENTS).map(k=>[k,0]));
+ for(const [kind,re,weight] of ENV_RULES){
+   const hits=t.match(re);
+   if(hits) scores[kind]+=hits.length*weight;
+ }
+ // Transport props are deliberately secondary. A carriage outside a house is still a house scene.
+ if(/\b(carriage|coach|wagon|horse-drawn|horse)\b/.test(t)) scores.road+=1;
+ if(/\b(window|outside|heard outside|looks outside|looks through)\b/.test(t)) scores.house+=2;
+ const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+ const winner=ranked[0];
+ return winner && winner[1]>0 ? ENVIRONMENTS[winner[0]] : ENVIRONMENTS.room;
+}
+function buildSceneContext(){
+ const chapterText=document.body.dataset.chapterText || beats.map(b=>b.text).join(" ");
+ const env=resolveEnvironment(chapterText);
+ const transitionWords=chapterText.match(/\b(then|later|afterward|outside|inside|entered|left|arrived|returned|went to|walked to|travelled to|traveled to)\b/gi)||[];
+ return {env,chapterText,transitionCount:transitionWords.length};
+}
+const sceneContext=buildSceneContext();
+const sceneEnvironment=sceneContext.env;
+function applyResolvedEnvironment(){
+ setWorld(sceneEnvironment.interior);
+ $("sceneContextText").textContent=sceneEnvironment.label+" · "+sceneEnvironment.family+" · interior: "+sceneEnvironment.interior+" · exterior: "+sceneEnvironment.exterior+" · props: "+sceneEnvironment.props.join(", ")+(sceneContext.transitionCount?" · transitions detected: "+sceneContext.transitionCount:"");
+}
+applyResolvedEnvironment();
+
+const sceneEnvironment=resolveEnvironment(beats.map(b=>b.text).join(" "));
+function applyResolvedEnvironment(){
+ setWorld(sceneEnvironment.interior);
+ $("sceneContextText").textContent=sceneEnvironment.label+" · interior: "+sceneEnvironment.interior+" · exterior: "+sceneEnvironment.exterior+" · props: "+sceneEnvironment.props.join(", ");
+}
+applyResolvedEnvironment();
+
+const initial={
+ eliz:{x:188,ground:581,hipY:-55,lean:0,head:0,pose:"sit"},
+ jane:{x:108,ground:581,hipY:-55,lean:0,head:0,pose:"sit"},
+ carriage:{x:500,y:330,opacity:0,wheelTurn:0}
+};
+let state=JSON.parse(JSON.stringify(initial));
+
+$("timeline").innerHTML=beats.map((b,i)=>'<div class="beat" id="beat'+i+'"><span class="n">'+String(i+1).padStart(2,"0")+'</span><span class="type">'+b.label+'</span><span>'+b.text+'</span><span class="dur">'+(b.ms/1000).toFixed(1)+'s</span></div>').join("");
+
+function setLine(id,x1,y1,x2,y2){const e=$(id);e.setAttribute("x1",x1);e.setAttribute("y1",y1);e.setAttribute("x2",x2);e.setAttribute("y2",y2);}
+function setCircle(id,x,y){const e=$(id);e.setAttribute("cx",x);e.setAttribute("cy",y);}
+function pt(x,y,deg,len){const r=deg*Math.PI/180;return {x:x+Math.cos(r)*len,y:y+Math.sin(r)*len};}
+function limb(idPrefix,s,e,elbow,foot){
+ setLine(idPrefix+"Thigh",s.x,s.y,elbow.x,elbow.y);
+ setLine(idPrefix+"Shin",elbow.x,elbow.y,e.x,e.y);
+ setLine(idPrefix+"Foot",e.x,e.y,foot.x,foot.y);
+}
+function arm(prefix,side,shoulder,hand,elbow){
+ const p=prefix+side;
+ setLine(p+"Upper",shoulder.x,shoulder.y,elbow.x,elbow.y);
+ setLine(p+"Lower",elbow.x,elbow.y,hand.x,hand.y);
+ setCircle(p+"Hand",hand.x,hand.y);
+}
+function drawActor(prefix,a){
+ const upper=prefix==="eliz"?205:202;
+ const hip={x:a.x,y:a.ground+a.hipY};
+ const shoulder={x:a.x+Math.sin(a.lean*Math.PI/180)*105,y:hip.y-108};
+ const head={x:shoulder.x+Math.sin(a.lean*Math.PI/180)*22,y:shoulder.y-48};
+ const seated=a.pose==="sit";
+ const stand=a.pose==="stand"||a.pose==="standup"||a.pose==="walk"||a.pose==="look";
+ const standT=clamp(a.standT||0);
+ const dressTop={x:shoulder.x,y:shoulder.y+10};
+ const dressY=hip.y+4;
+ $(prefix+"Dress").setAttribute("d","M"+(dressTop.x-29)+" "+dressTop.y+" Q"+dressTop.x+" "+(dressTop.y-14)+" "+(dressTop.x+29)+" "+dressTop.y+" L"+(hip.x+43)+" "+dressY+" Q"+hip.x+" "+(dressY+18)+" "+(hip.x-43)+" "+dressY+" Z");
+ $(prefix+"Waist").setAttribute("d","M"+(shoulder.x-19)+" "+(hip.y-55)+" Q"+shoulder.x+" "+(hip.y-42)+" "+(shoulder.x+19)+" "+(hip.y-55));
+ $(prefix+"Head").setAttribute("transform","translate("+head.x+" "+head.y+") rotate("+a.head+")");
+ const footY=a.ground;
+ let lHip={x:hip.x-13,y:hip.y},rHip={x:hip.x+13,y:hip.y};
+ let lk,rk,la,ra,lf,rf;
+ if(seated){
+   lk={x:hip.x-31,y:hip.y+34}; rk={x:hip.x+31,y:hip.y+34};
+   la={x:hip.x-34,y:footY}; ra={x:hip.x+34,y:footY};
+   lf={x:la.x-20,y:footY}; rf={x:ra.x+20,y:footY};
+ }else if(a.pose==="standup"){
+   const u=ease(standT);
+   const slk={x:hip.x-31,y:hip.y+34},srk={x:hip.x+31,y:hip.y+34};
+   const sla={x:hip.x-34,y:footY},sra={x:hip.x+34,y:footY};
+   const slf={x:sla.x-20,y:footY},srf={x:sra.x+20,y:footY};
+   const vlk={x:hip.x-12,y:hip.y+37},vrk={x:hip.x+12,y:hip.y+37};
+   const vla={x:hip.x-13,y:footY},vra={x:hip.x+13,y:footY};
+   const vlf={x:vla.x+15,y:footY},vrf={x:vra.x+15,y:footY};
+   lk={x:lerp(slk.x,vlk.x,u),y:lerp(slk.y,vlk.y,u)};
+   rk={x:lerp(srk.x,vrk.x,u),y:lerp(srk.y,vrk.y,u)};
+   la={x:lerp(sla.x,vla.x,u),y:lerp(sla.y,vla.y,u)};
+   ra={x:lerp(sra.x,vra.x,u),y:lerp(sra.y,vra.y,u)};
+   lf={x:lerp(slf.x,vlf.x,u),y:lerp(slf.y,vlf.y,u)};
+   rf={x:lerp(srf.x,vrf.x,u),y:lerp(srf.y,vrf.y,u)};
+ }else if(a.pose==="walk"){
+   const ph=a.phase;
+   const stride=10*Math.sin(ph), lift=Math.max(0,Math.cos(ph))*7;
+   lk={x:hip.x-16+stride*.65,y:hip.y+35-lift};
+   rk={x:hip.x+16-stride*.65,y:hip.y+35-Math.max(0,-Math.cos(ph))*7};
+   la={x:hip.x-14+stride,y:footY-lift};
+   ra={x:hip.x+14-stride,y:footY-Math.max(0,-Math.cos(ph))*7};
+   lf={x:la.x+13,y:la.y}; rf={x:ra.x+13, y:ra.y};
+ }else{
+   lk={x:hip.x-12,y:hip.y+37};rk={x:hip.x+12,y:hip.y+37};
+   la={x:hip.x-13,y:footY};ra={x:hip.x+13,y:footY};
+   lf={x:la.x+15,y:footY};rf={x:ra.x+15,y:footY};
+ }
+ limb(prefix+"Left",lHip,la,lk,lf);limb(prefix+"Right",rHip,ra,rk,rf);
+ const reach=a.reach||0;
+ const armY=shoulder.y+25;
+ const lShoulder={x:shoulder.x-18,y:armY},rShoulder={x:shoulder.x+18,y:armY};
+ const swing=a.armSwing||0;
+ const idleL={x:shoulder.x-40-swing,y:shoulder.y+70},idleR={x:shoulder.x+40+swing,y:shoulder.y+70};
+ let lHand={x:lerp(idleL.x,shoulder.x+20,reach),y:lerp(idleL.y,shoulder.y+80,reach)};
+ let rHand={x:lerp(idleR.x,shoulder.x+78,reach),y:lerp(idleR.y,shoulder.y+35,reach)};
+ if(a.pose==="standup"){
+   const u=ease(standT);
+   lHand={x:lerp(shoulder.x-30,shoulder.x-40,u),y:lerp(478,shoulder.y+76,u)};
+   rHand={x:lerp(shoulder.x+25,shoulder.x+40,u),y:lerp(478,shoulder.y+76,u)};
+ }
+ arm(prefix,"Left",lShoulder,lHand,{x:(lShoulder.x+lHand.x)/2-8,y:(lShoulder.y+lHand.y)/2+10});
+ arm(prefix,"Right",rShoulder,rHand,{x:(rShoulder.x+rHand.x)/2+8,y:(rShoulder.y+rHand.y)/2+6});
+}
+function render(){
+ drawActor("eliz",state.eliz);drawActor("jane",state.jane);
+ $("carriage").setAttribute("transform","translate("+state.carriage.x+" "+state.carriage.y+") scale(1.18)");
+ $("carriage").setAttribute("opacity",state.carriage.opacity);
+ $("wheelA").setAttribute("transform","rotate("+state.carriage.wheelTurn+" -48 20)");
+ $("wheelB").setAttribute("transform","rotate("+state.carriage.wheelTurn+" 15 20)");
+}
+function baseActors(){
+ return {
+  A:{...initial.eliz},J:{...initial.jane},carriage:{x:500,opacity:0}
+ };
+}
+function sample(index,q){
+ const e=ease(clamp(q)),o=baseActors(),A=o.A,J=o.J;
+ if(index===0){
+   A.x=188;A.ground=581;A.hipY=-55;A.pose="sit";A.head=0;
+   J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=0;
+ }else if(index===1){
+   A.x=188;A.ground=581;A.hipY=-55;A.pose="sit";A.head=lerp(0,-16,e);A.lean=lerp(0,-5,e);
+   J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=lerp(0,-10,e);
+ }else if(index===2){
+   A.x=188;A.ground=581;A.hipY=-55;A.pose="sit";A.head=lerp(-16,-55,e);A.lean=lerp(-5,-13,e);
+   J.x=108;J.head=lerp(-10,-35,e);
+ }else if(index===3){
+   A.x=lerp(188,190,e);A.ground=581;A.pose="standup";A.standT=e;
+   const rise=ease(e);
+   A.hipY=lerp(-55,-78,rise);A.head=lerp(-55,-52,e);A.lean=lerp(-13,-5,e);
+   A.armSwing=0;
+   J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=-35;
+ }else if(index===4){
+   A.pose="walk";A.ground=581;A.hipY=-78;A.x=lerp(188,283,e);A.head=lerp(-55,-8,e);A.lean=lerp(0,2,e);
+   A.phase=e*Math.PI*4.0;
+   A.armSwing=Math.sin(A.phase)*7;
+   A.hipY=-78-Math.abs(Math.sin(A.phase))*2;
+   A.lean=lerp(0,2,e);
+   J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=lerp(-35,-8,e);
+ }else if(index===5){
+   A.pose="look";A.ground=581;A.hipY=-78;A.x=283;A.head=lerp(-8,-38,e);A.lean=lerp(2,7,e);A.reach=e;
+   J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=lerp(-8,-28,e);
+ }else if(index===6){
+   A.pose="look";A.ground=581;A.hipY=-78;A.x=283;A.head=-38;A.lean=7;A.reach=0;
+   J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=lerp(-28,-42,e);
+   o.carriage={x:lerp(470,360,e),y:365,opacity:lerp(0,1,e),wheelTurn:e*1080};
+ }else{
+   A.pose="look";A.ground=581;A.hipY=-78;A.x=283;A.head=-38;A.lean=7;A.reach=0;
+   J.x=108;J.ground=581;J.hipY=-55;J.pose="sit";J.head=-42;
+   o.carriage={x:360,y:365,opacity:1,wheelTurn:1080};
+ }
+ return o;
+}
+function setCaption(b){
+ $("captionKind").textContent=b.type==="read"?"Narrative":"Action";
+ $("captionText").textContent=b.text;
+ $("caption").style.display="block";
+ $("caption").style.opacity=b.type==="read"?"1":".86";
+}
+function enterBeat(i){
+ current=i;
+ applyResolvedEnvironment();
+ setCaption(beats[i]);
+ beats.forEach((_,n)=>{const el=$("beat"+n);el.classList.toggle("active",n===i);el.classList.toggle("done",n<i);});
+ $("actionHud").textContent=beats[i].label+" · "+(beats[i].type==="read"?"NARRATIVE":"ACTING");
+}
+function tick(ts){
+ if(!playing)return;
+ if(!start)start=ts;
+ elapsed=ts-start;
+ const b=beats[current],q=clamp(elapsed/b.ms),s=sample(current,q);
+ state.eliz=s.A;state.jane=s.J;state.carriage=s.carriage;render();
+ $("clockHud").textContent=(elapsed/1000).toFixed(1)+"s";
+ if(q>=1){
+   if(current<beats.length-1){current++;start=ts;enterBeat(current);}
+   else{playing=false;start=0;elapsed=0;$("actionHud").textContent="DONE · SCENE COMPLETE";return;}
+ }
+ raf=requestAnimationFrame(tick);
+}
+function play(){
+ if(playing)return;playing=true;
+ if(start===0){start=performance.now();enterBeat(current);}else start=performance.now()-elapsed;
+ cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);
+}
+function pause(){playing=false;cancelAnimationFrame(raf);}
+function restart(){pause();current=0;start=0;elapsed=0;state=sample(0,0);render();enterBeat(0);$("clockHud").textContent="0.0s";}
+$("play").onclick=play;$("pause").onclick=pause;$("restart").onclick=restart;restart();
+</script>
+</body>
+</html>

@@ -1,0 +1,680 @@
+import '../../domain/book.dart';
+import '../../domain/experience/ai_scene_plan.dart';
+import '../../core/utils/text_sanitizer.dart';
+
+class SceneAnchor {
+  const SceneAnchor(this.id, this.x, this.y, {this.depth = 0});
+  final String id;
+  final double x;
+  final double y;
+  final double depth;
+}
+
+class SceneActionBeat {
+  const SceneActionBeat({
+    required this.text,
+    required this.action,
+    required this.actorId,
+    this.targetAnchor,
+    required this.duration,
+  });
+  final String text;
+  final String action;
+  final String actorId;
+  final String? targetAnchor;
+  final Duration duration;
+}
+
+class SceneActor {
+  const SceneActor({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.startAnchor,
+  });
+  final String id;
+  final String name;
+  final String description;
+  final String startAnchor;
+}
+
+class SuperBookSceneGraph {
+  const SuperBookSceneGraph({
+    required this.environment,
+    required this.anchors,
+    required this.actors,
+    required this.props,
+    required this.timeline,
+  });
+
+  final String environment;
+  final Map<String, SceneAnchor> anchors;
+  final List<SceneActor> actors;
+  final List<String> props;
+  final List<SceneActionBeat> timeline;
+
+  static SuperBookSceneGraph from({
+    required AiScenePlan plan,
+    required Scene scene,
+    required List<BookCharacter> bookCharacters,
+    required List<String> passage,
+    String narrativeFocus = '',
+  }) {
+    // Literary prose is authoritative for physical setting. AI supplies a
+    // fallback only when the supplied prose contains no usable setting evidence.
+    final literarySource = [
+      ...passage,
+      scene.title,
+      scene.moment,
+      narrativeFocus,
+    ].join(' ').toLowerCase();
+
+    // The book passage is authoritative. AI may describe how to stage a
+    // moment, but it must never manufacture the physical location.
+    final physicalSource = literarySource;
+
+    final indoorTerms = [
+      'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
+      'bedroom', 'office', 'inside', 'interior', 'chamber', 'kitchen',
+      'fireplace', 'hearth',
+    ];
+    final specificOutdoorTerms = [
+      'forest', 'woods', 'woodland', 'trees', 'garden', 'meadow', 'field',
+      'street', 'road', 'sea', 'ocean', 'shore', 'harbour', 'harbor',
+      'beach', 'battlefield', 'station', 'courtyard', 'carriage', 'coach',
+      'wagon', 'ship', 'deck',
+    ];
+    final explicitIndoor = _hasAny(physicalSource, indoorTerms);
+    final explicitOutdoor = _hasAny(physicalSource, [
+      ...specificOutdoorTerms,
+      'outdoors', 'outside', 'path', 'battle',
+    ]);
+    // Resolve the immediate beat before falling back to the wider passage.
+    // Words such as "outside" are incidental unless a concrete outdoor
+    // location is actually named.
+    final immediateSource = [
+      scene.title,
+      scene.moment,
+      narrativeFocus,
+      ...passage.take(2),
+    ].join(' ');
+    final immediateOutdoorTerms = [
+      ...specificOutdoorTerms,
+      'park', 'ramble', 'walk', 'walks', 'outside', 'outdoors', 'path', 'battle',
+    ];
+    final immediateIndoorTerms = [
+      ...indoorTerms,
+      'sitting', 'sat', 'writing', 'wrote', 'read', 'reading', 'letter',
+      'dine', 'dinner', 'drawing room', 'parlor',
+    ];
+    final immediateIndoor = _hasAny(immediateSource, immediateIndoorTerms);
+    final immediateOutdoor = _hasAny(immediateSource, immediateOutdoorTerms);
+    final indoors = immediateIndoor
+        ? true
+        : immediateOutdoor
+            ? false
+            : explicitIndoor && !explicitOutdoor;
+
+    final hasWindow = indoors && _hasAny(physicalSource, ['window']);
+    final hasDoor = indoors && _hasAny(physicalSource, [
+      'doorway', 'threshold', 'open door', 'opened the door',
+      'through the door', 'at the door', 'door',
+    ]);
+    final hasTable = indoors &&
+        _hasAny(physicalSource, ['table', 'desk']) &&
+        _hasAny(physicalSource, [
+          'sit', 'sat', 'sitting', 'seated', 'dinner', 'eat', 'ate',
+          'write', 'wrote', 'map', 'key',
+        ]);
+    final hasCarriage = !indoors && _hasAny(physicalSource, [
+      'carriage', 'coach', 'wagon', 'horse',
+    ]);
+
+    // A prop only becomes renderable when the literary source actually
+    // establishes it. The AI prop list cannot ground itself.
+    final groundedProps = plan.props
+        .where((prop) => _isGroundedProp(prop, literarySource))
+        .take(3)
+        .toList();
+
+    final anchors = <String, SceneAnchor>{
+      'center': const SceneAnchor('center', .50, .68),
+      'left': const SceneAnchor('left', .27, .68),
+      'right': const SceneAnchor('right', .73, .68),
+      if (hasTable) 'table': const SceneAnchor('table', .50, .60),
+      if (hasWindow) 'window': const SceneAnchor('window', .78, .38, depth: .15),
+      if (hasWindow) 'outside_window': const SceneAnchor('outside_window', .88, .44, depth: .65),
+      if (hasDoor) 'door': const SceneAnchor('door', .14, .52),
+      'outside': const SceneAnchor('outside', .92, .62, depth: .75),
+    };
+
+    final explicitSolo = _hasAny(immediateSource, [
+      'alone', 'by himself', 'by herself', 'on his own', 'on her own',
+      'single figure', 'solitary',
+    ]);
+    final isDialogueOrGroup = _hasAny(immediateSource, [
+      'said', 'spoke', 'replied', 'answered', 'asked', 'conversation',
+      'talk', 'talked', 'wife', 'husband', 'sister', 'sisters', 'brother',
+      'mother', 'father', 'guest', 'cousin', 'cousins', 'friend', 'friends',
+      'ladies', 'gentlemen', 'girls', 'both', 'between', 'with', 'to her',
+      'to him', 'met', 'meet', 'related to', 'listened', 'entered',
+    ]);
+    final targetCount =
+        (explicitSolo || (plan.characters.length == 1 && !isDialogueOrGroup))
+            ? 1
+            : 2;
+
+    final actors = <SceneActor>[];
+    final planned = plan.characters.take(targetCount).toList();
+
+    if (planned.isNotEmpty) {
+      for (var i = 0; i < planned.length; i++) {
+        final character = planned[i];
+        actors.add(SceneActor(
+          id: _slug(character.id.isEmpty ? 'actor_$i' : character.id),
+          name: character.id.isEmpty
+              ? (i < bookCharacters.length
+                  ? bookCharacters[i].name
+                  : 'Character ${i + 1}')
+              : character.id,
+          description: character.description,
+          startAnchor: i == 0 ? 'left' : 'right',
+        ));
+      }
+    }
+
+    if (actors.length < targetCount) {
+      final rawImmediate = [
+        scene.moment,
+        narrativeFocus,
+        ...passage.take(3),
+      ].join(' ');
+
+      final mentionRegex = RegExp(
+        r'\b(?:Mr\.?\s+[A-Z][a-z]+|Mrs\.?\s+[A-Z][a-z]+|Miss\s+[A-Z][a-z]+|Lady\s+[A-Z][a-z]+|Sir\s+[A-Z][a-z]+|Colonel\s+[A-Z][a-z]+|Captain\s+[A-Z][a-z]+|Elizabeth|Jane|Darcy|Bingley|Collins|Charlotte|Lydia|Wickham|Mary|Kitty|Catherine|Gardiner|Lucas|his\s+wife|her\s+husband|her\s+mother|her\s+father|his\s+father|her\s+sister|his\s+guest|her\s+friend|his\s+friend|her\s+aunt|their\s+aunt|uncle\s+Philips)\b',
+      );
+
+      final namedMatches = mentionRegex
+          .allMatches(rawImmediate)
+          .where((match) {
+            final raw = match.group(0)!.toLowerCase();
+            return !_hasAny(raw, [
+              'wife', 'husband', 'mother', 'father', 'sister', 'guest',
+              'friend', 'aunt',
+            ]);
+          })
+          .toList();
+      final relationshipMatches = mentionRegex
+          .allMatches(rawImmediate)
+          .where((match) {
+            final raw = match.group(0)!.toLowerCase();
+            return _hasAny(raw, [
+              'wife', 'husband', 'mother', 'father', 'sister', 'guest',
+              'friend', 'aunt',
+            ]);
+          })
+          .toList();
+
+      for (final match in [...namedMatches, ...relationshipMatches]) {
+        if (actors.length >= targetCount) break;
+        final rawName = match.group(0)!.replaceAll(RegExp(r'\s+'), ' ').trim();
+        final lower = rawName.toLowerCase();
+
+        final isFemaleMention = _hasAny(lower, [
+          'mrs', 'miss', 'lady', 'elizabeth', 'jane', 'charlotte',
+          'lydia', 'mary', 'kitty', 'catherine', 'wife', 'mother',
+          'sister', 'aunt',
+        ]);
+        final isMaleMention = _hasAny(lower, [
+          'mr', 'sir', 'colonel', 'captain', 'darcy', 'bingley',
+          'collins', 'wickham', 'husband', 'father', 'guest', 'uncle',
+        ]);
+
+        var canonicalKey = _slug(rawName);
+        for (final surname in [
+          'elizabeth', 'jane', 'darcy', 'bingley', 'collins',
+          'charlotte', 'lydia', 'wickham', 'mary', 'kitty',
+          'catherine', 'gardiner', 'lucas', 'philips',
+        ]) {
+          if (_hasAny(lower, [surname])) {
+            canonicalKey =
+                '${isFemaleMention ? 'f' : isMaleMention ? 'm' : 'x'}_$surname';
+            break;
+          }
+        }
+        if (_hasAny(lower, ['bennet'])) {
+          canonicalKey = isFemaleMention ? 'mrs_bennet' : 'mr_bennet';
+        }
+        if (actors.any((actor) => actor.id == canonicalKey)) continue;
+
+        final genderTag = isFemaleMention
+            ? 'female woman lady'
+            : (isMaleMention ? 'male gentleman' : '');
+
+        actors.add(SceneActor(
+          id: canonicalKey,
+          name: rawName,
+          description: '$rawName $genderTag'.trim(),
+          startAnchor: actors.isEmpty ? 'left' : 'right',
+        ));
+      }
+    }
+
+    if (actors.length < targetCount) {
+      final rawImmediate = [
+        scene.moment,
+        narrativeFocus,
+        ...passage.take(3),
+      ].join(' ');
+
+      // Resolve book characters in prose order. Full names are considered
+      // before bare surnames so "Mr. Bennet" cannot resolve to Elizabeth.
+      final mentionedCharacters =
+          _orderedCharacterMentions(bookCharacters, rawImmediate);
+      for (final character in mentionedCharacters) {
+        if (actors.length >= targetCount) break;
+        final description =
+            _genderedCharacterDescription(character, rawImmediate);
+        final id = _slug(character.name);
+        final nameParts = character.name
+            .toLowerCase()
+            .split(RegExp(r'\s+'))
+            .where((word) => word.length >= 4)
+            .toList();
+        final alreadyPresent = actors.any((actor) =>
+            actor.id == id ||
+            _hasAny(actor.name.toLowerCase(), [
+              character.name.toLowerCase(),
+              ...nameParts,
+            ]));
+        if (alreadyPresent) continue;
+        actors.add(SceneActor(
+          id: id,
+          name: character.name,
+          description: description,
+          startAnchor: actors.isEmpty ? 'left' : 'right',
+        ));
+      }
+    }
+
+    while (actors.length < targetCount) {
+      final slot = actors.length;
+      final anchor = slot == 0 ? 'left' : 'right';
+      if (slot == 0) {
+        final hasMale = _hasAny(immediateSource, [
+          'he', 'him', 'his', 'mr', 'gentleman', 'father',
+        ]);
+        final hasFemale = _hasAny(immediateSource, [
+          'she', 'her', 'mrs', 'miss', 'lady', 'woman',
+        ]);
+        final isFemale = hasFemale && !hasMale;
+        actors.add(SceneActor(
+          id: isFemale ? 'lead_lady' : 'lead_gentleman',
+          name: isFemale ? 'Lady' : 'Gentleman',
+          description: isFemale ? 'female woman lady' : 'male gentleman',
+          startAnchor: anchor,
+        ));
+      } else {
+        final firstIsFemale = _hasAny(
+          actors.first.description.toLowerCase(),
+          ['female', 'woman', 'lady', 'mrs', 'miss'],
+        );
+        actors.add(SceneActor(
+          id: firstIsFemale ? 'companion_gentleman' : 'companion_lady',
+          name: firstIsFemale ? 'Companion Gentleman' : 'Companion Lady',
+          description:
+              firstIsFemale ? 'male gentleman' : 'female woman lady',
+          startAnchor: anchor,
+        ));
+      }
+    }
+
+    if (actors.isEmpty) {
+      actors.add(const SceneActor(
+        id: 'protagonist',
+        name: 'Protagonist',
+        description: '',
+        startAnchor: 'center',
+      ));
+    }
+
+    final timeline = <SceneActionBeat>[];
+
+    // Build acting beats from the actual chapter prose first. The AI plan is
+    // interpretation, not a replacement for what the book says happened.
+    final literaryBeats = _literaryBeats(passage, scene.moment);
+    final plannedActions = literaryBeats.isNotEmpty
+        ? literaryBeats
+        : <String>[
+            ...plan.actions,
+            ...plan.characters.map((c) => '${c.id}: ${c.action}'),
+          ].where((a) => a.trim().isNotEmpty).take(6).toList();
+
+    for (var i = 0; i < plannedActions.length; i++) {
+      final text = plannedActions[i];
+      final action = _normalizeAction(text);
+      final actor = _actorFor(text, actors, i);
+      timeline.add(SceneActionBeat(
+        text: text,
+        action: action,
+        actorId: actor.id,
+        targetAnchor: _targetFor(text, anchors),
+        duration: _durationFor(action),
+      ));
+    }
+
+    if (timeline.isEmpty) {
+      timeline.add(SceneActionBeat(
+        text: scene.moment,
+        action: _normalizeAction('${scene.moment} ${plan.motion}'),
+        actorId: actors.first.id,
+        targetAnchor: _targetFor(scene.moment, anchors),
+        duration: const Duration(milliseconds: 2600),
+      ));
+    }
+
+    return SuperBookSceneGraph(
+      environment: _environmentLabel(physicalSource, indoors, immediateSource),
+      anchors: anchors,
+      actors: actors,
+      props: groundedProps.isNotEmpty
+          ? groundedProps
+          : (hasCarriage ? const ['carriage'] : const []),
+      timeline: timeline,
+    );
+  }
+
+  static List<BookCharacter> _orderedCharacterMentions(
+    List<BookCharacter> characters,
+    String source,
+  ) {
+    final fullNameMatches = <({BookCharacter character, int index})>[];
+    final surnameMatches = <({BookCharacter character, int index})>[];
+
+    // Prefer exact/full-name mentions over bare surnames. This prevents
+    // "Mr. Bennet" from resolving to "Elizabeth Bennet" merely because
+    // both contain the surname "Bennet".
+    for (final character in characters) {
+      final name = character.name.trim();
+      if (name.isEmpty) continue;
+
+      final fullMatch = RegExp(
+        r'(?<![A-Za-z])' + RegExp.escape(name) + r'(?![A-Za-z])',
+        caseSensitive: false,
+      ).firstMatch(source);
+      if (fullMatch != null) {
+        fullNameMatches.add((character: character, index: fullMatch.start));
+        continue;
+      }
+
+      final parts = name.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+      if (parts.length < 2) continue;
+      final surname = parts.last;
+      final surnameMatch = RegExp(
+        r'(?<![A-Za-z])' + RegExp.escape(surname) + r'(?![A-Za-z])',
+        caseSensitive: false,
+      ).firstMatch(source);
+      if (surnameMatch != null) {
+        surnameMatches.add((character: character, index: surnameMatch.start));
+      }
+    }
+
+    fullNameMatches.sort((a, b) => a.index.compareTo(b.index));
+    surnameMatches.sort((a, b) => a.index.compareTo(b.index));
+
+    final ordered = <BookCharacter>[];
+    for (final match in [...fullNameMatches, ...surnameMatches]) {
+      if (!ordered.any((item) => item.name.toLowerCase() == match.character.name.toLowerCase())) {
+        ordered.add(match.character);
+      }
+    }
+    return ordered;
+  }
+
+  static String _genderedCharacterDescription(
+    BookCharacter character,
+    String source,
+  ) {
+    final existing = character.description.trim();
+    final combined = '${character.name} $existing'.toLowerCase();
+    if (_hasAny(combined, [
+      'female', 'woman', 'girl', 'lady', 'mrs', 'miss', 'ms', 'daughter',
+      'sister', 'wife', 'mother', 'aunt', 'niece', 'elizabeth', 'jane',
+      'charlotte', 'lydia', 'mary', 'kitty', 'catherine', 'georgiana', 'maria',
+    ])) {
+      return existing.isEmpty ? 'female character' : '$existing; female character';
+    }
+    if (_hasAny(combined, [
+      'male', 'man', 'boy', 'gentleman', 'mr', 'sir', 'colonel', 'captain',
+      'son', 'brother', 'husband', 'father', 'uncle', 'nephew', 'darcy',
+      'bingley', 'collins', 'wickham',
+    ])) {
+      return existing.isEmpty ? 'male character' : '$existing; male character';
+    }
+    final name = RegExp.escape(character.name.trim());
+    if (RegExp(r'\b(?:Mrs\.?|Ms\.?|Miss|Lady)\s+' + name + r'\b', caseSensitive: false)
+        .hasMatch(source)) {
+      return existing.isEmpty ? 'female character' : '$existing; female character';
+    }
+    if (RegExp(r'\b(?:Mr\.?|Sir|Captain|Colonel|Col|Capt)\s+' + name + r'\b', caseSensitive: false)
+        .hasMatch(source)) {
+      return existing.isEmpty ? 'male character' : '$existing; male character';
+    }
+    final mention = RegExp.escape(character.name.trim());
+    final match = RegExp(
+      r'(.{0,80})\b' + mention + r'\b(.{0,80})',
+      caseSensitive: false,
+      dotAll: true,
+    ).firstMatch(source);
+    final context = match == null ? '' : '${match.group(1)!} ${match.group(2)!}';
+    if (_hasAny(context, ['she', 'her', 'herself'])) {
+      return existing.isEmpty ? 'female character' : '$existing; female character';
+    }
+    if (_hasAny(context, ['he', 'him', 'his', 'himself'])) {
+      return existing.isEmpty ? 'male character' : '$existing; male character';
+    }
+    return existing;
+  }
+
+  static bool _hasAny(String text, List<String> terms) {
+    final normalized = ' ${text
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')} ';
+    return terms.any((term) {
+      final normalizedTerm =
+          term.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+      return normalized.contains(' $normalizedTerm ');
+    });
+  }
+
+  static bool _isGroundedProp(String prop, String source) {
+    final words = prop
+        .toLowerCase()
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((word) => word.length >= 4)
+        .toList();
+    return words.isNotEmpty && words.every((word) => _hasAny(source, [word]));
+  }
+
+  static String _environmentLabel(
+    String source,
+    bool indoors,
+    String immediateSource,
+  ) {
+    final hasPhysicalSetting = _hasAny(source, [
+      'room', 'house', 'hall', 'dining', 'library', 'parlor', 'parlour',
+      'bedroom', 'office', 'inside', 'interior', 'chamber', 'kitchen',
+      'fireplace', 'hearth', 'garden', 'forest', 'woods', 'woodland',
+      'trees', 'field', 'meadow', 'street', 'road', 'sea', 'ocean', 'shore',
+      'harbour', 'harbor', 'outdoors', 'outside', 'courtyard', 'path',
+      'station', 'battlefield', 'battle', 'ship', 'deck', 'carriage',
+      'coach', 'wagon', 'horse',
+    ]);
+    if (!hasPhysicalSetting) return 'Narrative setting not specified';
+    if (indoors) {
+      if (_hasAny(immediateSource, ['dining', 'dinner', 'dine', 'breakfast'])) {
+        return 'Dining room';
+      }
+      if (_hasAny(immediateSource, ['drawing room', 'drawing-room', 'parlor', 'parlour'])) {
+        return 'Drawing room';
+      }
+      if (_hasAny(immediateSource, ['library', 'study'])) { return 'Library or study'; }
+      if (_hasAny(immediateSource, ['bedroom', 'bed'])) { return 'Bedroom'; }
+      if (_hasAny(immediateSource, ['fireplace', 'hearth'])) { return 'Fireplace interior'; }
+      if (_hasAny(source, ['dining', 'dinner'])) { return 'Dining room'; }
+      if (_hasAny(source, ['drawing room', 'drawing-room', 'parlor', 'parlour'])) {
+        return 'Drawing room';
+      }
+      if (_hasAny(source, ['library', 'study'])) { return 'Library or study'; }
+      if (_hasAny(source, ['bedroom'])) { return 'Bedroom'; }
+      if (_hasAny(source, ['fireplace', 'hearth'])) { return 'Fireplace interior'; }
+      return 'Interior';
+    }
+    if (_hasAny(source, ['forest', 'woods', 'woodland', 'trees'])) {
+      return 'Forest or woodland';
+    }
+    if (_hasAny(source, ['garden', 'meadow', 'field', 'park', 'courtyard'])) {
+      return 'Garden or open grounds';
+    }
+    if (_hasAny(source, ['sea', 'ocean', 'ship', 'shore', 'harbour', 'harbor', 'deck'])) {
+      return 'At sea';
+    }
+    if (_hasAny(source, ['street', 'road', 'market', 'town', 'city', 'station'])) {
+      return 'Street or public place';
+    }
+    if (_hasAny(source, ['battle', 'battlefield', 'army', 'soldier', 'enemy', 'cannon'])) {
+      return 'Battlefield';
+    }
+    if (_hasAny(source, ['carriage', 'coach', 'wagon', 'horse'])) {
+      return 'Road or carriage setting';
+    }
+    return 'Outdoor setting';
+  }
+
+  static String _slug(String value) => value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+      .replaceAll(RegExp(r'^_|_$'), '');
+
+  static SceneActor _actorFor(String text, List<SceneActor> actors, int index) {
+    final t = text.toLowerCase();
+    for (final actor in actors) {
+      if (_hasAny(t, [actor.id.replaceAll('_', ' '), actor.name])) { return actor; }
+    }
+    return actors[index % actors.length];
+  }
+
+  static String? _targetFor(String text, Map<String, SceneAnchor> anchors) {
+    final t = text.toLowerCase();
+
+    // "reach and look outside" means the character is interacting with the
+    // exterior through the window, not walking to the generic outside anchor.
+    if (anchors.containsKey('outside_window') &&
+        t.contains('outside') &&
+        _hasAny(t, ['look', 'turn', 'reach'])) {
+      return 'outside_window';
+    }
+
+    for (final key in ['outside_window', 'window', 'table', 'door', 'outside']) {
+      if (anchors.containsKey(key) && t.contains(key.replaceAll('_', ' '))) { return key; }
+    }
+    if (anchors.containsKey('window') && _hasAny(t, ['look', 'turn', 'reach'])) {
+      return 'window';
+    }
+    return null;
+  }
+
+  static Duration _durationFor(String action) {
+    switch (action) {
+      case 'walk':
+        return const Duration(milliseconds: 4200);
+      case 'carriage':
+        return const Duration(milliseconds: 4500);
+      case 'reach':
+        return const Duration(milliseconds: 3200);
+      case 'stand':
+        return const Duration(milliseconds: 2800);
+      case 'talk':
+        return const Duration(milliseconds: 3600);
+      case 'look':
+        return const Duration(milliseconds: 3000);
+      case 'sit':
+        return const Duration(milliseconds: 2800);
+      default:
+        return const Duration(milliseconds: 3000);
+    }
+  }
+
+  static List<String> _literaryBeats(
+    List<String> passage,
+    String sceneMoment,
+  ) {
+    final source = passage
+        .map((line) => line.cleanOcr())
+        .where((line) => line.trim().isNotEmpty)
+        .take(6)
+        .join(' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (source.isEmpty) return const [];
+
+    // Protect titles/abbreviations from period-splitting. Coordinating words
+    // such as "and" and "then" are never sentence boundaries.
+    final protected = source.replaceAllMapped(
+      RegExp(
+        r'\b(Mr|Mrs|Ms|Miss|Dr|St|Rev|Col|Capt|Gen|Lady|Sir)\.',
+        caseSensitive: false,
+      ),
+      (m) => '${m[1]}\u0000',
+    );
+
+    final rawSentences = protected
+        .split(RegExp(r'(?<=[.!?;:])\s+'))
+        .map((s) => s.replaceAll('\u0000', '.').trim())
+        .where((s) => s.length >= 14)
+        .toList();
+
+    final beats = <String>[];
+    for (var s in rawSentences) {
+      if (s.length > 140) {
+        s = '${s.substring(0, 137).trim()}…';
+      }
+      s = s.cleanOcr();
+      beats.add(s);
+    }
+
+    if (beats.isNotEmpty) return beats.take(6).toList();
+    if (sceneMoment.trim().isNotEmpty && sceneMoment != '[Illustration]') {
+      return [sceneMoment.trim()];
+    }
+    return const [];
+  }
+
+  static String _normalizeAction(String value) {
+    final t = value.toLowerCase();
+    if (_hasAny(t, ['carriage', 'coach', 'wagon', 'horse arrives'])) { return 'carriage'; }
+    if (_hasAny(t, [
+      'walk', 'walked', 'walking', 'approach', 'approached', 'enter', 'entered',
+      'leave', 'left', 'leaving', 'move', 'moved', 'go', 'went', 'cross', 'crossed',
+      'run', 'ran', 'running', 'rush', 'rushed', 'flee', 'fled',
+    ])) { return 'walk'; }
+    if (_hasAny(t, ['stand', 'stood', 'rise', 'rose', 'get up', 'got up'])) { return 'stand'; }
+    if (_hasAny(t, [
+      'reach', 'reached', 'open', 'opened', 'take', 'took', 'pick up', 'picked up',
+      'hold', 'held', 'write', 'wrote',
+    ])) { return 'reach'; }
+    if (_hasAny(t, ['fight', 'fought', 'fighting', 'strike', 'struck', 'duel', 'attack', 'attacked'])) { return 'fight'; }
+    if (_hasAny(t, ['sit', 'sits', 'sat', 'sitting', 'seated'])) { return 'sit'; }
+    if (_hasAny(t, ['read', 'reads', 'reading', 'letter', 'book'])) { return 'read'; }
+    if (_hasAny(t, [
+      'turn', 'turned', 'look', 'looked', 'watch', 'watched', 'notice', 'noticed',
+      'see', 'saw', 'hear', 'heard', 'listen', 'listened',
+    ])) { return 'look'; }
+    if (_hasAny(t, [
+      'say', 'said', 'speak', 'spoke', 'talk', 'talked', 'ask', 'asked',
+      'reply', 'replied', 'answer', 'answered', 'protest', 'protested',
+      'argue', 'argued', 'insist', 'insisted', 'continue', 'continued',
+    ])) { return 'talk'; }
+    return 'look';
+  }
+}
