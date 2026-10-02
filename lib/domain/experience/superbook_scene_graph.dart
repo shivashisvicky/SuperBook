@@ -1,5 +1,6 @@
 import '../../domain/book.dart';
 import '../../domain/experience/ai_scene_plan.dart';
+import '../../core/utils/text_sanitizer.dart';
 
 class SceneAnchor {
   const SceneAnchor(this.id, this.x, this.y, {this.depth = 0});
@@ -609,6 +610,7 @@ class SuperBookSceneGraph {
     String sceneMoment,
   ) {
     final source = passage
+        .map((line) => line.cleanOcr())
         .where((line) => line.trim().isNotEmpty)
         .take(6)
         .join(' ')
