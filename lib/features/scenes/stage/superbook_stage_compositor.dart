@@ -7,6 +7,7 @@ import 'rigs/quadruped_puppet_rig.dart';
 import 'environments/biome_backdrop_painter.dart';
 import 'environments/stage_set_piece_painter.dart';
 import '../../../domain/book.dart';
+import '../../../core/utils/text_sanitizer.dart';
 
 class SuperBookStageCompositor extends StatefulWidget{
   const SuperBookStageCompositor({super.key,required this.script,required this.characters,required this.passage});
@@ -34,7 +35,7 @@ class _StagePainter extends CustomPainter{
     final t=progress*math.pi*2;
     c.save();
     final zoom=1+.025*math.sin(t);c.translate(s.width/2,s.height/2);c.scale(zoom);c.translate(-s.width/2,-s.height/2);
-    final storyText=passage.join(' ').toLowerCase();
+    final storyText=passage.map((line)=>line.cleanOcr()).join(' ').toLowerCase();
     final blooming=storyText.contains('bloom')||storyText.contains('blossom')||storyText.contains('flower');
     backdrop.paint(c,s,script.biome,script.lighting,t,blooming:blooming);
     final pieces=[...script.setPieces]..sort((a,b)=>a.depth.compareTo(b.depth));
