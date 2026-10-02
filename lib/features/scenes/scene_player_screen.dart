@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../domain/book.dart';
+import '../../core/utils/text_sanitizer.dart';
 import '../../domain/experience/ai_scene_plan.dart';
 import '../../domain/experience/superbook_scene_graph.dart';
 import '../../services/scene_generation/cloudflare_scene_provider.dart';
