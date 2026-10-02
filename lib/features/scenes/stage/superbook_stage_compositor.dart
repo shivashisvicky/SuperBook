@@ -76,7 +76,7 @@ class _StagePainter extends CustomPainter{
   void _paintBeatBubble(Canvas c,Size s,ChoreographedBeat beat,List<CharacterPuppetSpec> ordered){
     final activeTrack=beat.tracks.firstWhere((track)=>track.pose!=ActorPose.listenAttentive&&track.pose!=ActorPose.idleStand,orElse:()=>beat.tracks.isEmpty?const ActorTrack(actorId:'',pose:ActorPose.idleStand):beat.tracks.first);
     final actor=ordered.firstWhere((item)=>item.id==activeTrack.actorId,orElse:()=>ordered.isEmpty?const CharacterPuppetSpec(id:'',name:'',description:'',x:.5,y:.78,facing:1):ordered.first);
-    var text=beat.text.replaceAll('_','').replaceAll(RegExp(r'[\^§\$]+'),'').replaceAll(RegExp(r'\\s+'),' ').trim();
+    var text=beat.text.cleanOcr();
     if(text.length>150) text=text.substring(0,147)+'…';
     if(text.isEmpty)return;
     final textPainter=TextPainter(
