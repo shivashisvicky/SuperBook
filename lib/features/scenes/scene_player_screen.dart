@@ -453,8 +453,7 @@ class _StoryMomentOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final sanitizedSummary =
-        summary.replaceAll(RegExp(r'[\^§\$_]+'), '');
+    final sanitizedSummary = summary.cleanOcr();
     return AnimatedSize(
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeOutCubic,
