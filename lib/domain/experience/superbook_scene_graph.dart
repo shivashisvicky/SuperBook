@@ -639,7 +639,7 @@ class SuperBookSceneGraph {
       if (s.length > 140) {
         s = '${s.substring(0, 137).trim()}…';
       }
-      s = s.replaceAll('_', '').replaceAll(RegExp(r'[\^§\$]+'), '');
+      s = s.cleanOcr();
       beats.add(s);
     }
 
